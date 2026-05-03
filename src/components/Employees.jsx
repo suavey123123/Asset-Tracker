@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, Badge } from './UI'
 
 const EMPTY_FORM = {
-  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '',
+  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null,
 }
 
 export default function Employees({ onViewEmployee }) {
@@ -19,23 +19,26 @@ export default function Employees({ onViewEmployee }) {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [filterDept, setFilterDept] = useState('')
+  const [sites, setSites] = useState([])
   const [viewEmp, setViewEmp] = useState(null)
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: e }, { data: a }] = await Promise.all([
+    const [{ data: e }, { data: a }, { data: s }] = await Promise.all([
       supabase.from('employees').select('*').order('name'),
       supabase.from('assets').select('id, name, asset_tag, category, status, assigned_to').eq('status', 'Checked Out'),
+      supabase.from('sites').select('id, name').order('name'),
     ])
     setEmployees(e || [])
     setAssets(a || [])
+    setSites(s || [])
     setLoading(false)
   }
 
   function openAdd() { setEditEmp(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
-  function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'' }); setError(''); setModalOpen(true) }
+  function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null }); setError(''); setModalOpen(true) }
 
   async function save() {
     if (!form.name.trim()) { setError('Name is required.'); return }
@@ -109,7 +112,7 @@ export default function Employees({ onViewEmployee }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Name', 'Title', 'Department', 'Location', 'Assets', 'Actions'].map(h => (
+                {['Name', 'Title', 'Department', 'Site', 'Assets', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                 ))}
               </tr>
@@ -131,7 +134,7 @@ export default function Employees({ onViewEmployee }) {
                         <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--blue-bg)', color: 'var(--blue)', fontFamily: 'var(--mono)' }}>{emp.department}</span>
                       ) : <span style={{ color: 'var(--text3)' }}>—</span>}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{emp.location || '—'}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{sites.find(s=>s.id===emp.site_id)?.name || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
                       {empAssets.length > 0 ? (
                         <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--green-bg)', color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{empAssets.length} asset{empAssets.length !== 1 ? 's' : ''}</span>
@@ -215,6 +218,12 @@ export default function Employees({ onViewEmployee }) {
             <FormField label="Phone"><input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="e.g. 555-1234" /></FormField>
             <FormField label="Location"><input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Floor 3, Desk 12" /></FormField>
           </div>
+          <FormField label="Site">
+            <select value={form.site_id||''} onChange={e => setForm(f => ({ ...f, site_id: e.target.value || null }))}>
+              <option value="">No site assigned</option>
+              {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </FormField>
           <FormField label="Notes"><textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any additional info…" /></FormField>
           {error && <div style={{ color: 'var(--red)', fontSize: 12 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>

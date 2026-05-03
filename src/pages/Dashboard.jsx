@@ -16,6 +16,7 @@ import Transfer from '../components/Transfer'
 import Scanner from '../components/Scanner'
 import Lifecycle from '../components/Lifecycle'
 import Employees from '../components/Employees'
+import Sites from '../components/Sites'
 
 const TITLES = {
   home:'Dashboard', inventory:'Inventory', checkout:'Check In / Out',
@@ -58,6 +59,7 @@ export default function Dashboard() {
     scanner: <Scanner onViewAsset={handleViewAsset} />,
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
     employees: <Employees />,
+    sites: <Sites />,
 
   }
 

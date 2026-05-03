@@ -10,7 +10,7 @@ const NAV = [
   { id:'lifecycle',   label:'Lifecycle',    icon:'◎' },
   { id:'reports',     label:'Reports',      icon:'⊟' },
   { id:'history',     label:'History',      icon:'◷' },
-  { id:'employees',   label:'Employees',    icon:'◑' },
+  { id:'sites',       label:'Sites',        icon:'⊕' },
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
 ]
 
