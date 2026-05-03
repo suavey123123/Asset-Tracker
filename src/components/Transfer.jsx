@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, EmptyState, Spinner, ViewOnlyBanner } from './UI'
+import EmployeeSelect from './EmployeeSelect'
 
 export default function Transfer({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
@@ -110,7 +111,7 @@ export default function Transfer({ onViewAsset }) {
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Transfer to *</label>
-              <input value={toPerson} onChange={e => setToPerson(e.target.value)} placeholder="New employee name" />
+              <EmployeeSelect value={toPerson} onChange={setToPerson} placeholder="Select or type employee name" />
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Reason</label>
