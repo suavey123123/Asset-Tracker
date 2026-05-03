@@ -82,11 +82,25 @@ export default function Sites() {
   async function saveEmployee() {
     if (!empForm.name.trim()) { setEmpError('Name is required.'); return }
     setEmpSaving(true); setEmpError('')
-    const { error } = await supabase.from('employees').insert({ ...empForm, site_id: activeSite?.id || null })
+    const { _editId, ...payload } = empForm
+    let error
+    if (_editId) {
+      const { error: e } = await supabase.from('employees').update(payload).eq('id', _editId)
+      error = e
+    } else {
+      const { error: e } = await supabase.from('employees').insert({ ...payload, site_id: activeSite?.id || null })
+      error = e
+    }
     setEmpSaving(false)
     if (error) { setEmpError(error.message); return }
     setEmpModalOpen(false)
     setEmpForm({ name:'', email:'', department:'', title:'', phone:'', location:'', notes:'', site_id:null })
+    fetchAll()
+  }
+
+  async function deleteEmployee(emp) {
+    if (!confirm(`Delete ${emp.name}? This won't affect their assigned assets.`)) return
+    await supabase.from('employees').delete().eq('id', emp.id)
     fetchAll()
   }
 
@@ -150,7 +164,7 @@ export default function Sites() {
             {siteEmployees.length === 0 ? <EmptyState message="No employees assigned to this site yet. Add employees and set their site." /> : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Name', 'Title', 'Department', 'Email'].map(h => (
+                  {['Name', 'Title', 'Department', 'Email', ...(isAdmin ? ['Actions'] : [])].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr></thead>
@@ -161,6 +175,15 @@ export default function Sites() {
                       <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>{e.title || '—'}</td>
                       <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>{e.department || '—'}</td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{e.email || '—'}</td>
+                      {isAdmin && <td style={{ padding: '10px 14px' }}>
+                        <div style={{ display:'flex', gap:4 }}>
+                          <Btn size="sm" onClick={() => {
+                            setEmpForm({ name:e.name||'', email:e.email||'', department:e.department||'', title:e.title||'', phone:e.phone||'', location:e.location||'', notes:e.notes||'', site_id:e.site_id, _editId: e.id })
+                            setEmpError(''); setEmpModalOpen(true)
+                          }}>Edit</Btn>
+                          <Btn size="sm" variant="danger" onClick={() => deleteEmployee(e)}>Del</Btn>
+                        </div>
+                      </td>}
                     </tr>
                   ))}
                 </tbody>
@@ -195,7 +218,7 @@ export default function Sites() {
         )}
 
         {/* Add Employee Modal */}
-        <Modal open={empModalOpen} onClose={() => setEmpModalOpen(false)} title={`Add employee to ${activeSite?.name}`}>
+        <Modal open={empModalOpen} onClose={() => setEmpModalOpen(false)} title={empForm._editId ? `Edit employee` : `Add employee to ${activeSite?.name}`}>
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               <FormField label="Full name" required><input value={empForm.name} onChange={e=>setEmpForm(f=>({...f,name:e.target.value}))} placeholder="John Smith" /></FormField>
@@ -213,7 +236,7 @@ export default function Sites() {
             {empError && <div style={{ color:'var(--red)', fontSize:12 }}>{empError}</div>}
             <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
               <Btn onClick={()=>setEmpModalOpen(false)}>Cancel</Btn>
-              <Btn variant="primary" onClick={saveEmployee} disabled={empSaving}>{empSaving?'Saving…':'Add employee'}</Btn>
+              <Btn variant="primary" onClick={saveEmployee} disabled={empSaving}>{empSaving?'Saving…': empForm._editId ? 'Save changes' : 'Add employee'}</Btn>
             </div>
           </div>
         </Modal>
