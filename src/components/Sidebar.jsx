@@ -11,6 +11,10 @@ const NAV = [
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
 ]
 
+const BOTTOM_NAV = [
+  { id:'settings', label:'Settings', icon:'⚙' },
+]
+
 export default function Sidebar({ active, onNav, alerts=0 }) {
   const { profile, signOut, isAdmin } = useAuth()
   return (
@@ -31,6 +35,9 @@ export default function Sidebar({ active, onNav, alerts=0 }) {
         ))}
       </nav>
       <div style={s.footer}>
+        <button onClick={()=>onNav('settings')} style={{ ...s.navItem, ...(active==='settings'?s.navActive:{}), marginBottom:8 }}>
+          <span style={s.navIcon}>⚙</span>Settings
+        </button>
         <div style={s.userRow}>
           <div style={s.avatar}>{profile?.email?.[0]?.toUpperCase()||'?'}</div>
           <div style={{ flex:1, minWidth:0 }}>
@@ -50,11 +57,11 @@ const s = {
   logoBox:{ width:30, height:30, background:'var(--accent)', color:'#0f0f0f', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--mono)', fontWeight:500, fontSize:11, flexShrink:0 },
   logoText:{ fontSize:14, fontWeight:500, letterSpacing:'-0.02em' },
   nav:{ display:'flex', flexDirection:'column', gap:2, flex:1 },
-  navItem:{ display:'flex', alignItems:'center', gap:9, padding:'7px 10px', borderRadius:'var(--radius)', fontSize:13, color:'var(--text2)', background:'none', border:'none', cursor:'pointer', textAlign:'left', width:'100%', transition:'all 0.1s' },
+  navItem:{ display:'flex', alignItems:'center', gap:9, padding:'7px 10px', borderRadius:'var(--radius)', fontSize:13, color:'var(--text2)', background:'none', border:'none', cursor:'pointer', textAlign:'left', width:'100%', transition:'all 0.1s', fontFamily:'var(--font)' },
   navActive:{ background:'var(--accent-bg)', color:'var(--accent)', border:'1px solid var(--accent-border)' },
   navIcon:{ fontSize:14, width:16, textAlign:'center', flexShrink:0 },
   footer:{ borderTop:'1px solid var(--border)', paddingTop:'0.75rem', marginTop:'0.5rem' },
   userRow:{ display:'flex', alignItems:'center', gap:8, marginBottom:8 },
   avatar:{ width:28, height:28, borderRadius:'50%', background:'var(--bg4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:500, flexShrink:0 },
-  signOut:{ width:'100%', fontSize:12, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:'4px 2px' },
+  signOut:{ width:'100%', fontSize:12, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:'4px 2px', fontFamily:'var(--font)' },
 }

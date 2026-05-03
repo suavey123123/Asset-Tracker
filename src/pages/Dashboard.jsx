@@ -11,11 +11,12 @@ import History from '../components/History'
 import Users from '../components/Users'
 import AssetDetail from '../components/AssetDetail'
 import Reports from '../components/Reports'
+import Settings from '../components/Settings'
 
 const TITLES = {
   home:'Dashboard', inventory:'Inventory', checkout:'Check In / Out',
   maintenance:'Maintenance', history:'Activity History',
-  users:'User Management', reports:'Reports',
+  users:'User Management', reports:'Reports', settings:'Settings',
 }
 
 export default function Dashboard() {
@@ -47,6 +48,7 @@ export default function Dashboard() {
     history: <History onViewAsset={handleViewAsset} />,
     users: isAdmin ? <Users /> : null,
     reports: <Reports />,
+    settings: <Settings />,
   }
 
   return (
