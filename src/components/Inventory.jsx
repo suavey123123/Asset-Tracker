@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, StatusSelect } from './UI'
+import CategorySelect from './CategorySelect'
+import { SPEC_FIELDS, TECH_SPEC_CATEGORIES } from '../lib/constants'
+import EmployeeSelect from './EmployeeSelect'
 import ImportCSV from './ImportCSV'
 
 const EMPTY_FORM = {
-  asset_tag:'', name:'', category:'IT Equipment', status:'Available',
+  asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
+  specs: {},
 }
 
 export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
@@ -46,13 +50,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   function openEditModal(asset) {
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'IT Equipment', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'' })
+    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
     setError(''); setModalOpen(true)
   }
 
   function duplicateAsset(asset) {
     setEditAsset(null)
-    setForm({ asset_tag:asset.asset_tag+'-COPY', name:asset.name+' (Copy)', category:asset.category, status:'Available', model:asset.model||'', serial_number:'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'' })
+    setForm({ asset_tag:asset.asset_tag+'-COPY', name:asset.name+' (Copy)', category:asset.category, status:'Available', model:asset.model||'', serial_number:'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
     setError(''); setModalOpen(true)
   }
 
@@ -68,6 +72,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       serial_number: form.serial_number || null,
       location: form.location || null,
       notes: form.notes || null,
+      specs: form.specs || {},
     }
     let err
     if (editAsset) {
@@ -163,7 +168,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         </select>
         <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{ width:160 }}>
           <option value="">All categories</option>
-          <option>IT Equipment</option><option>Tools & Equipment</option>
+          <option>LAPTOP</option><option>DESKTOP</option><option>PHONE</option><option>TABLET</option><option>CAMERA</option><option>TV</option><option>PRINTER</option><option>ROUTER</option><option>MOUSE</option><option>KEYBOARD</option><option>MONITOR</option><option>Tools & Equipment</option>
         </select>
         <div style={{ flex:1 }} />
         {isAdmin && selected.length>0 && (
@@ -243,7 +248,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <FormField label="Category"><select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}><option>IT Equipment</option><option>Tools & Equipment</option></select></FormField>
+            <FormField label="Category"><CategorySelect value={form.category} onChange={v=>setForm(f=>({...f,category:v}))} /></FormField>
             <FormField label="Status"><StatusSelect value={form.status} onChange={v=>setForm(f=>({...f,status:v}))} /></FormField>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
@@ -258,6 +263,22 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Purchase date"><input type="date" value={form.purchase_date} onChange={e=>setForm(f=>({...f,purchase_date:e.target.value}))} /></FormField>
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
           </div>
+          {TECH_SPEC_CATEGORIES.includes(form.category) && (
+            <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>Tech specs</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                {SPEC_FIELDS.tech.map(f => (
+                  <FormField key={f.key} label={f.key}>
+                    <input
+                      value={form.specs?.[f.key]||''}
+                      onChange={e=>setForm(fm=>({...fm, specs:{...fm.specs, [f.key]:e.target.value}}))}
+                      placeholder={f.placeholder}
+                    />
+                  </FormField>
+                ))}
+              </div>
+            </div>
+          )}
           <FormField label="Notes"><textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></FormField>
           {error && <div style={{ color:'var(--red)', fontSize:12 }}>{error}</div>}
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>

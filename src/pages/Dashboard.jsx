@@ -54,6 +54,9 @@ export default function Dashboard() {
     reports: <Reports />,
     settings: <Settings />,
     scanner: <Scanner onViewAsset={handleViewAsset} />,
+    lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
+    employees: <Employees />,
+
   }
 
   return (

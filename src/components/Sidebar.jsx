@@ -8,8 +8,10 @@ const NAV = [
   { id:'transfer',    label:'Transfer',     icon:'↔' },
   { id:'maintenance', label:'Maintenance',  icon:'⚙' },
   { id:'scanner',     label:'Scanner',      icon:'◈' },
+  { id:'lifecycle',   label:'Lifecycle',    icon:'◎' },
   { id:'reports',     label:'Reports',      icon:'⊟' },
   { id:'history',     label:'History',      icon:'◷' },
+  { id:'employees',   label:'Employees',    icon:'👤' },
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
 ]
 

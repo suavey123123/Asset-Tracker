@@ -6,7 +6,6 @@ export function Badge({ status }) {
     'Retired':      { bg: '#2a2a2a',          color: 'var(--text2)',  label: 'Retired' },
     'Ordered':      { bg: 'var(--purple-bg)', color: 'var(--purple)', label: 'Ordered' },
     'Received':     { bg: 'var(--accent-bg)', color: 'var(--accent)', label: 'Received' },
-    'IT Equipment': { bg: 'var(--blue-bg)',   color: 'var(--blue)',   label: 'IT' },
     'Tools & Equipment': { bg: 'var(--amber-bg)', color: 'var(--amber)', label: 'Tools' },
     'admin':        { bg: 'var(--accent-bg)', color: 'var(--accent)', label: 'Admin' },
     'viewer':       { bg: '#222',             color: 'var(--text2)',  label: 'Viewer' },

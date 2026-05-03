@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, EmptyState, Spinner, ViewOnlyBanner } from './UI'
+import EmployeeSelect from './EmployeeSelect'
 
 export default function Checkout() {
   const { isAdmin, profile } = useAuth()
@@ -78,7 +79,7 @@ export default function Checkout() {
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Assigned to</label>
-                <input value={coPerson} onChange={e => setCoPerson(e.target.value)} placeholder="Employee name" />
+                <EmployeeSelect value={coPerson} onChange={setCoPerson} placeholder="Select or type employee name" />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Expected return</label>
