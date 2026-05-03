@@ -21,6 +21,7 @@ export default function Employees({ onViewEmployee }) {
   const [filterDept, setFilterDept] = useState('')
   const [sites, setSites] = useState([])
   const [viewEmp, setViewEmp] = useState(null)
+  const [selected, setSelected] = useState([])
 
   useEffect(() => { fetchAll() }, [])
 
@@ -60,6 +61,15 @@ export default function Employees({ onViewEmployee }) {
   async function deleteEmp(emp) {
     if (!confirm(`Delete ${emp.name}? This won't remove their assigned assets.`)) return
     await supabase.from('employees').delete().eq('id', emp.id)
+    fetchAll()
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.length} employee${selected.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
+    for (const id of selected) {
+      await supabase.from('employees').delete().eq('id', id)
+    }
+    setSelected([])
     fetchAll()
   }
 
@@ -103,6 +113,9 @@ export default function Employees({ onViewEmployee }) {
           {departments.map(d => <option key={d}>{d}</option>)}
         </select>
         <div style={{ flex: 1 }} />
+        {isAdmin && selected.length > 0 && (
+          <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
+        )}
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
       </div>
 
@@ -112,7 +125,14 @@ export default function Employees({ onViewEmployee }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Name', 'Title', 'Department', 'Site', 'Assets', 'Actions'].map(h => (
+                <th style={{ padding:'10px 14px', width:32 }}>
+                  <input type="checkbox"
+                    checked={filtered.length > 0 && filtered.every(e => selected.includes(e.id))}
+                    onChange={ev => setSelected(ev.target.checked ? filtered.map(e => e.id) : [])}
+                    style={{ width:'auto', cursor:'pointer' }}
+                  />
+                </th>
+              {['Name', 'Title', 'Department', 'Site', 'Assets', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                 ))}
               </tr>
