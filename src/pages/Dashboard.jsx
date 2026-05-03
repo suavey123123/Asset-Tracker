@@ -14,6 +14,8 @@ import Reports from '../components/Reports'
 import Settings from '../components/Settings'
 import Transfer from '../components/Transfer'
 import Scanner from '../components/Scanner'
+import Lifecycle from '../components/Lifecycle'
+import Employees from '../components/Employees'
 
 const TITLES = {
   home:'Dashboard', inventory:'Inventory', checkout:'Check In / Out',
