@@ -32,6 +32,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [bulkPerson, setBulkPerson] = useState('')
   const [bulkDate, setBulkDate] = useState('')
   const [quickStatusId, setQuickStatusId] = useState(null)
+  const [checkoutModal, setCheckoutModal] = useState(null) // asset object
+  const [checkinModal, setCheckinModal] = useState(null)   // asset object
+  const [qcPerson, setQcPerson] = useState('')
+  const [qcDate, setQcDate] = useState('')
+  const [qcNotes, setQcNotes] = useState('')
+  const [qcCondition, setQcCondition] = useState('Good')
 
   useEffect(() => { fetchAssets() }, [])
 
@@ -112,6 +118,24 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       await logActivity(id, asset.asset_tag, asset.name, 'checkout', `Bulk checked out to ${bulkPerson} by ${profile?.email}`)
     }
     setSelected([]); setBulkPerson(''); setBulkDate(''); setBulkCheckoutOpen(false)
+    fetchAssets()
+  }
+
+  async function doQuickCheckout() {
+    if (!qcPerson.trim()) return
+    const asset = checkoutModal
+    await supabase.from('assets').update({ status:'Checked Out', assigned_to:qcPerson, expected_return:qcDate||null }).eq('id', asset.id)
+    await logActivity(asset.id, asset.asset_tag, asset.name, 'checkout', `Checked out to ${qcPerson}${qcNotes?' — '+qcNotes:''}`)
+    setCheckoutModal(null); setQcPerson(''); setQcDate(''); setQcNotes('')
+    fetchAssets()
+  }
+
+  async function doQuickCheckin() {
+    const asset = checkinModal
+    const newStatus = qcCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
+    await supabase.from('assets').update({ status:newStatus, assigned_to:null, expected_return:null }).eq('id', asset.id)
+    await logActivity(asset.id, asset.asset_tag, asset.name, 'checkin', `Checked in from ${asset.assigned_to||'unknown'} — condition: ${qcCondition}${qcNotes?' — '+qcNotes:''}`)
+    setCheckinModal(null); setQcCondition('Good'); setQcNotes('')
     fetchAssets()
   }
 
@@ -226,8 +250,10 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     <td style={{ padding:'10px 14px', fontSize:12, color:a.assigned_to?'var(--text)':'var(--text3)' }}>{a.assigned_to||'—'}</td>
                     <td style={{ padding:'10px 14px', fontSize:12, color:a.location?'var(--text)':'var(--text3)' }}>{a.location||'—'}</td>
                     <td style={{ padding:'10px 14px' }}>
-                      <div style={{ display:'flex', gap:4 }}>
+                      <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
                         <Btn size="sm" onClick={()=>onViewAsset?.(a)}>View</Btn>
+                        {isAdmin && a.status==='Available' && <Btn size="sm" variant="success" onClick={()=>{setCheckoutModal(a);setQcPerson('');setQcDate('');setQcNotes('')}}>Out</Btn>}
+                        {isAdmin && a.status==='Checked Out' && <Btn size="sm" variant="primary" onClick={()=>{setCheckinModal(a);setQcCondition('Good');setQcNotes('')}}>In</Btn>}
                         {isAdmin && <Btn size="sm" onClick={()=>openEditModal(a)}>Edit</Btn>}
                         {isAdmin && <Btn size="sm" onClick={()=>duplicateAsset(a)}>Copy</Btn>}
                         {isAdmin && <Btn size="sm" variant="danger" onClick={()=>deleteAsset(a)}>Del</Btn>}
@@ -298,6 +324,46 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setBulkCheckoutOpen(false)}>Cancel</Btn>
             <Btn variant="primary" onClick={doBulkCheckout} disabled={!bulkPerson.trim()}>Check out all</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Quick Checkout Modal */}
+      <Modal open={!!checkoutModal} onClose={()=>setCheckoutModal(null)} title={`Check out — ${checkoutModal?.name||''}`} width={400}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <FormField label="Assign to" required>
+            <EmployeeSelect value={qcPerson} onChange={setQcPerson} placeholder="Search or type employee name" />
+          </FormField>
+          <FormField label="Expected return">
+            <input type="date" value={qcDate} onChange={e=>setQcDate(e.target.value)} />
+          </FormField>
+          <FormField label="Notes">
+            <input value={qcNotes} onChange={e=>setQcNotes(e.target.value)} placeholder="Optional notes" />
+          </FormField>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
+            <Btn onClick={()=>setCheckoutModal(null)}>Cancel</Btn>
+            <Btn variant="primary" onClick={doQuickCheckout} disabled={!qcPerson.trim()}>Check out</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Quick Checkin Modal */}
+      <Modal open={!!checkinModal} onClose={()=>setCheckinModal(null)} title={`Check in — ${checkinModal?.name||''}`} width={400}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ fontSize:13, color:'var(--text2)' }}>Currently assigned to: <strong style={{color:'var(--text)'}}>{checkinModal?.assigned_to||'Unknown'}</strong></div>
+          <FormField label="Condition on return">
+            <select value={qcCondition} onChange={e=>setQcCondition(e.target.value)}>
+              <option>Good</option>
+              <option>Needs maintenance</option>
+              <option>Damaged</option>
+            </select>
+          </FormField>
+          <FormField label="Notes">
+            <input value={qcNotes} onChange={e=>setQcNotes(e.target.value)} placeholder="Optional notes" />
+          </FormField>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
+            <Btn onClick={()=>setCheckinModal(null)}>Cancel</Btn>
+            <Btn variant="primary" onClick={doQuickCheckin}>Check in</Btn>
           </div>
         </div>
       </Modal>
