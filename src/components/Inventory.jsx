@@ -59,7 +59,16 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   async function save() {
     if (!form.name.trim()||!form.asset_tag.trim()) { setError('Name and Asset Tag are required.'); return }
     setSaving(true); setError('')
-    const payload = { ...form, purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null }
+    const payload = {
+      ...form,
+      purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
+      purchase_date: form.purchase_date || null,
+      warranty_expiry: form.warranty_expiry || null,
+      model: form.model || null,
+      serial_number: form.serial_number || null,
+      location: form.location || null,
+      notes: form.notes || null,
+    }
     let err
     if (editAsset) {
       const { error: e } = await supabase.from('assets').update(payload).eq('id', editAsset.id)

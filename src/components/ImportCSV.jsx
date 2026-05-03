@@ -61,9 +61,9 @@ export default function ImportCSV({ open, onClose, onDone }) {
       category: r.category || 'IT Equipment',
       status: r.status || 'Available',
       model: r.model || null, serial_number: r.serial_number || null,
-      location: r.location || null, purchase_date: r.purchase_date || null,
+      location: r.location || null, purchase_date: r.purchase_date?.trim() || null,
       purchase_cost: r.purchase_cost ? parseFloat(r.purchase_cost) : null,
-      warranty_expiry: r.warranty_expiry || null, notes: r.notes || null,
+      warranty_expiry: r.warranty_expiry?.trim() || null, notes: r.notes || null,
     }))
     const { data, error } = await supabase.from('assets').insert(payload).select()
     if (!error && data) {
