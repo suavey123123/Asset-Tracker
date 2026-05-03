@@ -9,7 +9,7 @@ const EMPTY_FORM = {
   purchase_cost: '', warranty_expiry: '', notes: '',
 }
 
-export default function Inventory() {
+export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const { isAdmin, profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,6 +23,13 @@ export default function Inventory() {
   const [error, setError] = useState('')
 
   useEffect(() => { fetchAssets() }, [])
+
+  useEffect(() => {
+    if (editAssetProp) {
+      openEditModal(editAssetProp)
+      onEditDone?.()
+    }
+  }, [editAssetProp])
 
   async function fetchAssets() {
     setLoading(true)
@@ -38,7 +45,7 @@ export default function Inventory() {
     setModalOpen(true)
   }
 
-  function openEdit(asset) {
+  function openEditModal(asset) {
     setEditAsset(asset)
     setForm({
       asset_tag: asset.asset_tag || '',
@@ -87,12 +94,15 @@ export default function Inventory() {
     await supabase.from('activity_log').insert({ asset_id: assetId, asset_tag: assetTag, asset_name: assetName, type, message, performed_by: profile?.email })
   }
 
+  const today = new Date()
+  const in30 = new Date(); in30.setDate(today.getDate() + 30)
+
   const filtered = assets.filter(a => {
     if (filterStatus && a.status !== filterStatus) return false
     if (filterCat && a.category !== filterCat) return false
     if (search) {
       const q = search.toLowerCase()
-      if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number}`.toLowerCase().includes(q)) return false
+      if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number} ${a.assigned_to}`.toLowerCase().includes(q)) return false
     }
     return true
   })
@@ -102,6 +112,12 @@ export default function Inventory() {
     available: assets.filter(a => a.status === 'Available').length,
     out: assets.filter(a => a.status === 'Checked Out').length,
     maintenance: assets.filter(a => a.status === 'Maintenance').length,
+  }
+
+  function rowWarning(a) {
+    if (a.status === 'Checked Out' && a.expected_return && new Date(a.expected_return) < today) return 'var(--red)'
+    if (a.warranty_expiry && new Date(a.warranty_expiry) <= in30 && new Date(a.warranty_expiry) >= today) return 'var(--amber)'
+    return null
   }
 
   return (
@@ -140,33 +156,37 @@ export default function Inventory() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Tag', 'Name', 'Category', 'Status', 'Assigned To', 'Location', isAdmin ? 'Actions' : ''].map(h => (
+                {['Tag', 'Name', 'Category', 'Status', 'Assigned To', 'Location', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(a => (
-                <tr key={a.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text2)' }}>{a.asset_tag}</td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <div style={{ fontWeight: 500, fontSize: 13 }}>{a.name}</div>
-                    {a.model && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{a.model}</div>}
-                  </td>
-                  <td style={{ padding: '10px 14px' }}><Badge status={a.category} /></td>
-                  <td style={{ padding: '10px 14px' }}><Badge status={a.status} /></td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: a.assigned_to ? 'var(--text)' : 'var(--text3)' }}>{a.assigned_to || '—'}</td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: a.location ? 'var(--text)' : 'var(--text3)' }}>{a.location || '—'}</td>
-                  {isAdmin && (
+              {filtered.map(a => {
+                const warn = rowWarning(a)
+                return (
+                  <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', borderLeft: warn ? `3px solid ${warn}` : '3px solid transparent' }}>
+                    <td style={{ padding: '10px 14px', fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text2)' }}>{a.asset_tag}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <button onClick={() => onViewAsset?.(a)} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}>
+                        <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text)' }}>{a.name}</div>
+                        {a.model && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{a.model}</div>}
+                      </button>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}><Badge status={a.category} /></td>
+                    <td style={{ padding: '10px 14px' }}><Badge status={a.status} /></td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: a.assigned_to ? 'var(--text)' : 'var(--text3)' }}>{a.assigned_to || '—'}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: a.location ? 'var(--text)' : 'var(--text3)' }}>{a.location || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <Btn size="sm" onClick={() => openEdit(a)}>Edit</Btn>
-                        <Btn size="sm" variant="danger" onClick={() => deleteAsset(a)}>Delete</Btn>
+                        <Btn size="sm" onClick={() => onViewAsset?.(a)}>View</Btn>
+                        {isAdmin && <Btn size="sm" onClick={() => openEditModal(a)}>Edit</Btn>}
+                        {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteAsset(a)}>Delete</Btn>}
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

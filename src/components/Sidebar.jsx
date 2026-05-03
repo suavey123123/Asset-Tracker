@@ -2,6 +2,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Badge } from './UI'
 
 const NAV = [
+  { id: 'home',        label: 'Dashboard',    icon: '⊞' },
   { id: 'inventory',   label: 'Inventory',    icon: '▦' },
   { id: 'checkout',    label: 'Check In/Out', icon: '⇄' },
   { id: 'maintenance', label: 'Maintenance',  icon: '⚙' },
@@ -9,7 +10,7 @@ const NAV = [
   { id: 'users',       label: 'Users',        icon: '◉', adminOnly: true },
 ]
 
-export default function Sidebar({ active, onNav }) {
+export default function Sidebar({ active, onNav, alerts = 0 }) {
   const { profile, signOut, isAdmin } = useAuth()
 
   return (
@@ -28,6 +29,11 @@ export default function Sidebar({ active, onNav }) {
           >
             <span style={s.navIcon}>{n.icon}</span>
             {n.label}
+            {n.id === 'home' && alerts > 0 && (
+              <span style={{ marginLeft: 'auto', background: 'var(--red)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 100, fontFamily: 'var(--mono)' }}>
+                {alerts}
+              </span>
+            )}
           </button>
         ))}
       </nav>
@@ -50,27 +56,16 @@ export default function Sidebar({ active, onNav }) {
 
 const s = {
   sidebar: {
-    width: 200,
-    minWidth: 200,
-    height: '100vh',
-    background: 'var(--bg2)',
-    borderRight: '1px solid var(--border)',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '1.25rem 0.75rem',
-    position: 'sticky',
-    top: 0,
+    width: 200, minWidth: 200, height: '100vh',
+    background: 'var(--bg2)', borderRight: '1px solid var(--border)',
+    display: 'flex', flexDirection: 'column',
+    padding: '1.25rem 0.75rem', position: 'sticky', top: 0,
   },
-  logo: {
-    display: 'flex', alignItems: 'center', gap: 9,
-    padding: '0 0.5rem', marginBottom: '1.5rem',
-  },
+  logo: { display: 'flex', alignItems: 'center', gap: 9, padding: '0 0.5rem', marginBottom: '1.5rem' },
   logoBox: {
-    width: 30, height: 30,
-    background: 'var(--accent)', color: '#0f0f0f',
+    width: 30, height: 30, background: 'var(--accent)', color: '#0f0f0f',
     borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: 'var(--mono)', fontWeight: 500, fontSize: 11,
-    flexShrink: 0,
+    fontFamily: 'var(--mono)', fontWeight: 500, fontSize: 11, flexShrink: 0,
   },
   logoText: { fontSize: 14, fontWeight: 500, letterSpacing: '-0.02em' },
   nav: { display: 'flex', flexDirection: 'column', gap: 2, flex: 1 },
@@ -82,8 +77,7 @@ const s = {
     transition: 'all 0.1s',
   },
   navActive: {
-    background: 'var(--accent-bg)',
-    color: 'var(--accent)',
+    background: 'var(--accent-bg)', color: 'var(--accent)',
     border: '1px solid var(--accent-border)',
   },
   navIcon: { fontSize: 14, width: 16, textAlign: 'center', flexShrink: 0 },
