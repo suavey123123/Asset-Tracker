@@ -4,7 +4,6 @@ import { Badge } from './UI'
 const NAV = [
   { id:'home',        label:'Dashboard',    icon:'⊞' },
   { id:'inventory',   label:'Inventory',    icon:'▦' },
-  { id:'checkout',    label:'Check In/Out', icon:'⇄' },
   { id:'transfer',    label:'Transfer',     icon:'↔' },
   { id:'maintenance', label:'Maintenance',  icon:'⚙' },
   { id:'scanner',     label:'Scanner',      icon:'◈' },
