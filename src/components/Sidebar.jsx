@@ -5,14 +5,12 @@ const NAV = [
   { id:'home',        label:'Dashboard',    icon:'⊞' },
   { id:'inventory',   label:'Inventory',    icon:'▦' },
   { id:'checkout',    label:'Check In/Out', icon:'⇄' },
+  { id:'transfer',    label:'Transfer',     icon:'↔' },
   { id:'maintenance', label:'Maintenance',  icon:'⚙' },
+  { id:'scanner',     label:'Scanner',      icon:'◈' },
   { id:'reports',     label:'Reports',      icon:'⊟' },
   { id:'history',     label:'History',      icon:'◷' },
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
-]
-
-const BOTTOM_NAV = [
-  { id:'settings', label:'Settings', icon:'⚙' },
 ]
 
 export default function Sidebar({ active, onNav, alerts=0 }) {
@@ -52,8 +50,8 @@ export default function Sidebar({ active, onNav, alerts=0 }) {
 }
 
 const s = {
-  sidebar:{ width:200, minWidth:200, height:'100vh', background:'var(--bg2)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', padding:'1.25rem 0.75rem', position:'sticky', top:0 },
-  logo:{ display:'flex', alignItems:'center', gap:9, padding:'0 0.5rem', marginBottom:'1.5rem' },
+  sidebar:{ width:200, minWidth:200, height:'100vh', background:'var(--bg2)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', padding:'1.25rem 0.75rem', position:'sticky', top:0, overflowY:'auto' },
+  logo:{ display:'flex', alignItems:'center', gap:9, padding:'0 0.5rem', marginBottom:'1.25rem' },
   logoBox:{ width:30, height:30, background:'var(--accent)', color:'#0f0f0f', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'var(--mono)', fontWeight:500, fontSize:11, flexShrink:0 },
   logoText:{ fontSize:14, fontWeight:500, letterSpacing:'-0.02em' },
   nav:{ display:'flex', flexDirection:'column', gap:2, flex:1 },

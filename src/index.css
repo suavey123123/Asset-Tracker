@@ -76,3 +76,119 @@ textarea { resize: vertical; min-height: 72px; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fade-in { animation: fadeIn 0.2s ease; }
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+@media (max-width: 768px) {
+  .sidebar-wrapper {
+    position: fixed !important;
+    left: -200px;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transition: left 0.25s ease;
+  }
+  .sidebar-wrapper.sidebar-open {
+    left: 0 !important;
+  }
+  .mobile-overlay {
+    display: block !important;
+  }
+  .mobile-menu-btn {
+    display: block !important;
+  }
+
+  /* Stack grids on mobile */
+  .mobile-stack {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tighter padding on mobile */
+  main > div:last-child {
+    padding: 0.75rem !important;
+  }
+
+  /* Stats cards - 2 col on mobile */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Full width tables scroll */
+  table {
+    font-size: 12px;
+  }
+
+  /* Modal full screen on mobile */
+  .modal-inner {
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    min-height: 100vh;
+  }
+
+  /* Hide less important columns on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Asset detail grid */
+  .asset-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Form grids */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Checkout grid */
+  .checkout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Search bar shrink */
+  input[placeholder*="Search"] {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Buttons smaller on mobile */
+  .mobile-full {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Bottom nav for mobile */
+  .mobile-bottom-nav {
+    display: flex !important;
+  }
+}
+
+/* Mobile bottom navigation bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+  padding: 4px 0 env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch targets */
+@media (pointer: coarse) {
+  button, select, input {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 36px !important;
+  }
+}
+
+/* Prevent zoom on input focus iOS */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
