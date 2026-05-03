@@ -19,6 +19,10 @@ export default function Sites() {
   const [error, setError] = useState('')
   const [activeSite, setActiveSite] = useState(null) // null = overview, site object = drill-in
   const [activeTab, setActiveTab] = useState('employees') // employees | assets
+  const [empModalOpen, setEmpModalOpen] = useState(false)
+  const [empForm, setEmpForm] = useState({ name:'', email:'', department:'', title:'', phone:'', location:'', notes:'', site_id:null })
+  const [empSaving, setEmpSaving] = useState(false)
+  const [empError, setEmpError] = useState('')
 
   useEffect(() => { fetchAll() }, [])
 
@@ -75,6 +79,17 @@ export default function Sites() {
     return assets.filter(a => a.location?.toLowerCase().includes(site.name.toLowerCase()))
   }
 
+  async function saveEmployee() {
+    if (!empForm.name.trim()) { setEmpError('Name is required.'); return }
+    setEmpSaving(true); setEmpError('')
+    const { error } = await supabase.from('employees').insert({ ...empForm, site_id: activeSite?.id || null })
+    setEmpSaving(false)
+    if (error) { setEmpError(error.message); return }
+    setEmpModalOpen(false)
+    setEmpForm({ name:'', email:'', department:'', title:'', phone:'', location:'', notes:'', site_id:null })
+    fetchAll()
+  }
+
   // Drill-in view for a single site
   if (activeSite) {
     const siteEmployees = getSiteEmployees(activeSite.id)
@@ -110,18 +125,25 @@ export default function Sites() {
           {activeSite.notes && <div style={{ marginTop: '1rem', fontSize: 13, color: 'var(--text2)' }}>{activeSite.notes}</div>}
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, background: 'var(--bg2)', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border)', marginBottom: '1rem', width: 'fit-content' }}>
-          {[['employees', `Employees (${siteEmployees.length})`], ['assets', `Assets (${siteAssets.length})`]].map(([id, label]) => (
-            <button key={id} onClick={() => setActiveTab(id)} style={{
-              padding: '6px 14px', fontSize: 13, borderRadius: 'var(--radius)',
-              background: activeTab === id ? 'var(--bg4)' : 'transparent',
-              color: activeTab === id ? 'var(--text)' : 'var(--text2)',
-              border: activeTab === id ? '1px solid var(--border2)' : '1px solid transparent',
-              cursor: 'pointer', fontFamily: 'var(--font)',
-            }}>{label}</button>
-          ))}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--bg2)', padding: 4, borderRadius: 'var(--radius)', border: '1px solid var(--border)', width: 'fit-content' }}>
+            {[['employees', `Employees (${siteEmployees.length})`], ['assets', `Assets (${siteAssets.length})`]].map(([id, label]) => (
+              <button key={id} onClick={() => setActiveTab(id)} style={{
+                padding: '6px 14px', fontSize: 13, borderRadius: 'var(--radius)',
+                background: activeTab === id ? 'var(--bg4)' : 'transparent',
+                color: activeTab === id ? 'var(--text)' : 'var(--text2)',
+                border: activeTab === id ? '1px solid var(--border2)' : '1px solid transparent',
+                cursor: 'pointer', fontFamily: 'var(--font)',
+              }}>{label}</button>
+            ))}
+          </div>
+          {isAdmin && activeTab === 'employees' && (
+            <Btn variant="primary" size="sm" onClick={() => { setEmpForm({ name:'', email:'', department:'', title:'', phone:'', location:'', notes:'', site_id: activeSite?.id }); setEmpError(''); setEmpModalOpen(true) }}>
+              + Add employee
+            </Btn>
+          )}
         </div>
+  
 
         {activeTab === 'employees' && (
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
@@ -171,6 +193,30 @@ export default function Sites() {
             )}
           </div>
         )}
+
+        {/* Add Employee Modal */}
+        <Modal open={empModalOpen} onClose={() => setEmpModalOpen(false)} title={`Add employee to ${activeSite?.name}`}>
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <FormField label="Full name" required><input value={empForm.name} onChange={e=>setEmpForm(f=>({...f,name:e.target.value}))} placeholder="John Smith" /></FormField>
+              <FormField label="Email"><input type="email" value={empForm.email} onChange={e=>setEmpForm(f=>({...f,email:e.target.value}))} placeholder="john@company.com" /></FormField>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <FormField label="Job title"><input value={empForm.title} onChange={e=>setEmpForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Engineer" /></FormField>
+              <FormField label="Department"><input value={empForm.department} onChange={e=>setEmpForm(f=>({...f,department:e.target.value}))} placeholder="e.g. IT" /></FormField>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <FormField label="Phone"><input value={empForm.phone} onChange={e=>setEmpForm(f=>({...f,phone:e.target.value}))} placeholder="555-1234" /></FormField>
+              <FormField label="Location"><input value={empForm.location} onChange={e=>setEmpForm(f=>({...f,location:e.target.value}))} placeholder="Desk / Floor" /></FormField>
+            </div>
+            <FormField label="Notes"><textarea value={empForm.notes} onChange={e=>setEmpForm(f=>({...f,notes:e.target.value}))} placeholder="Any additional info…" /></FormField>
+            {empError && <div style={{ color:'var(--red)', fontSize:12 }}>{empError}</div>}
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
+              <Btn onClick={()=>setEmpModalOpen(false)}>Cancel</Btn>
+              <Btn variant="primary" onClick={saveEmployee} disabled={empSaving}>{empSaving?'Saving…':'Add employee'}</Btn>
+            </div>
+          </div>
+        </Modal>
 
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Edit site">
           <SiteForm form={form} setForm={setForm} error={error} saving={saving} onSave={save} onCancel={() => setModalOpen(false)} />
