@@ -11,6 +11,7 @@ const NAV = [
   { id:'reports',     label:'Reports',      icon:'⊟' },
   { id:'history',     label:'History',      icon:'◷' },
   { id:'sites',       label:'Sites',        icon:'⊕' },
+  { id:'employees',   label:'Employees',    icon:'◑' },
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
 ]
 
