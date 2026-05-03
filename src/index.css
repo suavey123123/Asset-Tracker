@@ -22,6 +22,8 @@
   --red-bg: rgba(255,90,90,0.1);
   --green: #4aff8c;
   --green-bg: rgba(74,255,140,0.1);
+  --purple: #a78bfa;
+  --purple-bg: rgba(167,139,250,0.1);
   --font: 'IBM Plex Sans', sans-serif;
   --mono: 'IBM Plex Mono', monospace;
   --radius: 6px;
@@ -67,12 +69,10 @@ input::placeholder, textarea::placeholder { color: var(--text3); }
 select option { background: var(--bg3); }
 textarea { resize: vertical; min-height: 72px; }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-/* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .fade-in { animation: fadeIn 0.2s ease; }

@@ -1,11 +1,11 @@
-// Shared UI primitives
-
 export function Badge({ status }) {
   const map = {
     'Available':    { bg: 'var(--green-bg)',  color: 'var(--green)',  label: 'Available' },
     'Checked Out':  { bg: 'var(--blue-bg)',   color: 'var(--blue)',   label: 'Checked Out' },
     'Maintenance':  { bg: 'var(--amber-bg)',  color: 'var(--amber)',  label: 'Maintenance' },
     'Retired':      { bg: '#2a2a2a',          color: 'var(--text2)',  label: 'Retired' },
+    'Ordered':      { bg: 'var(--purple-bg)', color: 'var(--purple)', label: 'Ordered' },
+    'Received':     { bg: 'var(--accent-bg)', color: 'var(--accent)', label: 'Received' },
     'IT Equipment': { bg: 'var(--blue-bg)',   color: 'var(--blue)',   label: 'IT' },
     'Tools & Equipment': { bg: 'var(--amber-bg)', color: 'var(--amber)', label: 'Tools' },
     'admin':        { bg: 'var(--accent-bg)', color: 'var(--accent)', label: 'Admin' },
@@ -39,6 +39,7 @@ export function Btn({ children, onClick, variant = 'default', size = 'md', disab
     primary: { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#0f0f0f' },
     danger:  { background: 'var(--red-bg)', borderColor: 'var(--red)', color: 'var(--red)' },
     ghost:   { background: 'transparent', borderColor: 'transparent', color: 'var(--text2)' },
+    success: { background: 'var(--green-bg)', borderColor: 'var(--green)', color: 'var(--green)' },
   }
   return (
     <button onClick={onClick} disabled={disabled} style={{ ...base, ...sizes[size], ...variants[variant], ...style }}>
@@ -111,5 +112,20 @@ export function ViewOnlyBanner() {
     }}>
       👁 View-only mode — contact your admin to make changes.
     </div>
+  )
+}
+
+export function StatusSelect({ value, onChange, style = {} }) {
+  const statuses = ['Available', 'Checked Out', 'Maintenance', 'Ordered', 'Received', 'Retired']
+  const colors = {
+    'Available': 'var(--green)', 'Checked Out': 'var(--blue)',
+    'Maintenance': 'var(--amber)', 'Retired': 'var(--text2)',
+    'Ordered': 'var(--purple)', 'Received': 'var(--accent)',
+  }
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ ...style, color: colors[value] || 'var(--text)', fontFamily: 'var(--mono)', fontSize: 12 }}>
+      {statuses.map(s => <option key={s} value={s} style={{ color: colors[s] }}>{s}</option>)}
+    </select>
   )
 }
