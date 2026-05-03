@@ -293,7 +293,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <div style={{ fontSize:13, color:'var(--text2)' }}>
             Assets: {selectedAvailable.map(id=>assets.find(a=>a.id===id)?.name).join(', ')}
           </div>
-          <FormField label="Assign to" required><input value={bulkPerson} onChange={e=>setBulkPerson(e.target.value)} placeholder="Employee name" /></FormField>
+          <FormField label="Assign to" required><EmployeeSelect value={bulkPerson} onChange={setBulkPerson} placeholder="Search or type employee name" /></FormField>
           <FormField label="Expected return"><input type="date" value={bulkDate} onChange={e=>setBulkDate(e.target.value)} /></FormField>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setBulkCheckoutOpen(false)}>Cancel</Btn>
