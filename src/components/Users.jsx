@@ -6,7 +6,7 @@ import { Badge, Btn, EmptyState, Spinner, Modal, FormField } from './UI'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export default function Users() {
-  const { profile, user } = useAuth()
+  const { profile } = useAuth()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null)
@@ -14,6 +14,12 @@ export default function Users() {
   const [inviting, setInviting] = useState(false)
   const [inviteMsg, setInviteMsg] = useState('')
   const [actionMsg, setActionMsg] = useState({})
+  const [pwdModal, setPwdModal] = useState(null)
+  const [newPwd, setNewPwd] = useState('')
+  const [pwdSaving, setPwdSaving] = useState(false)
+  const [pwdMsg, setPwdMsg] = useState('')
+  const [resetLinkModal, setResetLinkModal] = useState(null)
+  const [resetLink, setResetLink] = useState('')
 
   useEffect(() => { fetchUsers() }, [])
 
@@ -24,77 +30,68 @@ export default function Users() {
     setLoading(false)
   }
 
-  async function setRole(userId, role) {
-    setSaving(userId)
-    await supabase.from('profiles').update({ role }).eq('id', userId)
-    setSaving(null)
-    fetchUsers()
-  }
-
-  async function callEdgeFunction(action, userId) {
+  async function callEdge(action, payload = {}) {
     const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch(`${SUPABASE_URL}/functions/v1/manage-user`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ action, userId }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action, ...payload }),
     })
-    const json = await res.json()
-    return json
+    return res.json()
+  }
+
+  function setMsg(userId, type, text) {
+    setActionMsg(prev => ({ ...prev, [userId]: { type, text } }))
+    setTimeout(() => setActionMsg(prev => { const n={...prev}; delete n[userId]; return n }), 4000)
+  }
+
+  async function setRole(userId, role) {
+    setSaving(userId)
+    await supabase.from('profiles').update({ role }).eq('id', userId)
+    setSaving(null); fetchUsers()
   }
 
   async function disableUser(u) {
-    if (!confirm(`Disable ${u.email}? They will be immediately signed out and blocked from logging in.`)) return
+    if (!confirm(`Disable ${u.email}? They will be immediately blocked from logging in.`)) return
     setSaving(u.id)
-    const result = await callEdgeFunction('disable', u.id)
+    const r = await callEdge('disable', { userId: u.id })
     setSaving(null)
-    if (result.error) {
-      setActionMsg({ [u.id]: { type: 'error', text: result.error } })
-    } else {
-      setActionMsg({ [u.id]: { type: 'success', text: 'User disabled' } })
-      fetchUsers()
-    }
+    r.error ? setMsg(u.id, 'error', r.error) : (setMsg(u.id, 'success', '✓ User disabled'), fetchUsers())
   }
 
   async function enableUser(u) {
-    if (!confirm(`Re-enable ${u.email}? They will be able to log in again.`)) return
+    if (!confirm(`Re-enable ${u.email}?`)) return
     setSaving(u.id)
-    const result = await callEdgeFunction('enable', u.id)
+    const r = await callEdge('enable', { userId: u.id })
     setSaving(null)
-    if (result.error) {
-      setActionMsg({ [u.id]: { type: 'error', text: result.error } })
-    } else {
-      setActionMsg({ [u.id]: { type: 'success', text: 'User enabled' } })
-      fetchUsers()
-    }
+    r.error ? setMsg(u.id, 'error', r.error) : (setMsg(u.id, 'success', '✓ User enabled'), fetchUsers())
   }
 
   async function deleteUser(u) {
-    if (!confirm(`Permanently delete ${u.email}? This removes them from authentication entirely and cannot be undone.`)) return
+    if (!confirm(`Permanently delete ${u.email}? Cannot be undone.`)) return
     setSaving(u.id)
-    const result = await callEdgeFunction('delete', u.id)
+    const r = await callEdge('delete', { userId: u.id })
     setSaving(null)
-    if (result.error) {
-      setActionMsg({ [u.id]: { type: 'error', text: result.error } })
-    } else {
-      fetchUsers()
-    }
+    r.error ? setMsg(u.id, 'error', r.error) : fetchUsers()
   }
 
-  async function resetPassword(u) {
-    if (!confirm(`Send a password reset email to ${u.email}?`)) return
+  async function setPassword() {
+    if (!newPwd || newPwd.length < 6) { setPwdMsg('Password must be at least 6 characters'); return }
+    setPwdSaving(true); setPwdMsg('')
+    const r = await callEdge('set_password', { userId: pwdModal.id, password: newPwd })
+    setPwdSaving(false)
+    if (r.error) { setPwdMsg(r.error); return }
+    setPwdMsg('✓ Password updated successfully')
+    setTimeout(() => { setPwdModal(null); setNewPwd(''); setPwdMsg('') }, 1500)
+  }
+
+  async function generateResetLink(u) {
     setSaving(u.id)
-    const { error } = await supabase.auth.resetPasswordForEmail(u.email, {
-      redirectTo: window.location.origin + '/login',
-    })
+    const r = await callEdge('send_reset', { userId: u.email })
     setSaving(null)
-    setActionMsg(prev => ({ ...prev, [u.id]: error
-      ? { type: 'error', text: error.message }
-      : { type: 'success', text: '✓ Reset email sent' }
-    }))
-    setTimeout(() => setActionMsg(prev => { const n={...prev}; delete n[u.id]; return n }), 4000)
+    if (r.error) { setMsg(u.id, 'error', r.error); return }
+    setResetLink(r.link || '')
+    setResetLinkModal(u)
   }
 
   async function sendInvite() {
@@ -116,7 +113,7 @@ export default function Users() {
       {/* Invite */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '1.25rem' }}>
         <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>Invite team member</div>
-        <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>They'll receive a magic link to sign in.</div>
+        <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>They'll receive a magic link to sign in and set their password.</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendInvite()} placeholder="colleague@company.com" type="email" style={{ flex: 1 }} />
           <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
@@ -126,11 +123,6 @@ export default function Users() {
             {isError ? inviteMsg.replace('error:', '') : inviteMsg}
           </div>
         )}
-      </div>
-
-      {/* Edge function setup notice */}
-      <div style={{ background: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: 'var(--radius)', padding: '8px 14px', fontSize: 12, color: 'var(--blue)', marginBottom: '1rem' }}>
-        💡 Disable/Delete requires the <strong>manage-user</strong> edge function to be deployed. Run: <code style={{ fontFamily: 'var(--mono)', background: 'var(--bg4)', padding: '1px 4px', borderRadius: 3 }}>npx supabase functions deploy manage-user</code>
       </div>
 
       {/* Users table */}
@@ -145,7 +137,7 @@ export default function Users() {
             </tr></thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', opacity: u.blocked ? 0.6 : 1 }}>
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', opacity: u.blocked ? 0.65 : 1 }}>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ fontWeight: 500, fontSize: 13 }}>{u.full_name || u.email}</div>
                     {u.full_name && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{u.email}</div>}
@@ -153,25 +145,23 @@ export default function Users() {
                   </td>
                   <td style={{ padding: '10px 14px' }}><Badge status={u.role} /></td>
                   <td style={{ padding: '10px 14px' }}>
-                    {u.blocked
-                      ? <span style={{ fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--red)', background: 'var(--red-bg)', padding: '2px 8px', borderRadius: 100 }}>DISABLED</span>
-                      : <span style={{ fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--green)', background: 'var(--green-bg)', padding: '2px 8px', borderRadius: 100 }}>ACTIVE</span>
-                    }
+                    <span style={{ fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 600, padding: '2px 8px', borderRadius: 100, color: u.blocked ? 'var(--red)' : 'var(--green)', background: u.blocked ? 'var(--red-bg)' : 'var(--green-bg)' }}>
+                      {u.blocked ? 'DISABLED' : 'ACTIVE'}
+                    </span>
                   </td>
                   <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{new Date(u.created_at).toLocaleDateString()}</td>
                   <td style={{ padding: '10px 14px' }}>
                     {u.id !== profile?.id ? (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                         {u.role !== 'admin' && <Btn size="sm" variant="primary" disabled={!!saving} onClick={() => setRole(u.id, 'admin')}>Make admin</Btn>}
                         {u.role !== 'viewer' && <Btn size="sm" disabled={!!saving} onClick={() => setRole(u.id, 'viewer')}>Make viewer</Btn>}
-                        <Btn size="sm" disabled={saving === u.id} onClick={() => resetPassword(u)} title="Send password reset email">
-                          {saving === u.id ? '…' : '📧 Reset pwd'}
-                        </Btn>
+                        <Btn size="sm" variant="primary" onClick={() => { setPwdModal(u); setNewPwd(''); setPwdMsg('') }}>Set password</Btn>
+                        <Btn size="sm" onClick={() => generateResetLink(u)} disabled={saving === u.id}>{saving === u.id ? '…' : '🔗 Reset link'}</Btn>
                         {u.blocked
-                          ? <Btn size="sm" disabled={saving === u.id} onClick={() => enableUser(u)}>{saving === u.id ? '…' : 'Enable'}</Btn>
-                          : <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => disableUser(u)}>{saving === u.id ? '…' : 'Disable'}</Btn>
+                          ? <Btn size="sm" disabled={saving === u.id} onClick={() => enableUser(u)}>Enable</Btn>
+                          : <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => disableUser(u)}>Disable</Btn>
                         }
-                        <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => deleteUser(u)}>{saving === u.id ? '…' : 'Delete'}</Btn>
+                        <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => deleteUser(u)}>Delete</Btn>
                         {actionMsg[u.id] && (
                           <span style={{ fontSize: 11, color: actionMsg[u.id].type === 'error' ? 'var(--red)' : 'var(--green)' }}>{actionMsg[u.id].text}</span>
                         )}
@@ -186,6 +176,43 @@ export default function Users() {
           </table>
         )}
       </div>
+
+      {/* Set password modal */}
+      <Modal open={!!pwdModal} onClose={() => setPwdModal(null)} title={`Set password — ${pwdModal?.email}`} width={400}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--text2)' }}>Manually set a new password for this user. Share it with them securely.</div>
+          <FormField label="New password">
+            <input type="text" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="Min. 6 characters" onKeyDown={e => e.key === 'Enter' && setPassword()} />
+          </FormField>
+          {pwdMsg && <div style={{ fontSize: 12, color: pwdMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)' }}>{pwdMsg}</div>}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+            <Btn onClick={() => setPwdModal(null)}>Cancel</Btn>
+            <Btn variant="primary" onClick={setPassword} disabled={pwdSaving || !newPwd}>{pwdSaving ? 'Saving…' : 'Set password'}</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Reset link modal */}
+      <Modal open={!!resetLinkModal} onClose={() => { setResetLinkModal(null); setResetLink('') }} title={`Password reset link — ${resetLinkModal?.email}`} width={500}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+            {resetLink
+              ? 'Share this link with the user. It expires after 1 hour and can only be used once.'
+              : 'A reset email has been sent to the user.'}
+          </div>
+          {resetLink && (
+            <div style={{ background: 'var(--bg3)', border: '1px solid var(--border2)', borderRadius: 'var(--radius)', padding: '10px 12px', wordBreak: 'break-all', fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--text2)' }}>
+              {resetLink}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+            {resetLink && (
+              <Btn variant="primary" onClick={() => { navigator.clipboard.writeText(resetLink); }}>📋 Copy link</Btn>
+            )}
+            <Btn onClick={() => { setResetLinkModal(null); setResetLink('') }}>Close</Btn>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
