@@ -37,6 +37,15 @@ export default function ImportCSV({ open, onClose, onDone }) {
     return { rows, errors: errs }
   }
 
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => handlePaste(ev.target.result)
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
   function handlePaste(text) {
     setCsv(text)
     setResult(null)

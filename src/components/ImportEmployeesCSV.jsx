@@ -38,6 +38,15 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const [result, setResult] = useState(null)
   const [siteId, setSiteId] = useState('')
 
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => handleCSV(ev.target.result)
+    reader.readAsText(file)
+    e.target.value = '' // reset so same file can be re-selected
+  }
+
   function handleCSV(text) {
     setCsv(text); setErrors([])
     if (!text.trim()) { setPreview([]); return }
@@ -208,9 +217,25 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               name, email, title, department, phone, hire_date, asset_tag, asset_category, asset_model, asset_serial, cpu, gpu, ram, ssd, hdd, mac_wifi, mac_lan, os_version
             </div>
 
+            {/* File upload */}
+            <label style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg3)', border:'2px dashed var(--border2)', borderRadius:'var(--radius)', cursor:'pointer', fontSize:13, color:'var(--text2)' }}>
+              <span style={{ fontSize:20 }}>📂</span>
+              <div>
+                <div style={{ fontWeight:500, color:'var(--text)' }}>Click to upload CSV file</div>
+                <div style={{ fontSize:11, marginTop:2 }}>or paste data below</div>
+              </div>
+              <input type="file" accept=".csv,.txt" onChange={handleFileUpload} style={{ display:'none' }} />
+            </label>
+
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ flex:1, height:1, background:'var(--border)' }} />
+              <span style={{ fontSize:11, color:'var(--text3)' }}>or paste manually</span>
+              <div style={{ flex:1, height:1, background:'var(--border)' }} />
+            </div>
+
             <textarea value={csv} onChange={e => handleCSV(e.target.value)}
-              placeholder="Paste CSV here or download the template above…"
-              style={{ minHeight: 130, fontFamily: 'var(--mono)', fontSize: 12 }} />
+              placeholder="Paste CSV data here…"
+              style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
 
             {errors.length > 0 && (
               <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--radius)', padding: '8px 12px' }}>
