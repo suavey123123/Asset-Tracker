@@ -83,6 +83,20 @@ export default function Users() {
     }
   }
 
+  async function resetPassword(u) {
+    if (!confirm(`Send a password reset email to ${u.email}?`)) return
+    setSaving(u.id)
+    const { error } = await supabase.auth.resetPasswordForEmail(u.email, {
+      redirectTo: window.location.origin + '/login',
+    })
+    setSaving(null)
+    setActionMsg(prev => ({ ...prev, [u.id]: error
+      ? { type: 'error', text: error.message }
+      : { type: 'success', text: '✓ Reset email sent' }
+    }))
+    setTimeout(() => setActionMsg(prev => { const n={...prev}; delete n[u.id]; return n }), 4000)
+  }
+
   async function sendInvite() {
     if (!inviteEmail.trim()) return
     setInviting(true); setInviteMsg('')
@@ -150,6 +164,9 @@ export default function Users() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                         {u.role !== 'admin' && <Btn size="sm" variant="primary" disabled={!!saving} onClick={() => setRole(u.id, 'admin')}>Make admin</Btn>}
                         {u.role !== 'viewer' && <Btn size="sm" disabled={!!saving} onClick={() => setRole(u.id, 'viewer')}>Make viewer</Btn>}
+                        <Btn size="sm" disabled={saving === u.id} onClick={() => resetPassword(u)} title="Send password reset email">
+                          {saving === u.id ? '…' : '📧 Reset pwd'}
+                        </Btn>
                         {u.blocked
                           ? <Btn size="sm" disabled={saving === u.id} onClick={() => enableUser(u)}>{saving === u.id ? '…' : 'Enable'}</Btn>
                           : <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => disableUser(u)}>{saving === u.id ? '…' : 'Disable'}</Btn>
