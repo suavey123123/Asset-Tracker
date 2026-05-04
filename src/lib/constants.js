@@ -57,8 +57,8 @@ export const SPEC_FIELDS = {
     { key: 'RAM',        placeholder: 'e.g. 16GB DDR5' },
     { key: 'SSD',        placeholder: 'e.g. 512GB NVMe' },
     { key: 'HDD',        placeholder: 'e.g. 1TB HDD' },
-    { key: 'WLAN',       placeholder: 'e.g. Wi-Fi 6E' },
-    { key: 'LAN',        placeholder: 'e.g. 1GbE' },
+    { key: 'MAC ADDRESS (WIFI)', placeholder: 'e.g. 00:1A:2B:3C:4D:5E' },
+    { key: 'MAC ADDRESS (LAN)',  placeholder: 'e.g. 00:1A:2B:3C:4D:5F' },
     { key: 'OS VERSION', placeholder: 'e.g. Windows 11 Pro 23H2' },
   ],
 }

@@ -288,7 +288,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title={editAsset?'Edit asset':'Add new asset'}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <FormField label="Asset name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></FormField>
+            <FormField label="Device name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. MacBook Pro 14" /></FormField>
             <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           </div>
           <FormField label="Assign to employee">
