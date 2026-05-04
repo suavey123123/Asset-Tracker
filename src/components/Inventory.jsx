@@ -73,6 +73,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   })
   const [saveFilterName, setSaveFilterName] = useState('')
   const [showSaveFilter, setShowSaveFilter] = useState(false)
+  const [sortCol, setSortCol] = useState('')
+  const [sortDir, setSortDir] = useState('asc')
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
     try {
@@ -109,6 +111,20 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       localStorage.setItem('inventory_cols', JSON.stringify(updated))
       return [...updated] // new array ref forces re-render
     })
+  }
+
+  function handleSort(colId) {
+    if (colId === 'actions' || colId === 'tag') {
+      // tag sorts by asset_tag
+      const field = colId === 'tag' ? 'asset_tag' : colId
+      if (sortCol === field) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
+      else { setSortCol(field); setSortDir('asc') }
+      return
+    }
+    const fieldMap = { model:'model', category:'category', status:'status', assigned_to:'assigned_to', site:'location', serial:'serial_number', purchase:'purchase_cost', warranty:'warranty_expiry' }
+    const field = fieldMap[colId] || colId
+    if (sortCol === field) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
+    else { setSortCol(field); setSortDir('asc') }
   }
 
   function resetCols() {
@@ -370,8 +386,19 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     return true
   })
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const paginated = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
+  // Sort
+  const sorted = sortCol ? [...filtered].sort((a, b) => {
+    let av = a[sortCol] ?? ''
+    let bv = b[sortCol] ?? ''
+    if (sortCol === 'purchase_cost') { av = parseFloat(av)||0; bv = parseFloat(bv)||0 }
+    else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase() }
+    if (av < bv) return sortDir === 'asc' ? -1 : 1
+    if (av > bv) return sortDir === 'asc' ? 1 : -1
+    return 0
+  }) : filtered
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = sorted.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
 
   const stats = {
     total:assets.length,
@@ -466,9 +493,21 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                 {isAdmin && <th style={{ padding:'10px 14px', width:32 }}>
                   <input type="checkbox" checked={allSelected} onChange={e => setSelected(e.target.checked ? filtered.map(a=>a.id) : [])} style={{ width:'auto', cursor:'pointer' }} />
                 </th>}
-                {ALL_COLS.filter(c => has(c.id)).map(c=>(
-                  <th key={c.id} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{c.label}</th>
-                ))}
+                {ALL_COLS.filter(c => has(c.id)).map(c => {
+                  const fieldMap = { tag:'asset_tag', model:'model', category:'category', status:'status', assigned_to:'assigned_to', site:'location', serial:'serial_number', purchase:'purchase_cost', warranty:'warranty_expiry' }
+                  const field = fieldMap[c.id]
+                  const isActive = sortCol === field
+                  const canSort = c.id !== 'actions'
+                  return (
+                    <th key={c.id} onClick={() => canSort && handleSort(c.id)}
+                      style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color: isActive ? 'var(--accent)' : 'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap', cursor: canSort ? 'pointer' : 'default', userSelect:'none' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                        {c.label}
+                        {canSort && <span style={{ fontSize:10, opacity: isActive ? 1 : 0.3 }}>{isActive ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}</span>}
+                      </div>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
