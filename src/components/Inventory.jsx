@@ -110,18 +110,22 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     }
     setSaving(false)
     if (err) { setError(err.message); return }
-    // Assign licenses if any selected
+    // Close modal immediately on success
+    setModalOpen(false); setFormLicenses([]); fetchAssets()
+    // Assign licenses in background
     if (!editAsset && formLicenses.length > 0) {
       const { data: newAsset } = await supabase.from('assets').select('id').eq('asset_tag', form.asset_tag).single()
       if (newAsset) {
         for (const licId of formLicenses) {
-          await supabase.from('asset_license_assignments').insert({ asset_id: newAsset.id, license_id: licId }).onConflict('asset_id,license_id').ignore()
-          const lic = allLicenses.find(l => l.id === licId)
-          if (lic) await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
+          try {
+            await supabase.from('asset_license_assignments').insert({ asset_id: newAsset.id, license_id: licId })
+            const lic = allLicenses.find(l => l.id === licId)
+            if (lic) await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
+          } catch(e) {}
         }
+        fetchAssets()
       }
     }
-    setModalOpen(false); setFormLicenses([]); fetchAssets()
   }
 
   async function deleteAsset(asset) {
