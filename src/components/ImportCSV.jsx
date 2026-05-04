@@ -60,11 +60,16 @@ export default function ImportCSV({ open, onClose, onDone }) {
     return { rows, errors: errs }
   }
 
+  const [fileName, setFileName] = useState('')
+
   function handleFileUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => handlePaste(ev.target.result)
+    reader.onload = (ev) => {
+      handlePaste(ev.target.result)
+      setFileName(file.name)
+    }
     reader.readAsText(file)
     e.target.value = ''
   }

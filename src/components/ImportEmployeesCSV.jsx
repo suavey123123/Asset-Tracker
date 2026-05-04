@@ -63,6 +63,7 @@ function parseCSV(text) {
 
 export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const [csv, setCsv] = useState('')
+  const [fileName, setFileName] = useState('')
   const [preview, setPreview] = useState([])
   const [errors, setErrors] = useState([])
   const [importing, setImporting] = useState(false)
@@ -74,9 +75,20 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = (ev) => handleCSV(ev.target.result)
+    reader.onload = (ev) => {
+      const text = ev.target.result
+      setErrors([])
+      const { rows, errors } = parseCSV(text)
+      setPreview(rows.slice(0, 5))
+      setErrors(errors)
+      if (!errors.length) {
+        // Store parsed rows directly, don't show raw CSV in textarea
+        setCsv(text)
+        setFileName(file.name)
+      }
+    }
     reader.readAsText(file)
-    e.target.value = '' // reset so same file can be re-selected
+    e.target.value = ''
   }
 
   function handleCSV(text) {
@@ -192,7 +204,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   }
 
   function reset() {
-    setCsv(''); setPreview([]); setErrors([]); setResult(null); setSiteId('')
+    setCsv(''); setFileName(''); setPreview([]); setErrors([]); setResult(null); setSiteId('')
     setProgress({ step: '', current: 0, total: 0 })
   }
 
@@ -262,15 +274,24 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               <input type="file" accept=".csv,.txt" onChange={handleFileUpload} style={{ display:'none' }} />
             </label>
 
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div style={{ flex:1, height:1, background:'var(--border)' }} />
-              <span style={{ fontSize:11, color:'var(--text3)' }}>or paste manually</span>
-              <div style={{ flex:1, height:1, background:'var(--border)' }} />
-            </div>
-
-            <textarea value={csv} onChange={e => handleCSV(e.target.value)}
-              placeholder="Paste CSV data here…"
-              style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
+            {fileName ? (
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--green-bg)', border:'1px solid var(--green)', borderRadius:'var(--radius)', fontSize:13 }}>
+                <span>✓</span>
+                <span style={{ flex:1, color:'var(--green)', fontWeight:500 }}>{fileName}</span>
+                <button onClick={()=>{ setCsv(''); setFileName(''); setPreview([]); setErrors([]) }} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:16, fontFamily:'var(--font)' }}>×</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ flex:1, height:1, background:'var(--border)' }} />
+                  <span style={{ fontSize:11, color:'var(--text3)' }}>or paste manually</span>
+                  <div style={{ flex:1, height:1, background:'var(--border)' }} />
+                </div>
+                <textarea value={csv} onChange={e => { setFileName(''); handleCSV(e.target.value) }}
+                  placeholder="Paste CSV data here…"
+                  style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
+              </>
+            )}
 
             {errors.length > 0 && (
               <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--radius)', padding: '8px 12px' }}>
