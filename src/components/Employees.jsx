@@ -5,7 +5,7 @@ import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, Badge } fro
 import ImportEmployeesCSV from './ImportEmployeesCSV'
 
 const EMPTY_FORM = {
-  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: '',
+  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: null,
 }
 
 export default function Employees({ onViewEmployee }) {
@@ -58,7 +58,7 @@ export default function Employees({ onViewEmployee }) {
   async function save() {
     if (!form.name.trim()) { setError('Name is required.'); return }
     setSaving(true); setError('')
-    const payload = { ...form, name: form.name.trim() }
+    const payload = { ...form, name: form.name.trim(), hire_date: form.hire_date && form.hire_date !== '' ? form.hire_date : null, site_id: form.site_id || null }
     let err
     if (editEmp) {
       const { error: e } = await supabase.from('employees').update(payload).eq('id', editEmp.id)
