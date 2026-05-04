@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import Sidebar from '../components/Sidebar'
@@ -33,8 +33,45 @@ const TITLES = {
   users:'User Management', reports:'Reports', settings:'Settings', scanner:'Scanner',
 }
 
+function ShortcutsButton() {
+  const [open, setOpen] = React.useState(false)
+  const shortcuts = [
+    { key: 'N', desc: 'New asset (when on Inventory)' },
+    { key: '/', desc: 'Focus search bar' },
+    { key: 'Esc', desc: 'Close modal' },
+    { key: 'H', desc: 'Go to Dashboard' },
+    { key: 'I', desc: 'Go to Inventory' },
+    { key: 'M', desc: 'Go to Maintenance' },
+  ]
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} title="Keyboard shortcuts" style={{
+        fontSize: 13, color: open ? 'var(--text)' : 'var(--text3)', cursor: 'pointer',
+        padding: '5px 9px', border: '1px solid', borderColor: open ? 'var(--border2)' : 'var(--border)',
+        borderRadius: 'var(--radius)', background: open ? 'var(--bg3)' : 'none', fontFamily: 'var(--mono)',
+      }}>⌨</button>
+      {open && (
+        <div className="fade-in" style={{
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280,
+          background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 500, overflow: 'hidden',
+        }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 500, color: 'var(--text2)' }}>Keyboard shortcuts</div>
+          {shortcuts.map(s => (
+            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
+              <kbd style={{ background: 'var(--bg4)', border: '1px solid var(--border2)', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--accent)', minWidth: 28, textAlign: 'center' }}>{s.key}</kbd>
+              <span style={{ fontSize: 12, color: 'var(--text2)' }}>{s.desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [tab, setTab] = useState('home')
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
@@ -96,7 +133,33 @@ export default function Dashboard() {
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
           <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
-          <div title="Keyboard shortcuts: N=new asset, /=search, H=home, I=inventory, M=maintenance, Esc=close" style={{ fontSize:11, color:'var(--text3)', cursor:'help', padding:'4px 8px', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontFamily:'var(--mono)' }}>⌨</div>
+          <button onClick={()=>setShowShortcuts(s=>!s)} title="Keyboard shortcuts" style={{ fontSize:13, color:'var(--text3)', cursor:'pointer', padding:'4px 8px', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontFamily:'var(--mono)', background:'none' }}>⌨</button>
+
+          {showShortcuts && (
+            <div onClick={()=>setShowShortcuts(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', padding:'1.5rem', minWidth:320, boxShadow:'0 16px 48px rgba(0,0,0,0.5)' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
+                  <div style={{ fontSize:14, fontWeight:500 }}>Keyboard shortcuts</div>
+                  <button onClick={()=>setShowShortcuts(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:18, lineHeight:1 }}>×</button>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {[
+                    ['N', 'New asset (on Inventory page)'],
+                    ['/', 'Focus search bar'],
+                    ['H', 'Go to Dashboard'],
+                    ['I', 'Go to Inventory'],
+                    ['M', 'Go to Maintenance'],
+                    ['Esc', 'Close modal / dialog'],
+                  ].map(([key, desc]) => (
+                    <div key={key} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                      <kbd style={{ background:'var(--bg4)', border:'1px solid var(--border2)', borderRadius:4, padding:'3px 8px', fontSize:12, fontFamily:'var(--mono)', fontWeight:600, minWidth:36, textAlign:'center', color:'var(--text)' }}>{key}</kbd>
+                      <span style={{ fontSize:13, color:'var(--text2)' }}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (

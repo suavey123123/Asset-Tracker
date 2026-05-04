@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {}, assigned_to: '', site_id: '',
+  specs: {}, assigned_to: '', assigned_to_team: '', site_id: '', provision_date: '',
 }
 
 function LazyAssetPhoto({ assetId, onClick }) {
@@ -65,8 +65,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allSites, setAllSites] = useState([])
   const [filterTag, setFilterTag] = useState('')
   const [allTags, setAllTags] = useState([])
+
+  // Reset page on filter changes
+  useEffect(() => { setPage(1) }, [filterStatus, filterCat, filterTag, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(1)
+  const [showAll, setShowAll] = useState(false)
   const PAGE_SIZE = 25
   const [savedFilters, setSavedFilters] = useState(() => {
     try { return JSON.parse(localStorage.getItem('inventory_filters') || '[]') } catch { return [] }
@@ -222,8 +226,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   function openEditModal(asset) {
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
-    setForm(f => ({...f, site_id: ''}))
+    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -242,6 +245,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       name: finalName,
       purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
       purchase_date: form.purchase_date || null,
+      provision_date: form.provision_date || null,
       warranty_expiry: form.warranty_expiry || null,
       model: form.model || null,
       serial_number: form.serial_number || null,
@@ -399,7 +403,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   }) : filtered
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
-  const paginated = sorted.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
+  const paginated = showAll ? sorted : sorted.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
 
   const stats = {
     total:assets.length,
@@ -433,7 +437,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search assets…" style={{ width:200 }} />
         <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ width:150 }}>
           <option value="">All statuses</option>
-          <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Ordered</option><option>Received</option><option>Retired</option>
+          <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
         </select>
         <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{ width:160 }}>
           <option value="">All categories</option>
@@ -516,7 +520,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 12px', fontSize:12, marginBottom:10 }}>
                    <div><span style={{ color:'var(--text3)' }}>Category </span>{a.category}</div>
                    <div><span style={{ color:'var(--text3)' }}>Site </span>{a.location||'—'}</div>
-                   <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>Assigned to </span>{a.assigned_to||'—'}</div>
+                   <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>Assigned to </span>{a.assigned_to || (a.assigned_to_team ? <span style={{ color:'var(--blue)' }}>{a.assigned_to_team} (team)</span> : '—')}</div>
                  </div>
                  {a.quick_note && <div style={{ fontSize:12, color:'var(--text2)', background:'rgba(212,255,78,0.05)', borderRadius:'var(--radius)', padding:'6px 10px', marginBottom:8 }}>📝 {a.quick_note}</div>}
                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -591,7 +595,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                         </div>
                       )}
                     </td>}
-                    {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12, color:a.assigned_to?'var(--text)':'var(--text3)' }}>{a.assigned_to||'—'}</td>}
+                    {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12 }}>
+                      {a.assigned_to
+                        ? <span style={{ color:'var(--text)' }}>{a.assigned_to}</span>
+                        : a.assigned_to_team
+                          ? <span style={{ color:'var(--blue)', fontSize:11, padding:'2px 8px', borderRadius:100, background:'var(--blue-bg)', fontFamily:'var(--mono)' }}>{a.assigned_to_team}</span>
+                          : <span style={{ color:'var(--text3)' }}>—</span>}
+                    </td>}
                     {has('site') && <td style={{ padding:'10px 14px', fontSize:12, color:a.location?'var(--text)':'var(--text3)' }}>{a.location||'—'}</td>}
                     {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
                     {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
@@ -618,7 +628,10 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           <FormField label="Assign to employee">
-            <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+            <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,assigned_to_team:'',status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+          </FormField>
+          <FormField label="Assign to team / department">
+            <input value={form.assigned_to_team||''} onChange={e=>setForm(f=>({...f,assigned_to_team:e.target.value,assigned_to:'',status:e.target.value?'Checked Out':'Available'}))} placeholder="e.g. Finance Team, Conference Room B, IT Shared" />
           </FormField>
           <FormField label="Site">
             <select value={form.site_id||''} onChange={e=>setForm(f=>({...f,site_id:e.target.value}))}>
@@ -634,10 +647,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Brand / Model"><input value={form.model} onChange={e=>setForm(f=>({...f,model:e.target.value}))} /></FormField>
             <FormField label="Serial number"><input value={form.serial_number} onChange={e=>setForm(f=>({...f,serial_number:e.target.value}))} /></FormField>
           </div>
-          <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Purchase date"><input type="date" value={form.purchase_date} onChange={e=>setForm(f=>({...f,purchase_date:e.target.value}))} /></FormField>
+            <FormField label="Provision date"><input type="date" value={form.provision_date||''} onChange={e=>setForm(f=>({...f,provision_date:e.target.value}))} /></FormField>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
+            <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           </div>
           {!editAsset && allLicenses.length > 0 && (
             <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
@@ -707,6 +723,29 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         </div>
       </Modal>
 
+
+      {/* Pagination */}
+      {sorted.length > PAGE_SIZE && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:12, fontSize:13, color:'var(--text2)' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span style={{ fontSize:12 }}>{sorted.length} assets {!showAll ? `· Page ${page} of ${totalPages}` : '· Showing all'}</span>
+            <button onClick={()=>{ setShowAll(s=>!s); setPage(1) }} style={{ fontSize:12, color:'var(--accent)', background:'none', border:'1px solid var(--border2)', borderRadius:'var(--radius)', padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>
+              {showAll ? '📄 Show pages' : '⊞ Show all'}
+            </button>
+          </div>
+          <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+            <button onClick={()=>setPage(1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>«</button>
+            <button onClick={()=>setPage(p=>p-1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>‹ Prev</button>
+            {Array.from({length:Math.min(5,totalPages)},(_,i)=>{
+              const p=Math.max(1,Math.min(totalPages-4,page-2))+i
+              return p<=totalPages?<button key={p} onClick={()=>setPage(p)} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:p===page?'var(--accent)':'var(--bg3)', color:p===page?'#0f0f0f':'var(--text)', cursor:'pointer', fontFamily:'var(--mono)', fontSize:12, fontWeight:p===page?600:400 }}>{p}</button>:null
+            })}
+            <button onClick={()=>setPage(p=>p+1)} disabled={page===totalPages} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===totalPages?'var(--text3)':'var(--text)', cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>Next ›</button>
+            <button onClick={()=>setPage(totalPages)} disabled={page===totalPages||showAll} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:(page===totalPages||showAll)?'var(--text3)':'var(--text)', cursor:(page===totalPages||showAll)?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>»</button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Checkout Modal */}
       <Modal open={!!checkoutModal} onClose={()=>setCheckoutModal(null)} title={`Check out — ${checkoutModal?.name||''}`} width={400}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -768,7 +807,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <FormField label="Change status (optional)">
             <select value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
               <option value="">— Keep current status —</option>
-              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Ordered</option><option>Received</option><option>Retired</option>
+              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
             </select>
           </FormField>
           <FormField label="Move to site (optional)">

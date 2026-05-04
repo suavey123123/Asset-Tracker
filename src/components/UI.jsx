@@ -115,7 +115,7 @@ export function ViewOnlyBanner() {
 }
 
 export function StatusSelect({ value, onChange, style = {} }) {
-  const statuses = ['Available', 'Checked Out', 'Maintenance', 'Ordered', 'Received', 'Retired']
+  const statuses = ['Available', 'Checked Out', 'Maintenance', 'Retired']
   const colors = {
     'Available': 'var(--green)', 'Checked Out': 'var(--blue)',
     'Maintenance': 'var(--amber)', 'Retired': 'var(--text2)',

@@ -130,11 +130,12 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
           <div style={card}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px 24px' }}>
               {[
-                ['Assigned to', asset.assigned_to],
+                ['Assigned to', asset.assigned_to || (asset.assigned_to_team ? asset.assigned_to_team + ' (team)' : null)],
                 ['Location / Site', asset.location],
                 ['Model', asset.model],
                 ['Serial number', asset.serial_number],
                 ['Purchase date', asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : null],
+                ['Provision date', asset.provision_date ? new Date(asset.provision_date).toLocaleDateString() : null],
                 ['Purchase cost', asset.purchase_cost ? '$'+parseFloat(asset.purchase_cost).toFixed(2) : null],
                 ['Warranty expiry', asset.warranty_expiry ? new Date(asset.warranty_expiry).toLocaleDateString() : null],
                 ['Expected return', asset.expected_return ? new Date(asset.expected_return).toLocaleDateString() : null],

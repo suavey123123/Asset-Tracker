@@ -4,15 +4,13 @@ import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Spinner, EmptyState } from './UI'
 
 const STAGES = [
-  { id: 'Ordered',     icon: '📦', color: 'var(--purple)', desc: 'Purchase order placed' },
-  { id: 'Received',    icon: '✅', color: 'var(--accent)',  desc: 'Physically received and logged' },
   { id: 'Available',   icon: '🟢', color: 'var(--green)',   desc: 'Ready for use' },
   { id: 'Checked Out', icon: '🔵', color: 'var(--blue)',    desc: 'Assigned to an employee' },
   { id: 'Maintenance', icon: '🔧', color: 'var(--amber)',   desc: 'Under repair or service' },
   { id: 'Retired',     icon: '⚫', color: 'var(--text3)',   desc: 'End of life, decommissioned' },
 ]
 
-const STAGE_ORDER = ['Ordered','Received','Available','Checked Out','Maintenance','Retired']
+const STAGE_ORDER = ['Available','Checked Out','Maintenance','Retired']
 
 export default function Lifecycle({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
@@ -146,7 +144,7 @@ export default function Lifecycle({ onViewAsset }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Asset', 'Current Stage', 'Days in Stage', 'Ordered', 'Received', 'Available', 'Actions'].map(h => (
+                {['Asset', 'Current Stage', 'Days in Stage', 'Available', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>

@@ -4,17 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
 
+  // Add any other settings you had (build, server, etc.)
   build: {
     rollupOptions: {
       output: {
-        // your existing rollup options here (if any)
+        manualChunks: undefined, // optional
       }
     }
-  },
-
-  // Add this:
-  esbuild: {
-    // This helps avoid eval in some cases
-    legalComments: 'none',
   }
 })
