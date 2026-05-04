@@ -82,10 +82,11 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   async function save() {
     if (!form.asset_tag.trim()) { setError('Asset Tag is required.'); return }
-    if (!form.name.trim()) setForm(f => ({...f, name: form.asset_tag}))
+    const finalName = form.name.trim() || form.asset_tag.trim()
     setSaving(true); setError('')
     const payload = {
       ...form,
+      name: finalName,
       purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
       purchase_date: form.purchase_date || null,
       warranty_expiry: form.warranty_expiry || null,
@@ -95,6 +96,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       notes: form.notes || null,
       specs: form.specs || {},
       location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || form.location || null) : form.location || null,
+      site_id: form.site_id || null,
     }
     let err
     if (editAsset) {
