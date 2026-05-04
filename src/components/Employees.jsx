@@ -22,6 +22,7 @@ export default function Employees({ onViewEmployee }) {
   const [sites, setSites] = useState([])
   const [viewEmp, setViewEmp] = useState(null)
   const [selected, setSelected] = useState([])
+  const [filterSite, setFilterSite] = useState('')
 
   useEffect(() => { fetchAll() }, [])
 
@@ -80,6 +81,7 @@ export default function Employees({ onViewEmployee }) {
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))].sort()
 
   const filtered = employees.filter(e => {
+    if (filterSite && e.site_id !== filterSite) return false
     if (filterDept && e.department !== filterDept) return false
     if (search) {
       const q = search.toLowerCase()
@@ -112,6 +114,10 @@ export default function Employees({ onViewEmployee }) {
           <option value="">All departments</option>
           {departments.map(d => <option key={d}>{d}</option>)}
         </select>
+        <select value={filterSite} onChange={e => setFilterSite(e.target.value)} style={{ width: 180 }}>
+          <option value="">All sites</option>
+          {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
         <div style={{ flex: 1 }} />
         {isAdmin && selected.length > 0 && (
           <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
@@ -132,7 +138,7 @@ export default function Employees({ onViewEmployee }) {
                     style={{ width:'auto', cursor:'pointer' }}
                   />
                 </th>
-              {['Name', 'Title', 'Department', 'Site', 'Assets', 'Actions'].map(h => (
+              {['Name', 'Email', 'Department', 'Site', 'Assets checked out', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                 ))}
               </tr>
