@@ -23,6 +23,15 @@ export default function Users() {
     setLoading(false)
   }
 
+  async function removeUser(u) {
+    if (!confirm(`Remove ${u.email} from the system? They will no longer be able to log in.`)) return
+    setSaving(u.id)
+    // Delete from profiles - auth user remains but loses access
+    await supabase.from('profiles').delete().eq('id', u.id)
+    setSaving(null)
+    fetchUsers()
+  }
+
   async function setRole(userId, role) {
     setSaving(userId)
     await supabase.from('profiles').update({ role }).eq('id', userId)
@@ -143,6 +152,9 @@ export default function Users() {
                             {saving === u.id ? '…' : 'Make viewer'}
                           </Btn>
                         )}
+                        <Btn size="sm" variant="danger" disabled={saving === u.id} onClick={() => removeUser(u)}>
+                          Remove
+                        </Btn>
                       </div>
                     ) : (
                       <span style={{ fontSize: 12, color: 'var(--text3)' }}>—</span>
