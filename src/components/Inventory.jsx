@@ -117,7 +117,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     localStorage.setItem('inventory_cols', JSON.stringify(defaults))
   }
 
-  const has = (id) => visibleCols.includes(id)
+  const has = (id) => id === 'actions' || visibleCols.includes(id)
 
   // Close col picker on outside click
   useEffect(() => {
@@ -466,8 +466,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                 {isAdmin && <th style={{ padding:'10px 14px', width:32 }}>
                   <input type="checkbox" checked={allSelected} onChange={e => setSelected(e.target.checked ? filtered.map(a=>a.id) : [])} style={{ width:'auto', cursor:'pointer' }} />
                 </th>}
-                {['Tag','Model / Brand','Category','Status','Assigned To','Site','Actions'].map(h=>(
-                  <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
+                {ALL_COLS.filter(c => has(c.id)).map(c=>(
+                  <th key={c.id} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{c.label}</th>
                 ))}
               </tr>
             </thead>
@@ -509,7 +509,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
                     {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
                     {has('warranty') && <td style={{ padding:'10px 14px', fontSize:12, color: a.warranty_expiry&&new Date(a.warranty_expiry)<new Date()?'var(--red)':'var(--text2)' }}>{a.warranty_expiry?new Date(a.warranty_expiry).toLocaleDateString():'—'}</td>}
-                    {has('actions') && <td style={{ padding:'10px 14px' }}>
+                    <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
                         <Btn size="sm" onClick={()=>onViewAsset?.(a)}>View</Btn>
                         {isAdmin && a.status==='Available' && <Btn size="sm" variant="success" onClick={()=>{setCheckoutModal(a);setQcPerson('');setQcDate('');setQcNotes('')}}>Out</Btn>}
@@ -518,7 +518,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                         {isAdmin && <Btn size="sm" onClick={()=>duplicateAsset(a)}>Copy</Btn>}
                         {isAdmin && <Btn size="sm" variant="danger" onClick={()=>deleteAsset(a)}>Del</Btn>}
                       </div>
-                    </td>}
+                    </td>
                   </tr>
                 )
               })}
