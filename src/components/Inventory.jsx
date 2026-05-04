@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {},
+  specs: {}, assigned_to: '',
 }
 
 export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
@@ -32,6 +32,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [bulkPerson, setBulkPerson] = useState('')
   const [bulkDate, setBulkDate] = useState('')
   const [quickStatusId, setQuickStatusId] = useState(null)
+  const [allLicenses, setAllLicenses] = useState([])
+  const [formLicenses, setFormLicenses] = useState([])
   const [checkoutModal, setCheckoutModal] = useState(null) // asset object
   const [checkinModal, setCheckinModal] = useState(null)   // asset object
   const [qcPerson, setQcPerson] = useState('')
@@ -39,11 +41,16 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [qcNotes, setQcNotes] = useState('')
   const [qcCondition, setQcCondition] = useState('Good')
 
-  useEffect(() => { fetchAssets() }, [])
+  useEffect(() => { fetchAssets(); fetchLicenses() }, [])
 
   useEffect(() => {
     if (editAssetProp) { openEditModal(editAssetProp); onEditDone?.() }
   }, [editAssetProp])
+
+  async function fetchLicenses() {
+    const { data } = await supabase.from('licenses').select('*').order('name')
+    setAllLicenses(data || [])
+  }
 
   async function fetchAssets() {
     setLoading(true)
@@ -52,12 +59,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     setLoading(false)
   }
 
-  function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
+  function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
 
   function openEditModal(asset) {
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
-    setError(''); setModalOpen(true)
+    setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
   function duplicateAsset(asset) {
@@ -92,7 +99,18 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     }
     setSaving(false)
     if (err) { setError(err.message); return }
-    setModalOpen(false); fetchAssets()
+    // Assign licenses if any selected
+    if (!editAsset && formLicenses.length > 0) {
+      const { data: newAsset } = await supabase.from('assets').select('id').eq('asset_tag', form.asset_tag).single()
+      if (newAsset) {
+        for (const licId of formLicenses) {
+          await supabase.from('asset_license_assignments').insert({ asset_id: newAsset.id, license_id: licId }).onConflict('asset_id,license_id').ignore()
+          const lic = allLicenses.find(l => l.id === licId)
+          if (lic) await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
+        }
+      }
+    }
+    setModalOpen(false); setFormLicenses([]); fetchAssets()
   }
 
   async function deleteAsset(asset) {
@@ -273,6 +291,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Asset name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></FormField>
             <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           </div>
+          <FormField label="Assign to employee">
+            <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+          </FormField>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Category"><CategorySelect value={form.category} onChange={v=>setForm(f=>({...f,category:v}))} /></FormField>
             <FormField label="Status"><StatusSelect value={form.status} onChange={v=>setForm(f=>({...f,status:v}))} /></FormField>
@@ -289,6 +310,35 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Purchase date"><input type="date" value={form.purchase_date} onChange={e=>setForm(f=>({...f,purchase_date:e.target.value}))} /></FormField>
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
           </div>
+          {!editAsset && allLicenses.length > 0 && (
+            <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Assign software licenses</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:160, overflowY:'auto' }}>
+                {allLicenses.map(l => {
+                  const seatsLeft = l.seats_total ? l.seats_total - (l.seats_used||0) : null
+                  const full = seatsLeft !== null && seatsLeft <= 0
+                  const checked = formLicenses.includes(l.id)
+                  return (
+                    <label key={l.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor: full && !checked ? 'not-allowed' : 'pointer', opacity: full && !checked ? 0.5 : 1, padding:'6px 10px', borderRadius:'var(--radius)', background: checked?'var(--accent-bg)':'var(--bg3)', border:`1px solid ${checked?'var(--accent-border)':'var(--border)'}` }}>
+                      <input type="checkbox" checked={checked} disabled={full && !checked}
+                        onChange={e => setFormLicenses(fl => e.target.checked ? [...fl, l.id] : fl.filter(x=>x!==l.id))}
+                        style={{ width:'auto', accentColor:'var(--accent)' }}
+                      />
+                      <div style={{ flex:1 }}>
+                        <span style={{ fontWeight:500 }}>{l.name}</span>
+                        {l.vendor && <span style={{ color:'var(--text2)', marginLeft:6, fontSize:12 }}>{l.vendor}</span>}
+                      </div>
+                      {seatsLeft !== null && (
+                        <span style={{ fontSize:11, fontFamily:'var(--mono)', color: full?'var(--red)':seatsLeft<=3?'var(--amber)':'var(--green)' }}>
+                          {full ? 'Full' : `${seatsLeft} left`}
+                        </span>
+                      )}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           {TECH_SPEC_CATEGORIES.includes(form.category) && (
             <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
               <div style={{ fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>Tech specs</div>

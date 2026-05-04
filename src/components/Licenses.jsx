@@ -30,7 +30,7 @@ export default function Licenses() {
     setLoading(true)
     const [{ data: l }, { data: a }] = await Promise.all([
       supabase.from('licenses').select('*').order('name'),
-      supabase.from('asset_license_assignments').select('*, asset:asset_id(id, name, asset_tag)'),
+      supabase.from('asset_license_assignments').select('*, asset:asset_id(id, name, asset_tag, assigned_to)'),
     ])
     setLicenses(l || [])
     setAssignments(a || [])
@@ -207,7 +207,10 @@ export default function Licenses() {
                           ? <span style={{ fontSize:12, color:'var(--text3)' }}>None</span>
                           : <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                               {licAssignments.map(a => a.asset && (
-                                <span key={a.id} style={{ fontSize:11, padding:'1px 6px', borderRadius:100, background:'var(--bg4)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.asset.asset_tag}</span>
+                                <span key={a.id} style={{ fontSize:11, padding:'2px 8px', borderRadius:100, background:'var(--bg4)', color:'var(--text2)', fontFamily:'var(--mono)', display:'inline-flex', gap:4 }}>
+                                  {a.asset.asset_tag}
+                                  {a.asset.assigned_to && <span style={{ color:'var(--blue)' }}>· {a.asset.assigned_to}</span>}
+                                </span>
                               ))}
                             </div>
                       })()}

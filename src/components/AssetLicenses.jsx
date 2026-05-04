@@ -13,14 +13,18 @@ export default function AssetLicenses({ assetId }) {
 
   useEffect(() => { fetchAll() }, [assetId])
 
+  const [assetOwner, setAssetOwner] = useState('')
+
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }] = await Promise.all([
+    const [{ data: a }, { data: l }, { data: asset }] = await Promise.all([
       supabase.from('asset_license_assignments').select('*, license:license_id(*)').eq('asset_id', assetId),
       supabase.from('licenses').select('*').order('name'),
+      supabase.from('assets').select('assigned_to').eq('id', assetId).single(),
     ])
     setAssigned(a || [])
     setAllLicenses(l || [])
+    setAssetOwner(asset?.assigned_to || '')
     setLoading(false)
   }
 
@@ -32,8 +36,8 @@ export default function AssetLicenses({ assetId }) {
       alert(`No seats available for ${lic.name} (${lic.seats_used}/${lic.seats_total} used)`)
       return
     }
-    // Add assignment
-    await supabase.from('asset_license_assignments').insert({ asset_id: assetId, license_id: selectedLic })
+    // Add assignment with owner
+    await supabase.from('asset_license_assignments').insert({ asset_id: assetId, license_id: selectedLic, assigned_to: assetOwner || null })
     // Increment seats_used
     await supabase.from('licenses').update({ seats_used: (lic.seats_used || 0) + 1 }).eq('id', selectedLic)
     setSelectedLic('')
