@@ -26,6 +26,11 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (data?.blocked) {
+      await supabase.auth.signOut()
+      setUser(null); setProfile(null)
+      return
+    }
     setProfile(data)
     setLoading(false)
   }
