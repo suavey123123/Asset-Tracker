@@ -37,6 +37,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allSites, setAllSites] = useState([])
   const [filterTag, setFilterTag] = useState('')
   const [allTags, setAllTags] = useState([])
+  const [assetPhotos, setAssetPhotos] = useState({})
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 25
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
@@ -76,6 +79,17 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     const { data } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
     setAssets(data || [])
     setLoading(false)
+    // Fetch first photo for each asset
+    if (data?.length) {
+      const photoMap = {}
+      await Promise.all(data.map(async a => {
+        const { data: files } = await supabase.storage.from('asset-photos').list(`${a.id}/`, { limit: 1 })
+        if (files?.length) {
+          photoMap[a.id] = supabase.storage.from('asset-photos').getPublicUrl(`${a.id}/${files[0].name}`).data.publicUrl
+        }
+      }))
+      setAssetPhotos(photoMap)
+    }
   }
 
   function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
@@ -247,6 +261,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     return true
   })
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
+
   const stats = {
     total:assets.length,
     available:assets.filter(a=>a.status==='Available').length,
@@ -329,7 +346,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(a => {
+              {paginated.map(a => {
                 const warn = rowWarning(a)
                 const isSelected = selected.includes(a.id)
                 return (
@@ -337,10 +354,17 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     {isAdmin && <td style={{ padding:'10px 14px' }}>
                       <input type="checkbox" checked={isSelected} onChange={e=>setSelected(s=>e.target.checked?[...s,a.id]:s.filter(x=>x!==a.id))} style={{ width:'auto', cursor:'pointer' }} />
                     </td>}
-                    <td style={{ padding:'10px 14px' }}>
-                      <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
-                        <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
-                      </button>
+                    <td style={{ padding:'8px 14px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        {assetPhotos[a.id] ? (
+                          <img src={assetPhotos[a.id]} alt="" onClick={()=>onViewAsset?.(a)} style={{ width:32, height:32, borderRadius:4, objectFit:'cover', cursor:'pointer', border:'1px solid var(--border)', flexShrink:0 }} />
+                        ) : (
+                          <div style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'var(--text3)' }}>▦</div>
+                        )}
+                        <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
+                          <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
+                        </button>
+                      </div>
                     </td>
                     <td style={{ padding:'10px 14px' }}>
                       <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>

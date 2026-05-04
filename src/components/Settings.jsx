@@ -66,8 +66,8 @@ export default function Settings() {
     setNotifMsg(error ? error.message : '✓ Preferences saved')
   }
 
-  const TABS = ['profile', 'password', 'notifications']
-  const LABELS = { profile: 'Profile', password: 'Password', notifications: 'Notifications' }
+  const TABS = ['profile', 'password', 'notifications', 'email']
+  const LABELS = { profile: 'Profile', password: 'Password', notifications: 'Notifications', email: 'Email Alerts' }
 
   const card = { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', maxWidth: 480 }
 
@@ -188,6 +188,40 @@ export default function Settings() {
                 {notifSaving ? 'Saving…' : 'Save preferences'}
               </Btn>
               <StatusMsg msg={notifMsg} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email alerts tab */}
+      {tab === 'email' && (
+        <div style={card} className="fade-in">
+          <h3 style={{ fontSize: 14, fontWeight: 500, marginBottom: '0.5rem' }}>Email alert setup</h3>
+          <p style={{ fontSize: 12, color: 'var(--text2)', marginBottom: '1.25rem' }}>
+            Email alerts are sent via a Supabase Edge Function using Resend. Follow these steps to enable them.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {[
+              ['Step 1 — Create a free Resend account', 'Go to resend.com and sign up. Get your API key from Settings → API Keys.'],
+              ['Step 2 — Add secrets to Supabase', 'Go to Supabase → Edge Functions → Secrets and add:
+• RESEND_API_KEY = your API key
+• ALERT_EMAIL = the email to send alerts to
+• APP_URL = https://nhncorp-assets.vercel.app
+• FROM_EMAIL = alerts@yourdomain.com'],
+              ['Step 3 — Deploy the edge function', 'Run in your project terminal:
+npx supabase functions deploy send-alerts'],
+              ['Step 4 — Schedule it (optional)', 'In Supabase → Edge Functions, set a cron schedule like 0 9 * * * to send alerts every morning at 9am.'],
+            ].map(([title, desc], i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, padding: '12px', background: 'var(--bg3)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#0f0f0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i+1}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>{title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)', whiteSpace: 'pre-line' }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ background: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 12, color: 'var(--blue)' }}>
+              💡 The edge function file is at <code style={{ fontFamily: 'var(--mono)', background: 'var(--bg4)', padding: '1px 4px', borderRadius: 3 }}>supabase/functions/send-alerts/index.ts</code> in your project folder.
             </div>
           </div>
         </div>
