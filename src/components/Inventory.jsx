@@ -153,6 +153,15 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     fetchAssets()
   }
 
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.length} asset${selected.length!==1?'s':''}? This cannot be undone.`)) return
+    for (const id of selected) {
+      await supabase.from('assets').delete().eq('id', id)
+    }
+    setSelected([])
+    fetchAssets()
+  }
+
   async function doQuickCheckout() {
     if (!qcPerson.trim()) return
     const asset = checkoutModal
