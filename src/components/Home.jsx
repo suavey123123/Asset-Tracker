@@ -11,7 +11,7 @@ const ALL_WIDGETS = [
   { id:'warranties',  label:'Expiring warranties',   default:true },
   { id:'licenses',    label:'License status',        default:true },
   { id:'byCategory',  label:'Assets by category',    default:false },
-  { id:'bySite',      label:'Assets by site',        default:false },
+  { id:'bySite',      label:'Assets & employees by site', default:false },
   { id:'byStatus',    label:'Assets by status',      default:false },
 ]
 
@@ -22,6 +22,7 @@ export default function Home({ onNav, onViewAsset }) {
   const [log, setLog] = useState([])
   const [licenses, setLicenses] = useState([])
   const [sites, setSites] = useState([])
+  const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState(() => {
@@ -39,16 +40,18 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }, { data: lg }, { data: s }] = await Promise.all([
+    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }] = await Promise.all([
       supabase.from('assets').select('*').order('created_at', { ascending: false }),
       supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),
+      supabase.from('employees').select('id, name, site_id'),
     ])
     setAssets(a || [])
     setLicenses(l || [])
     setLog(lg || [])
     setSites(s || [])
+    setEmployees(e || [])
     setLoading(false)
   }
 
@@ -269,18 +272,32 @@ export default function Home({ onNav, onViewAsset }) {
         )}
 
         {/* By site */}
-        {has('bySite') && Object.keys(bySite).length>0 && (
+        {has('bySite') && sites.length>0 && (
           <div style={card}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
-              <span style={cardTitle}>Assets by site</span>
+              <span style={cardTitle}>By site</span>
               <button onClick={()=>onNav('sites')} style={linkBtn}>View all →</button>
             </div>
-            {Object.entries(bySite).map(([site, count]) => (
-              <div key={site} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
-                <span>{site}</span>
-                <span style={{ fontFamily:'var(--mono)', fontWeight:500, color:'var(--accent)' }}>{count}</span>
-              </div>
-            ))}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:'0 16px', alignItems:'center', marginBottom:6 }}>
+              <span style={{ fontSize:11, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Site</span>
+              <span style={{ fontSize:11, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'right' }}>Employees</span>
+              <span style={{ fontSize:11, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'right' }}>Assets</span>
+            </div>
+            {sites.map(site => {
+              const siteAssets = assets.filter(a => a.location?.toLowerCase().includes(site.name.toLowerCase()) || a.site_id === site.id).length
+              const siteEmps = employees.filter(e => e.site_id === site.id).length
+              return (
+                <div key={site.id} style={{ display:'grid', gridTemplateColumns:'1fr auto auto', gap:'0 16px', alignItems:'center', padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                  <span style={{ fontSize:13, fontWeight:500 }}>{site.name}</span>
+                  <span style={{ fontFamily:'var(--mono)', fontWeight:500, color:'var(--blue)', textAlign:'right' }}>{siteEmps}</span>
+                  <span style={{ fontFamily:'var(--mono)', fontWeight:500, color:'var(--accent)', textAlign:'right' }}>{siteAssets}</span>
+                </div>
+              )
+            })}
+            <div style={{ display:'flex', gap:16, marginTop:8, paddingTop:8, borderTop:'1px solid var(--border)' }}>
+              <span style={{ fontSize:11, color:'var(--blue)' }}>● Employees</span>
+              <span style={{ fontSize:11, color:'var(--accent)' }}>● Assets</span>
+            </div>
           </div>
         )}
 
