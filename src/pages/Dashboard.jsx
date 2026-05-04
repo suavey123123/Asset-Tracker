@@ -20,6 +20,9 @@ import Offboarding from '../components/Offboarding'
 import AssetRequests from '../components/AssetRequests'
 import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
+import ErrorBoundary from '../components/ErrorBoundary'
+import Consumables from '../components/Consumables'
+import ValueDashboard from '../components/ValueDashboard'
 import Sites from '../components/Sites'
 import Licenses from '../components/Licenses'
 import Compliance from '../components/Compliance'
@@ -71,6 +74,8 @@ export default function Dashboard() {
     sites: <Sites />,
     licenses: <Licenses />,
     compliance: <Compliance />,
+    consumables: <Consumables />,
+    valuedashboard: <ValueDashboard />,
 
   }
 
@@ -91,6 +96,7 @@ export default function Dashboard() {
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
           <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
+          <div title="Keyboard shortcuts: N=new asset, /=search, H=home, I=inventory, M=maintenance, Esc=close" style={{ fontSize:11, color:'var(--text3)', cursor:'help', padding:'4px 8px', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontFamily:'var(--mono)' }}>⌨</div>
         </div>
         <div style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (

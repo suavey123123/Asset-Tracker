@@ -31,9 +31,11 @@ const NAV_GROUPS = [
   {
     label: 'Finance',
     items: [
-      { id: 'licenses',    label: 'Licenses',     icon: '⊡' },
-      { id: 'reports',     label: 'Reports',      icon: '⊟' },
-      { id: 'compliance',  label: 'Compliance',   icon: '✓' },
+      { id: 'licenses',      label: 'Licenses',       icon: '⊡' },
+      { id: 'valuedashboard', label: 'Asset Values',    icon: '$' },
+      { id: 'consumables',   label: 'Consumables',    icon: '⊞' },
+      { id: 'reports',       label: 'Reports',        icon: '⊟' },
+      { id: 'compliance',    label: 'Compliance',     icon: '✓' },
     ]
   },
   {

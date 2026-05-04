@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, StatusSelect } from './UI'
@@ -12,6 +12,34 @@ const EMPTY_FORM = {
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
   specs: {}, assigned_to: '', site_id: '',
+}
+
+function LazyAssetPhoto({ assetId, onClick }) {
+  const [url, setUrl] = React.useState(null)
+  const [loaded, setLoaded] = React.useState(false)
+  const ref = useRef()
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(async ([entry]) => {
+      if (entry.isIntersecting && !loaded) {
+        setLoaded(true)
+        obs.disconnect()
+        const { data: files } = await supabase.storage.from('asset-photos').list(`${assetId}/`, { limit: 1 })
+        if (files?.length) {
+          const { data: { publicUrl } } = supabase.storage.from('asset-photos').getPublicUrl(`${assetId}/${files[0].name}`)
+          setUrl(publicUrl)
+        }
+      }
+    }, { rootMargin: '100px' })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [assetId])
+
+  return (
+    <div ref={ref} onClick={onClick} style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, overflow:'hidden', cursor:'pointer' }}>
+      {url ? <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'var(--text3)' }}>▦</div>}
+    </div>
+  )
 }
 
 export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
@@ -40,6 +68,11 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
+  const [savedFilters, setSavedFilters] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('inventory_filters') || '[]') } catch { return [] }
+  })
+  const [saveFilterName, setSaveFilterName] = useState('')
+  const [showSaveFilter, setShowSaveFilter] = useState(false)
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
@@ -52,7 +85,20 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [qcNotes, setQcNotes] = useState('')
   const [qcCondition, setQcCondition] = useState('Good')
 
-  useEffect(() => { fetchAssets(); fetchLicenses(); fetchSites(); fetchTags() }, [])
+  useEffect(() => {
+    fetchAssets(); fetchLicenses(); fetchSites(); fetchTags()
+    // Listen for keyboard shortcuts
+    function handleShortcut(e) {
+      if (e.type === 'shortcut:new-asset') openAdd()
+      if (e.type === 'shortcut:escape') { setModalOpen(false); setBulkEditOpen(false); setBulkCheckinOpen(false) }
+    }
+    window.addEventListener('shortcut:new-asset', handleShortcut)
+    window.addEventListener('shortcut:escape', handleShortcut)
+    return () => {
+      window.removeEventListener('shortcut:new-asset', handleShortcut)
+      window.removeEventListener('shortcut:escape', handleShortcut)
+    }
+  }, [])
 
   useEffect(() => {
     if (editAssetProp) { openEditModal(editAssetProp); onEditDone?.() }
@@ -68,6 +114,25 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     setAllSites(data || [])
   }
 
+  function saveFilter() {
+    if (!saveFilterName.trim()) return
+    const filter = { name: saveFilterName.trim(), status: filterStatus, category: filterCat, tag: filterTag, id: Date.now() }
+    const updated = [...savedFilters, filter]
+    setSavedFilters(updated)
+    localStorage.setItem('inventory_filters', JSON.stringify(updated))
+    setSaveFilterName(''); setShowSaveFilter(false)
+  }
+
+  function loadFilter(f) {
+    setFilterStatus(f.status || ''); setFilterCat(f.category || ''); setFilterTag(f.tag || ''); setPage(1)
+  }
+
+  function deleteFilter(id) {
+    const updated = savedFilters.filter(f => f.id !== id)
+    setSavedFilters(updated)
+    localStorage.setItem('inventory_filters', JSON.stringify(updated))
+  }
+
   async function fetchTags() {
     const { data } = await supabase.from('asset_tags').select('tag').order('tag')
     const unique = [...new Set((data||[]).map(t=>t.tag))]
@@ -79,17 +144,6 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     const { data } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
     setAssets(data || [])
     setLoading(false)
-    // Fetch first photo for each asset
-    if (data?.length) {
-      const photoMap = {}
-      await Promise.all(data.map(async a => {
-        const { data: files } = await supabase.storage.from('asset-photos').list(`${a.id}/`, { limit: 1 })
-        if (files?.length) {
-          photoMap[a.id] = supabase.storage.from('asset-photos').getPublicUrl(`${a.id}/${files[0].name}`).data.publicUrl
-        }
-      }))
-      setAssetPhotos(photoMap)
-    }
   }
 
   function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
@@ -356,11 +410,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     </td>}
                     <td style={{ padding:'8px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        {assetPhotos[a.id] ? (
-                          <img src={assetPhotos[a.id]} alt="" onClick={()=>onViewAsset?.(a)} style={{ width:32, height:32, borderRadius:4, objectFit:'cover', cursor:'pointer', border:'1px solid var(--border)', flexShrink:0 }} />
-                        ) : (
-                          <div style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'var(--text3)' }}>▦</div>
-                        )}
+                        <LazyAssetPhoto assetId={a.id} onClick={()=>onViewAsset?.(a)} />
                         <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
                           <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
                         </button>

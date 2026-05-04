@@ -22,7 +22,7 @@ export default function Employees({ onViewEmployee }) {
   const [filterDept, setFilterDept] = useState('')
   const [sites, setSites] = useState([])
   const [viewEmp, setViewEmp] = useState(null)
-  const [empHistory, setEmpHistory] = useState([])
+  const [empHistory, setEmpHistory] = useState({ log: [], current: [] })
   const [selected, setSelected] = useState([])
   const [filterSite, setFilterSite] = useState('')
   const [importOpen, setImportOpen] = useState(false)
@@ -46,8 +46,11 @@ export default function Employees({ onViewEmployee }) {
 
   function openAdd() { setEditEmp(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
   async function fetchEmpHistory(emp) {
-    const { data } = await supabase.from('activity_log').select('*').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(20)
-    setEmpHistory(data || [])
+    const [{ data: log }, { data: current }] = await Promise.all([
+      supabase.from('activity_log').select('*').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(50),
+      supabase.from('assets').select('id, asset_tag, model, category, status, purchase_date').eq('assigned_to', emp.name),
+    ])
+    setEmpHistory({ log: log || [], current: current || [] })
   }
 
   function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null, hire_date: emp.hire_date||'' }); setError(''); setModalOpen(true) }
