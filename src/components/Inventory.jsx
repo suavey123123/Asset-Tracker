@@ -85,7 +85,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   async function save() {
     if (!form.asset_tag.trim()) { setError('Asset Tag is required.'); return }
-    const finalName = form.name.trim() || form.asset_tag.trim()
+    const finalName = form.asset_tag.trim()
     setSaving(true); setError('')
     const payload = {
       ...form,
@@ -304,12 +304,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     {isAdmin && <td style={{ padding:'10px 14px' }}>
                       <input type="checkbox" checked={isSelected} onChange={e=>setSelected(s=>e.target.checked?[...s,a.id]:s.filter(x=>x!==a.id))} style={{ width:'auto', cursor:'pointer' }} />
                     </td>}
-                    <td style={{ padding:'10px 14px', fontFamily:'var(--mono)', fontSize:12, color:'var(--text2)' }}>{a.asset_tag}</td>
                     <td style={{ padding:'10px 14px' }}>
-                      <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--font)' }}>
-                        <div style={{ fontWeight:500, fontSize:13, color:'var(--text)' }}>{a.model || a.asset_tag}</div>
-                        {a.serial_number && <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.serial_number}</div>}
+                      <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
+                        <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
                       </button>
+                    </td>
+                    <td style={{ padding:'10px 14px' }}>
+                      <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>
+                      {a.serial_number && <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.serial_number}</div>}
                     </td>
                     <td style={{ padding:'10px 14px' }}><Badge status={a.category} /></td>
                     <td style={{ padding:'10px 14px' }}>
