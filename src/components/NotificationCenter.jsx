@@ -24,9 +24,11 @@ export default function NotificationCenter({ onNav, onViewAsset }) {
     const today = new Date()
     const in30 = new Date(); in30.setDate(today.getDate() + 30)
 
-    const [{ data: assets }, { data: licenses }] = await Promise.all([
-      supabase.from('assets').select('id, name, asset_tag, status, expected_return, warranty_expiry, assigned_to'),
+    const [{ data: assets }, { data: licenses }, { data: schedules }, { data: requests }] = await Promise.all([
+      supabase.from('assets').select('id, name, asset_tag, model, status, expected_return, warranty_expiry, assigned_to'),
       supabase.from('licenses').select('id, name, expiry_date, seats_total, seats_used'),
+      supabase.from('maintenance_schedules').select('*, asset:asset_id(id, asset_tag, model)').lte('next_date', in30.toISOString().slice(0,10)),
+      supabase.from('asset_requests').select('id').eq('status', 'pending'),
     ])
 
     const notifs = []
@@ -55,6 +57,21 @@ export default function NotificationCenter({ onNav, onViewAsset }) {
     // Expired licenses
     ;(licenses || []).filter(l => l.expiry_date && new Date(l.expiry_date) < today).forEach(l => {
       notifs.push({ id: `lic-exp-${l.id}`, type: 'license-expired', color: 'var(--red)', icon: '📋', title: `${l.name} license EXPIRED`, body: `Expired ${new Date(l.expiry_date).toLocaleDateString()}`, nav: 'licenses' })
+    })
+
+    // Pending requests
+    if ((requests||[]).length > 0) {
+      notifs.push({ id:'requests', type:'request', color:'var(--blue)', icon:'◈', title:`${requests.length} pending asset request${requests.length!==1?'s':''}`, body:'Waiting for admin review', nav:'requests' })
+    }
+
+    // Overdue scheduled maintenance
+    ;(schedules||[]).filter(s => new Date(s.next_date) < today).forEach(s => {
+      notifs.push({ id:`sched-${s.id}`, type:'scheduled', color:'var(--red)', icon:'⏰', title:`${s.asset?.asset_tag} maintenance overdue`, body:`${s.maintenance_type} was due ${new Date(s.next_date).toLocaleDateString()}`, asset: s.asset, nav:'scheduled' })
+    })
+
+    // Due soon scheduled maintenance
+    ;(schedules||[]).filter(s => new Date(s.next_date) >= today).forEach(s => {
+      notifs.push({ id:`sched-soon-${s.id}`, type:'scheduled', color:'var(--amber)', icon:'⏰', title:`${s.asset?.asset_tag} maintenance due soon`, body:`${s.maintenance_type} due ${new Date(s.next_date).toLocaleDateString()}`, asset: s.asset, nav:'scheduled' })
     })
 
     // Full license seats

@@ -37,6 +37,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allSites, setAllSites] = useState([])
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
+  const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
   const [bulkStatus, setBulkStatus] = useState('')
   const [bulkSite, setBulkSite] = useState('') // asset object
   const [checkinModal, setCheckinModal] = useState(null)   // asset object
@@ -45,7 +47,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [qcNotes, setQcNotes] = useState('')
   const [qcCondition, setQcCondition] = useState('Good')
 
-  useEffect(() => { fetchAssets(); fetchLicenses(); fetchSites() }, [])
+  useEffect(() => { fetchAssets(); fetchLicenses(); fetchSites(); fetchTags() }, [])
 
   useEffect(() => {
     if (editAssetProp) { openEditModal(editAssetProp); onEditDone?.() }
@@ -59,6 +61,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   async function fetchSites() {
     const { data } = await supabase.from('sites').select('id, name').order('name')
     setAllSites(data || [])
+  }
+
+  async function fetchTags() {
+    const { data } = await supabase.from('asset_tags').select('tag').order('tag')
+    const unique = [...new Set((data||[]).map(t=>t.tag))]
+    setAllTags(unique)
   }
 
   async function fetchAssets() {
@@ -153,6 +161,17 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     fetchAssets()
   }
 
+  async function doBulkCheckin() {
+    const toCheckin = selected.filter(id => assets.find(a=>a.id===id)?.status==='Checked Out')
+    for (const id of toCheckin) {
+      const asset = assets.find(a=>a.id===id)
+      const newStatus = bulkCheckinCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
+      await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', id)
+      await logActivity(id, asset.asset_tag, asset.name, 'checkin', `Bulk checked in — condition: ${bulkCheckinCondition}`)
+    }
+    setSelected([]); setBulkCheckinOpen(false); fetchAssets()
+  }
+
   async function doBulkEdit() {
     if (!bulkStatus && !bulkSite) return
     const updates = {}
@@ -218,6 +237,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const filtered = assets.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
+    if (filterTag) { /* tag filtering handled via separate query */ }
     if (search) {
       const q = search.toLowerCase()
       if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number} ${a.assigned_to}`.toLowerCase().includes(q)) return false
@@ -264,6 +284,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <option>LAPTOP</option><option>DESKTOP</option><option>PHONE</option><option>TABLET</option><option>CAMERA</option><option>TV</option><option>PRINTER</option><option>ROUTER</option><option>MOUSE</option><option>KEYBOARD</option><option>MONITOR</option><option>Tools & Equipment</option>
         </select>
         <div style={{ flex:1 }} />
+        {allTags.length>0 && (
+          <select value={filterTag} onChange={e=>setFilterTag(e.target.value)} style={{ width:140 }}>
+            <option value="">All labels</option>
+            {allTags.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
         {isAdmin && selected.length>0 && (
           <>
             <Btn size="sm" variant="success" onClick={()=>setBulkCheckoutOpen(true)} disabled={selectedAvailable.length===0}>
@@ -272,6 +298,11 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <Btn size="sm" variant="danger" onClick={bulkDelete}>
               🗑 Delete {selected.length} selected
             </Btn>
+            {selected.filter(id=>assets.find(a=>a.id===id)?.status==='Checked Out').length > 0 && (
+              <Btn size="sm" onClick={()=>setBulkCheckinOpen(true)}>
+                ↩ Check in {selected.filter(id=>assets.find(a=>a.id===id)?.status==='Checked Out').length}
+              </Btn>
+            )}
             <Btn size="sm" onClick={()=>setBulkEditOpen(true)}>
               ✎ Edit {selected.length} selected
             </Btn>
@@ -475,6 +506,21 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setCheckinModal(null)}>Cancel</Btn>
             <Btn variant="primary" onClick={doQuickCheckin}>Check in</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Check-in Modal */}
+      <Modal open={bulkCheckinOpen} onClose={()=>setBulkCheckinOpen(false)} title={`Check in ${selected.filter(id=>assets.find(a=>a.id===id)?.status==='Checked Out').length} asset(s)`} width={380}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <FormField label="Condition on return">
+            <select value={bulkCheckinCondition} onChange={e=>setBulkCheckinCondition(e.target.value)}>
+              <option>Good</option><option>Needs maintenance</option><option>Damaged</option>
+            </select>
+          </FormField>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
+            <Btn onClick={()=>setBulkCheckinOpen(false)}>Cancel</Btn>
+            <Btn variant="primary" onClick={doBulkCheckin}>Check in all</Btn>
           </div>
         </div>
       </Modal>

@@ -6,6 +6,8 @@ const NAV = [
   { id:'inventory',   label:'Inventory',    icon:'▦' },
   { id:'transfer',    label:'Transfer',     icon:'↔' },
   { id:'maintenance', label:'Maintenance',  icon:'⚙' },
+  { id:'scheduled',    label:'Scheduled',    icon:'⏰' },
+  { id:'requests',     label:'Requests',     icon:'◈' },
   { id:'scanner',     label:'Scanner',      icon:'◈' },
   { id:'lifecycle',   label:'Lifecycle',    icon:'◎' },
   { id:'reports',     label:'Reports',      icon:'⊟' },

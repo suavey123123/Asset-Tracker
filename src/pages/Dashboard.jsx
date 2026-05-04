@@ -17,6 +17,8 @@ import Scanner from '../components/Scanner'
 import Lifecycle from '../components/Lifecycle'
 import Employees from '../components/Employees'
 import Offboarding from '../components/Offboarding'
+import AssetRequests from '../components/AssetRequests'
+import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
 import Sites from '../components/Sites'
 import Licenses from '../components/Licenses'
@@ -64,6 +66,8 @@ export default function Dashboard() {
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
     employees: <Employees />,
     offboarding: <Offboarding />,
+    requests: <AssetRequests />,
+    scheduled: <ScheduledMaintenance onViewAsset={handleViewAsset} />,
     sites: <Sites />,
     licenses: <Licenses />,
     compliance: <Compliance />,
