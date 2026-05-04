@@ -45,15 +45,34 @@ const NOTES = [
   'Costs accept $ signs and commas: $1,899.00 or 1899.00 both work.',
 ]
 
+function parseCSVLine(line) {
+  const vals = []
+  let cur = '', inQ = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (ch === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++ }
+      else inQ = !inQ
+    } else if (ch === ',' && !inQ) {
+      vals.push(cur.trim()); cur = ''
+    } else {
+      cur += ch
+    }
+  }
+  vals.push(cur.trim())
+  return vals
+}
+
 function parseCSV(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim())
+  // Handle Windows (CRLF) and Mac (CR) line endings
+  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim())
   if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'))
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
   const errs = []
   const rows = lines.slice(1).map((line, i) => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+    const vals = parseCSVLine(line)
     const row = {}
-    headers.forEach((h, j) => { row[h] = vals[j] || '' })
+    headers.forEach((h, j) => { row[h] = (vals[j] || '').trim() })
     if (!row.name) errs.push(`Row ${i + 2}: missing employee name`)
     return row
   })
@@ -79,7 +98,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       const text = ev.target.result
       setErrors([])
       const { rows, errors } = parseCSV(text)
-      setPreview(rows.slice(0, 5))
+      setPreview(rows)
       setErrors(errors)
       if (!errors.length) {
         // Store parsed rows directly, don't show raw CSV in textarea
@@ -95,7 +114,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     setCsv(text); setErrors([])
     if (!text.trim()) { setPreview([]); return }
     const { rows, errors } = parseCSV(text)
-    setPreview(rows.slice(0, 5))
+    setPreview(rows)
     setErrors(errors)
   }
 
@@ -299,10 +318,10 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
             {/* Preview */}
             {preview.length > 0 && !errors.length && (
-              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', maxHeight: 300, overflowY: 'auto' }}>
                 <div style={{ padding: '6px 12px', background: 'var(--bg3)', fontSize: 11, color: 'var(--text2)', fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>PREVIEW</span>
-                  <span>{rowCount} rows · {Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
+                  <span>PREVIEW ({preview.length} rows)</span>
+                  <span>{Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
