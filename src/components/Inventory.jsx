@@ -95,7 +95,6 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       warranty_expiry: form.warranty_expiry || null,
       model: form.model || null,
       serial_number: form.serial_number || null,
-      location: form.location || null,
       notes: form.notes || null,
       specs: form.specs || {},
       site_id: form.site_id || null,
