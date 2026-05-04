@@ -129,6 +129,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   async function deleteAsset(asset) {
     if (!confirm(`Delete "${asset.name}"? This cannot be undone.`)) return
+    await releaseLicenses(asset.id)
     await supabase.from('assets').delete().eq('id', asset.id)
     fetchAssets()
   }
@@ -153,9 +154,22 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     fetchAssets()
   }
 
+  async function releaseLicenses(assetId) {
+    const { data: assignments } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, seats_used)').eq('asset_id', assetId)
+    if (assignments?.length) {
+      for (const a of assignments) {
+        if (a.license) {
+          await supabase.from('licenses').update({ seats_used: Math.max(0, (a.license.seats_used||1) - 1) }).eq('id', a.license.id)
+        }
+      }
+      await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId)
+    }
+  }
+
   async function bulkDelete() {
     if (!confirm(`Delete ${selected.length} asset${selected.length!==1?'s':''}? This cannot be undone.`)) return
     for (const id of selected) {
+      await releaseLicenses(id)
       await supabase.from('assets').delete().eq('id', id)
     }
     setSelected([])
