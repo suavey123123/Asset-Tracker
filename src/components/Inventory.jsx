@@ -104,9 +104,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   useEffect(() => {
     if (!showColPicker) return
     function close(e) {
-      if (!e.target.closest('[data-colpicker]')) setShowColPicker(false)
+      if (!e.target.closest || !e.target.closest('[data-colpicker]')) setShowColPicker(false)
     }
-    document.addEventListener('mousedown', close)
+    setTimeout(() => document.addEventListener('mousedown', close), 100)
     return () => document.removeEventListener('mousedown', close)
   }, [showColPicker])
   const [checkoutModal, setCheckoutModal] = useState(null)
@@ -418,7 +418,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
-        <div style={{ position:'relative' }}>
+        <div style={{ position:'relative' }} data-colpicker>
           <button onClick={()=>setShowColPicker(p=>!p)} title="Customize columns" style={{ padding:'6px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background: showColPicker?'var(--bg4)':'var(--bg3)', color:'var(--text2)', cursor:'pointer', fontSize:13, fontFamily:'var(--font)' }}>⊞ Columns</button>
           {showColPicker && (
             <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', zIndex:200, padding:'10px', minWidth:180, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
