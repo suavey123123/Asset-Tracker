@@ -113,10 +113,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           for (const licId of formLicenses) {
             try {
               await supabase.from('asset_license_assignments').insert({ asset_id: data.id, license_id: licId, assigned_to: form.assigned_to || null })
-              const lic = allLicenses.find(l => l.id === licId)
-              if (lic) {
-                await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
-              }
+              await supabase.rpc('increment_license_seats', { license_id: licId })
             } catch(e) {}
           }
         }
@@ -159,7 +156,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     if (assignments?.length) {
       for (const a of assignments) {
         if (a.license) {
-          await supabase.from('licenses').update({ seats_used: Math.max(0, (a.license.seats_used||1) - 1) }).eq('id', a.license.id)
+          await supabase.rpc('decrement_license_seats', { license_id: a.license.id })
         }
       }
       await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId)
