@@ -458,20 +458,19 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     {isAdmin && <td style={{ padding:'10px 14px' }}>
                       <input type="checkbox" checked={isSelected} onChange={e=>setSelected(s=>e.target.checked?[...s,a.id]:s.filter(x=>x!==a.id))} style={{ width:'auto', cursor:'pointer' }} />
                     </td>}
-                    <td style={{ padding:'8px 14px' }}>
+                    {has('tag') && <td style={{ padding:'8px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <LazyAssetPhoto assetId={a.id} onClick={()=>onViewAsset?.(a)} />
                         <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
                           <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
                         </button>
                       </div>
-                    </td>
-                    <td style={{ padding:'10px 14px' }}>
+                    </td>}
+                    {has('model') && <td style={{ padding:'10px 14px' }}>
                       <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>
-                      {a.serial_number && <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.serial_number}</div>}
-                    </td>
-                    <td style={{ padding:'10px 14px' }}><Badge status={a.category} /></td>
-                    <td style={{ padding:'10px 14px' }}>
+                    </td>}
+                    {has('category') && <td style={{ padding:'10px 14px', fontSize:11 }}><span style={{ padding:'2px 8px', borderRadius:4, background:'var(--bg4)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.category}</span></td>}
+                    {has('status') && <td style={{ padding:'10px 14px' }}>
                       {isAdmin && quickStatusId===a.id ? (
                         <div style={{ display:'flex', gap:4, alignItems:'center' }}>
                           <StatusSelect value={a.status} onChange={v=>quickStatus(a.id,v)} style={{ width:140, padding:'4px 8px' }} />
@@ -482,10 +481,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                           <Badge status={a.status} />
                         </div>
                       )}
-                    </td>
-                    <td style={{ padding:'10px 14px', fontSize:12, color:a.assigned_to?'var(--text)':'var(--text3)' }}>{a.assigned_to||'—'}</td>
-                    <td style={{ padding:'10px 14px', fontSize:12, color:a.location?'var(--text)':'var(--text3)' }}>{a.location||'—'}</td>
-                    <td style={{ padding:'10px 14px' }}>
+                    </td>}
+                    {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12, color:a.assigned_to?'var(--text)':'var(--text3)' }}>{a.assigned_to||'—'}</td>}
+                    {has('site') && <td style={{ padding:'10px 14px', fontSize:12, color:a.location?'var(--text)':'var(--text3)' }}>{a.location||'—'}</td>}
+                    {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
+                    {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
+                    {has('warranty') && <td style={{ padding:'10px 14px', fontSize:12, color: a.warranty_expiry&&new Date(a.warranty_expiry)<new Date()?'var(--red)':'var(--text2)' }}>{a.warranty_expiry?new Date(a.warranty_expiry).toLocaleDateString():'—'}</td>}
+                    {has('actions') && <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
                         <Btn size="sm" onClick={()=>onViewAsset?.(a)}>View</Btn>
                         {isAdmin && a.status==='Available' && <Btn size="sm" variant="success" onClick={()=>{setCheckoutModal(a);setQcPerson('');setQcDate('');setQcNotes('')}}>Out</Btn>}
