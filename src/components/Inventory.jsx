@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {}, assigned_to: '',
+  specs: {}, assigned_to: '', site_id: '',
 }
 
 export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
@@ -34,6 +34,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [quickStatusId, setQuickStatusId] = useState(null)
   const [allLicenses, setAllLicenses] = useState([])
   const [formLicenses, setFormLicenses] = useState([])
+  const [allSites, setAllSites] = useState([])
   const [checkoutModal, setCheckoutModal] = useState(null) // asset object
   const [checkinModal, setCheckinModal] = useState(null)   // asset object
   const [qcPerson, setQcPerson] = useState('')
@@ -41,7 +42,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [qcNotes, setQcNotes] = useState('')
   const [qcCondition, setQcCondition] = useState('Good')
 
-  useEffect(() => { fetchAssets(); fetchLicenses() }, [])
+  useEffect(() => { fetchAssets(); fetchLicenses(); fetchSites() }, [])
 
   useEffect(() => {
     if (editAssetProp) { openEditModal(editAssetProp); onEditDone?.() }
@@ -50,6 +51,11 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   async function fetchLicenses() {
     const { data } = await supabase.from('licenses').select('*').order('name')
     setAllLicenses(data || [])
+  }
+
+  async function fetchSites() {
+    const { data } = await supabase.from('sites').select('id, name').order('name')
+    setAllSites(data || [])
   }
 
   async function fetchAssets() {
@@ -64,6 +70,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   function openEditModal(asset) {
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
+    setForm(f => ({...f, site_id: ''}))
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -87,6 +94,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       location: form.location || null,
       notes: form.notes || null,
       specs: form.specs || {},
+      location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || form.location || null) : form.location || null,
     }
     let err
     if (editAsset) {
@@ -291,6 +299,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           <FormField label="Assign to employee">
             <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+          </FormField>
+          <FormField label="Site">
+            <select value={form.site_id||''} onChange={e=>setForm(f=>({...f,site_id:e.target.value}))}>
+              <option value="">No site assigned</option>
+              {allSites.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
           </FormField>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Category"><CategorySelect value={form.category} onChange={v=>setForm(f=>({...f,category:v}))} /></FormField>
