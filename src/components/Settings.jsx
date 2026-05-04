@@ -111,21 +111,20 @@ export default function Settings() {
             <div>
               <Btn variant="primary" onClick={saveProfile} disabled={profileSaving}>{profileSaving ? 'Saving…' : 'Save profile'}</Btn>
               {msg(profileMsg)}
-          </div>
-          <div style={{ marginTop:'1.5rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
-            <div style={{ fontSize:13, fontWeight:500, marginBottom:8 }}>Appearance</div>
-            <div style={{ display:'flex', gap:8 }}>
-              {['dark','light'].map(t => (
-                <button key={t} onClick={()=>setTheme(t)} style={{
-                  padding:'8px 20px', borderRadius:'var(--radius)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13,
-                  background: theme===t ? 'var(--accent)' : 'var(--bg3)',
-                  color: theme===t ? '#0f0f0f' : 'var(--text2)',
-                  border: `1px solid ${theme===t ? 'var(--accent)' : 'var(--border2)'}`,
-                  fontWeight: theme===t ? 600 : 400,
-                }}>{t==='dark'?'🌙 Dark':'☀ Light'}</button>
-              ))}
             </div>
-          <div style={{ display:'none' }}>
+            <div style={{ marginTop:'1.5rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
+              <div style={{ fontSize:13, fontWeight:500, marginBottom:8 }}>Appearance</div>
+              <div style={{ display:'flex', gap:8 }}>
+                {['dark','light'].map(t => (
+                  <button key={t} onClick={()=>setTheme(t)} style={{
+                    padding:'8px 20px', borderRadius:'var(--radius)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13,
+                    background: theme===t ? 'var(--accent)' : 'var(--bg3)',
+                    color: theme===t ? '#0f0f0f' : 'var(--text2)',
+                    border: `1px solid ${theme===t ? 'var(--accent)' : 'var(--border2)'}`,
+                    fontWeight: theme===t ? 600 : 400,
+                  }}>{t==='dark'?'🌙 Dark':'☀ Light'}</button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
