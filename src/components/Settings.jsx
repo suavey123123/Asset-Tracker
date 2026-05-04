@@ -203,11 +203,7 @@ export default function Settings() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
               ['Step 1 — Create a free Resend account', 'Go to resend.com and sign up. Get your API key from Settings → API Keys.'],
-              ['Step 2 — Add secrets to Supabase', 'Go to Supabase → Edge Functions → Secrets and add:
-• RESEND_API_KEY = your API key
-• ALERT_EMAIL = the email to send alerts to
-• APP_URL = https://nhncorp-assets.vercel.app
-• FROM_EMAIL = alerts@yourdomain.com'],
+              ['Step 2 — Add secrets to Supabase', 'Go to Supabase → Edge Functions → Secrets and add: RESEND_API_KEY (your API key), ALERT_EMAIL (where to send), APP_URL (your app URL), FROM_EMAIL (sender address)'],
               ['Step 3 — Deploy the edge function', 'Run in your project terminal:
 npx supabase functions deploy send-alerts'],
               ['Step 4 — Schedule it (optional)', 'In Supabase → Edge Functions, set a cron schedule like 0 9 * * * to send alerts every morning at 9am.'],
