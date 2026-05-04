@@ -225,8 +225,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   function openEditModal(asset) {
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
-    setForm(f => ({...f, site_id: '', assigned_to_team: asset.assigned_to_team||'', provision_date: asset.provision_date||''}))
+    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -647,10 +646,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Brand / Model"><input value={form.model} onChange={e=>setForm(f=>({...f,model:e.target.value}))} /></FormField>
             <FormField label="Serial number"><input value={form.serial_number} onChange={e=>setForm(f=>({...f,serial_number:e.target.value}))} /></FormField>
           </div>
-          <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Purchase date"><input type="date" value={form.purchase_date} onChange={e=>setForm(f=>({...f,purchase_date:e.target.value}))} /></FormField>
+            <FormField label="Provision date"><input type="date" value={form.provision_date||''} onChange={e=>setForm(f=>({...f,provision_date:e.target.value}))} /></FormField>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
+            <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           </div>
           {!editAsset && allLicenses.length > 0 && (
             <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
