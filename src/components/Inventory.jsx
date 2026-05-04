@@ -237,9 +237,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         </select>
         <div style={{ flex:1 }} />
         {isAdmin && selected.length>0 && (
-          <Btn size="sm" variant="success" onClick={()=>setBulkCheckoutOpen(true)} disabled={selectedAvailable.length===0}>
-            Check out {selectedAvailable.length} selected
-          </Btn>
+          <>
+            <Btn size="sm" variant="success" onClick={()=>setBulkCheckoutOpen(true)} disabled={selectedAvailable.length===0}>
+              Check out {selectedAvailable.length} selected
+            </Btn>
+            <Btn size="sm" variant="danger" onClick={bulkDelete}>
+              🗑 Delete {selected.length} selected
+            </Btn>
+          </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add asset</Btn>}
