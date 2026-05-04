@@ -102,13 +102,30 @@ export default function ImportCSV({ open, onClose, onDone }) {
     if (errs.length) { setErrors(errs); return }
     setImporting(true)
     const payload = rows.map(r => ({
-      asset_tag: r.asset_tag, name: r.name,
-      category: r.category || 'IT Equipment',
+      asset_tag: r.asset_tag,
+      name: r.asset_model || r.asset_tag,
+      category: (r.asset_category || 'LAPTOP').toUpperCase(),
       status: r.status || 'Available',
-      model: r.model || null, serial_number: r.serial_number || null,
-      location: r.location || null, purchase_date: r.purchase_date?.trim() || null,
+      model: r.asset_model || null,
+      serial_number: r.asset_serial || null,
+      location: r.location || null,
+      assigned_to: r.assigned_to || null,
+      assigned_to_team: r.assigned_to_team || null,
+      purchase_date: normalizeDate(r.purchase_date),
+      provision_date: normalizeDate(r.provision_date),
       purchase_cost: r.purchase_cost ? parseFloat(r.purchase_cost) : null,
-      warranty_expiry: r.warranty_expiry?.trim() || null, notes: r.notes || null,
+      warranty_expiry: normalizeDate(r.warranty_expiry),
+      notes: r.notes || null,
+      specs: {
+        CPU: r.cpu || '',
+        GPU: r.gpu || '',
+        RAM: r.ram || '',
+        SSD: r.ssd || '',
+        HDD: r.hdd || '',
+        'MAC ADDRESS (WIFI)': r.mac_wifi || '',
+        'MAC ADDRESS (LAN)': r.mac_lan || '',
+        'OS VERSION': r.os_version || '',
+      }
     }))
     const { data, error } = await supabase.from('assets').insert(payload).select()
     if (!error && data) {

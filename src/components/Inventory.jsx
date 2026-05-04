@@ -65,6 +65,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allSites, setAllSites] = useState([])
   const [filterTag, setFilterTag] = useState('')
   const [allTags, setAllTags] = useState([])
+
+  // Reset page on filter changes
+  useEffect(() => { setPage(1) }, [filterStatus, filterCat, filterTag, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 25
