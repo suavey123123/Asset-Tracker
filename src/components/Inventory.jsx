@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {}, assigned_to: '', site_id: '',
+  specs: {}, assigned_to: '', assigned_to_team: '', site_id: '',
 }
 
 function LazyAssetPhoto({ assetId, onClick }) {
@@ -223,7 +223,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   function openEditModal(asset) {
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
-    setForm(f => ({...f, site_id: ''}))
+    setForm(f => ({...f, site_id: '', assigned_to_team: asset.assigned_to_team||''}))
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -516,7 +516,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 12px', fontSize:12, marginBottom:10 }}>
                    <div><span style={{ color:'var(--text3)' }}>Category </span>{a.category}</div>
                    <div><span style={{ color:'var(--text3)' }}>Site </span>{a.location||'—'}</div>
-                   <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>Assigned to </span>{a.assigned_to||'—'}</div>
+                   <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>Assigned to </span>{a.assigned_to || (a.assigned_to_team ? <span style={{ color:'var(--blue)' }}>{a.assigned_to_team} (team)</span> : '—')}</div>
                  </div>
                  {a.quick_note && <div style={{ fontSize:12, color:'var(--text2)', background:'rgba(212,255,78,0.05)', borderRadius:'var(--radius)', padding:'6px 10px', marginBottom:8 }}>📝 {a.quick_note}</div>}
                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -591,7 +591,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                         </div>
                       )}
                     </td>}
-                    {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12, color:a.assigned_to?'var(--text)':'var(--text3)' }}>{a.assigned_to||'—'}</td>}
+                    {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12 }}>
+                      {a.assigned_to
+                        ? <span style={{ color:'var(--text)' }}>{a.assigned_to}</span>
+                        : a.assigned_to_team
+                          ? <span style={{ color:'var(--blue)', fontSize:11, padding:'2px 8px', borderRadius:100, background:'var(--blue-bg)', fontFamily:'var(--mono)' }}>{a.assigned_to_team}</span>
+                          : <span style={{ color:'var(--text3)' }}>—</span>}
+                    </td>}
                     {has('site') && <td style={{ padding:'10px 14px', fontSize:12, color:a.location?'var(--text)':'var(--text3)' }}>{a.location||'—'}</td>}
                     {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
                     {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
@@ -618,7 +624,10 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           <FormField label="Assign to employee">
-            <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+            <EmployeeSelect value={form.assigned_to||''} onChange={v=>setForm(f=>({...f,assigned_to:v,assigned_to_team:'',status:v?'Checked Out':'Available'}))} placeholder="Search employee or leave blank" />
+          </FormField>
+          <FormField label="Assign to team / department">
+            <input value={form.assigned_to_team||''} onChange={e=>setForm(f=>({...f,assigned_to_team:e.target.value,assigned_to:'',status:e.target.value?'Checked Out':'Available'}))} placeholder="e.g. Finance Team, Conference Room B, IT Shared" />
           </FormField>
           <FormField label="Site">
             <select value={form.site_id||''} onChange={e=>setForm(f=>({...f,site_id:e.target.value}))}>

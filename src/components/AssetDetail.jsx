@@ -130,7 +130,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
           <div style={card}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px 24px' }}>
               {[
-                ['Assigned to', asset.assigned_to],
+                ['Assigned to', asset.assigned_to || (asset.assigned_to_team ? asset.assigned_to_team + ' (team)' : null)],
                 ['Location / Site', asset.location],
                 ['Model', asset.model],
                 ['Serial number', asset.serial_number],

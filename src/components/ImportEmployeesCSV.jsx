@@ -117,6 +117,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           serial_number: r.asset_serial || null,
           status: 'Checked Out',
           assigned_to: r.name,
+          assigned_to_team: null,
           location: sites?.find(s => s.id === siteId)?.name || null,
           specs: {
             CPU: r.cpu || '',
