@@ -98,8 +98,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       location: form.location || null,
       notes: form.notes || null,
       specs: form.specs || {},
-      location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || form.location || null) : form.location || null,
       site_id: form.site_id || null,
+      location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || null) : form.location || null,
     }
     let err
     if (editAsset) {
