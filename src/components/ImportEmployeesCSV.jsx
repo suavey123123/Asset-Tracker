@@ -260,9 +260,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               )}
             </div>
 
-            <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-              name, email, title, department, phone, hire_date, asset_tag, asset_category, asset_model, asset_serial, purchase_date, provision_date, purchase_cost, cpu, gpu, ram, ssd, hdd, mac_wifi, mac_lan, os_version
-            </div>
+
 
             {/* File upload */}
             <label style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg3)', border:'2px dashed var(--border2)', borderRadius:'var(--radius)', cursor:'pointer', fontSize:13, color:'var(--text2)' }}>
@@ -287,7 +285,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                   <span style={{ fontSize:11, color:'var(--text3)' }}>or paste manually</span>
                   <div style={{ flex:1, height:1, background:'var(--border)' }} />
                 </div>
-                <textarea value={csv} onChange={e => { setFileName(''); handleCSV(e.target.value) }}
+                <textarea value={csv} onChange={e => { setFileName(''); if (e.target.value.trim()) handleCSV(e.target.value); else { setCsv(''); setPreview([]); setErrors([]) } }}
                   placeholder="Paste CSV data here…"
                   style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
               </>
