@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, Badge } from './UI'
+import ImportEmployeesCSV from './ImportEmployeesCSV'
+import ImportEmployees from './ImportEmployees'
 
 const EMPTY_FORM = {
   name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: '',
@@ -24,6 +26,10 @@ export default function Employees({ onViewEmployee }) {
   const [empHistory, setEmpHistory] = useState([])
   const [selected, setSelected] = useState([])
   const [filterSite, setFilterSite] = useState('')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [offboardEmp, setOffboardEmp] = useState(null)
+  const [offboarding, setOffboarding] = useState(false)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -69,6 +75,31 @@ export default function Employees({ onViewEmployee }) {
     if (!confirm(`Delete ${emp.name}? This won't remove their assigned assets.`)) return
     await supabase.from('employees').delete().eq('id', emp.id)
     fetchAll()
+  }
+
+  async function offboard(emp) {
+    setOffboarding(true)
+    // Check in all assets assigned to this employee
+    const { data: empAssets } = await supabase.from('assets').select('id, name, asset_tag').eq('assigned_to', emp.name).eq('status', 'Checked Out')
+    if (empAssets?.length) {
+      for (const a of empAssets) {
+        await supabase.from('assets').update({ status: 'Available', assigned_to: null, expected_return: null }).eq('id', a.id)
+        await supabase.from('activity_log').insert({ asset_id: a.id, asset_tag: a.asset_tag, asset_name: a.name, type: 'checkin', message: `Checked in during offboarding of ${emp.name}`, performed_by: 'system' })
+        // Release licenses
+        const { data: assignments } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, seats_used)').eq('asset_id', a.id)
+        if (assignments?.length) {
+          for (const asgn of assignments) {
+            if (asgn.license) await supabase.rpc('decrement_license_seats', { license_id: asgn.license.id })
+          }
+          await supabase.from('asset_license_assignments').delete().eq('asset_id', a.id)
+        }
+      }
+    }
+    setOffboarding(false)
+    setOffboardEmp(null)
+    setViewEmp(null)
+    fetchAll()
+    alert(`✓ Offboarding complete. ${empAssets?.length || 0} asset${empAssets?.length !== 1 ? 's' : ''} checked in and all licenses freed.`)
   }
 
   async function bulkDelete() {
@@ -128,6 +159,8 @@ export default function Employees({ onViewEmployee }) {
         {isAdmin && selected.length > 0 && (
           <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
         )}
+        {isAdmin && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
+        {isAdmin && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
       </div>
 
@@ -246,6 +279,7 @@ export default function Employees({ onViewEmployee }) {
         })()}
       </Modal>
 
+      <ImportEmployeesCSV open={importOpen} onClose={()=>setImportOpen(false)} onDone={fetchAll} sites={sites} />
       {/* Add/Edit modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editEmp ? 'Edit employee' : 'Add employee'}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -280,6 +314,25 @@ export default function Employees({ onViewEmployee }) {
           </div>
         </div>
       </Modal>
+      {/* Offboard confirmation */}
+      <Modal open={!!offboardEmp} onClose={() => setOffboardEmp(null)} title="Offboard employee" width={420}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--radius)', padding: '12px 14px', fontSize: 13, color: 'var(--red)' }}>
+            ⚠ This will check in ALL assets assigned to <strong>{offboardEmp?.name}</strong> and free their software licenses.
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+            Assets checked out to this employee will be marked Available. License seat counts will update automatically.
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+            <Btn onClick={() => setOffboardEmp(null)}>Cancel</Btn>
+            <Btn variant="danger" onClick={() => offboard(offboardEmp)} disabled={offboarding}>
+              {offboarding ? 'Offboarding…' : '🚪 Confirm offboard'}
+            </Btn>
+          </div>
+        </div>
+      </Modal>
+
+      <ImportEmployees open={importOpen} onClose={() => setImportOpen(false)} onDone={fetchAll} sites={sites} />
     </div>
   )
 }

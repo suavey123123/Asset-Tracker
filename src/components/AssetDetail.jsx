@@ -6,8 +6,9 @@ import AssetPhotos from './AssetPhotos'
 import AssetComments from './AssetComments'
 import CustomFields from './CustomFields'
 import AssetLicenses from './AssetLicenses'
+import AssetTags from './AssetTags'
 
-const TABS = ['Overview','Licenses','Photos','Custom Fields','Comments','Maintenance','Activity']
+const TABS = ['Overview','Labels','Licenses','Photos','Custom Fields','Comments','Maintenance','Activity']
 
 export default function AssetDetail({ assetId, onBack, onEdit }) {
   const { isAdmin } = useAuth()
@@ -160,6 +161,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         </div>
       )}
 
+      {activeTab==='Labels' && <div style={card} className="fade-in"><AssetTags assetId={assetId} /></div>}
       {activeTab==='Licenses' && <div style={card} className="fade-in"><AssetLicenses assetId={assetId} /></div>}
       {activeTab==='Photos' && <div style={card} className="fade-in"><AssetPhotos assetId={assetId} assetTag={asset.asset_tag} /></div>}
       {activeTab==='Custom Fields' && <div style={card} className="fade-in"><CustomFields assetId={assetId} category={asset.category} /></div>}

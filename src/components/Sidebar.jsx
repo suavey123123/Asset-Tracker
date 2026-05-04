@@ -14,6 +14,7 @@ const NAV = [
   { id:'history',     label:'History',      icon:'◷' },
   { id:'sites',       label:'Sites',        icon:'⊕' },
   { id:'employees',   label:'Employees',    icon:'◑' },
+  { id:'offboarding',  label:'Offboarding',  icon:'⊗' },
   { id:'users',       label:'Users',        icon:'◉', adminOnly:true },
 ]
 

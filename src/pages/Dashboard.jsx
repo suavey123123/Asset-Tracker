@@ -16,6 +16,9 @@ import Transfer from '../components/Transfer'
 import Scanner from '../components/Scanner'
 import Lifecycle from '../components/Lifecycle'
 import Employees from '../components/Employees'
+import Offboarding from '../components/Offboarding'
+import NotificationCenter from '../components/NotificationCenter'
+import NotificationCenter from '../components/NotificationCenter'
 import Sites from '../components/Sites'
 import Licenses from '../components/Licenses'
 import Compliance from '../components/Compliance'
@@ -61,6 +64,7 @@ export default function Dashboard() {
     scanner: <Scanner onViewAsset={handleViewAsset} />,
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
     employees: <Employees />,
+    offboarding: <Offboarding />,
     sites: <Sites />,
     licenses: <Licenses />,
     compliance: <Compliance />,
@@ -80,10 +84,11 @@ export default function Dashboard() {
 
       <main style={{ flex:1, overflow:'auto', background:'var(--bg)', minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'0.75rem 1rem', borderBottom:'1px solid var(--border)', background:'var(--bg)', position:'sticky', top:0, zIndex:10 }}>
-          {/* Mobile menu button */}
           <button onClick={()=>setSidebarOpen(s=>!s)} className="mobile-menu-btn" style={{ display:'none', background:'none', border:'none', color:'var(--text)', fontSize:18, cursor:'pointer', padding:'4px', flexShrink:0 }}>☰</button>
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
+          <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
+          <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
         </div>
         <div style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (
