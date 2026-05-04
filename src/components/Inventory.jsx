@@ -106,26 +106,25 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     } else {
       const { data, error: e } = await supabase.from('assets').insert(payload).select().single()
       err = e
-      if (!e && data) await logActivity(data.id, data.asset_tag, data.name, 'created', `Asset added by ${profile?.email}`)
+      if (!e && data) {
+        await logActivity(data.id, data.asset_tag, data.name, 'created', `Asset added by ${profile?.email}`)
+        // Assign licenses using the returned asset ID directly
+        if (formLicenses.length > 0) {
+          for (const licId of formLicenses) {
+            try {
+              await supabase.from('asset_license_assignments').insert({ asset_id: data.id, license_id: licId, assigned_to: form.assigned_to || null })
+              const lic = allLicenses.find(l => l.id === licId)
+              if (lic) {
+                await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
+              }
+            } catch(e) {}
+          }
+        }
+      }
     }
     setSaving(false)
     if (err) { setError(err.message); return }
-    // Close modal immediately on success
     setModalOpen(false); setFormLicenses([]); fetchAssets()
-    // Assign licenses in background
-    if (!editAsset && formLicenses.length > 0) {
-      const { data: newAsset } = await supabase.from('assets').select('id').eq('asset_tag', form.asset_tag).single()
-      if (newAsset) {
-        for (const licId of formLicenses) {
-          try {
-            await supabase.from('asset_license_assignments').insert({ asset_id: newAsset.id, license_id: licId })
-            const lic = allLicenses.find(l => l.id === licId)
-            if (lic) await supabase.from('licenses').update({ seats_used: (lic.seats_used||0)+1 }).eq('id', licId)
-          } catch(e) {}
-        }
-        fetchAssets()
-      }
-    }
   }
 
   async function deleteAsset(asset) {
