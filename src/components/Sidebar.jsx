@@ -9,6 +9,8 @@ const NAV = [
   { id:'scanner',     label:'Scanner',      icon:'◈' },
   { id:'lifecycle',   label:'Lifecycle',    icon:'◎' },
   { id:'reports',     label:'Reports',      icon:'⊟' },
+  { id:'licenses',    label:'Licenses',     icon:'⊡' },
+  { id:'compliance',  label:'Compliance',   icon:'✓' },
   { id:'history',     label:'History',      icon:'◷' },
   { id:'sites',       label:'Sites',        icon:'⊕' },
   { id:'employees',   label:'Employees',    icon:'◑' },

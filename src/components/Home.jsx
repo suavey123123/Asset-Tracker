@@ -2,183 +2,296 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
 
+const ALL_WIDGETS = [
+  { id:'stats',       label:'Summary stats',        default:true },
+  { id:'alerts',      label:'Alerts & warnings',    default:true },
+  { id:'recent',      label:'Recent assets',         default:true },
+  { id:'activity',    label:'Recent activity',       default:true },
+  { id:'overdue',     label:'Overdue check-outs',    default:true },
+  { id:'warranties',  label:'Expiring warranties',   default:true },
+  { id:'licenses',    label:'License status',        default:true },
+  { id:'byCategory',  label:'Assets by category',    default:false },
+  { id:'bySite',      label:'Assets by site',        default:false },
+  { id:'byStatus',    label:'Assets by status',      default:false },
+]
+
+const STORAGE_KEY = 'dashboard_widgets_v1'
+
 export default function Home({ onNav, onViewAsset }) {
   const [assets, setAssets] = useState([])
   const [log, setLog] = useState([])
+  const [licenses, setLicenses] = useState([])
+  const [sites, setSites] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [widgets, setWidgets] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      return saved ? JSON.parse(saved) : ALL_WIDGETS.filter(w=>w.default).map(w=>w.id)
+    } catch { return ALL_WIDGETS.filter(w=>w.default).map(w=>w.id) }
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets)) } catch {}
+  }, [widgets])
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }] = await Promise.all([
+    const [{ data: a }, { data: l }, { data: lg }, { data: s }] = await Promise.all([
       supabase.from('assets').select('*').order('created_at', { ascending: false }),
+      supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
+      supabase.from('sites').select('id, name'),
     ])
     setAssets(a || [])
-    setLog(l || [])
+    setLicenses(l || [])
+    setLog(lg || [])
+    setSites(s || [])
     setLoading(false)
   }
 
-  if (loading) return <div style={{ padding: '3rem' }}><Spinner /></div>
+  function toggleWidget(id) {
+    setWidgets(w => w.includes(id) ? w.filter(x=>x!==id) : [...w, id])
+  }
+
+  if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
 
   const today = new Date()
-  const in30 = new Date(); in30.setDate(today.getDate() + 30)
+  const in30 = new Date(); in30.setDate(today.getDate()+30)
 
   const stats = {
     total: assets.length,
-    available: assets.filter(a => a.status === 'Available').length,
-    checkedOut: assets.filter(a => a.status === 'Checked Out').length,
-    maintenance: assets.filter(a => a.status === 'Maintenance').length,
+    available: assets.filter(a=>a.status==='Available').length,
+    checkedOut: assets.filter(a=>a.status==='Checked Out').length,
+    maintenance: assets.filter(a=>a.status==='Maintenance').length,
   }
 
-  const overdueCheckouts = assets.filter(a =>
-    a.status === 'Checked Out' && a.expected_return && new Date(a.expected_return) < today
-  )
+  const overdueCheckouts = assets.filter(a => a.status==='Checked Out' && a.expected_return && new Date(a.expected_return)<today)
+  const expiringWarranties = assets.filter(a => a.warranty_expiry && new Date(a.warranty_expiry)<=in30 && new Date(a.warranty_expiry)>=today)
+  const expiredWarranties = assets.filter(a => a.warranty_expiry && new Date(a.warranty_expiry)<today && a.status!=='Retired')
+  const expiringLicenses = licenses.filter(l => l.expiry_date && new Date(l.expiry_date)<=in30)
+  const totalAlerts = overdueCheckouts.length + expiringWarranties.length + expiringLicenses.length
 
-  const expiringWarranties = assets.filter(a =>
-    a.warranty_expiry && new Date(a.warranty_expiry) <= in30 && new Date(a.warranty_expiry) >= today
-  )
+  const byCategory = {}
+  assets.forEach(a => { byCategory[a.category] = (byCategory[a.category]||0)+1 })
+  const topCategories = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]).slice(0,8)
 
-  const expiredWarranties = assets.filter(a =>
-    a.warranty_expiry && new Date(a.warranty_expiry) < today && a.status !== 'Retired'
-  )
+  const byStatus = {}
+  assets.forEach(a => { byStatus[a.status] = (byStatus[a.status]||0)+1 })
 
-  const recentAssets = assets.slice(0, 5)
+  const bySite = {}
+  sites.forEach(s => { bySite[s.name] = assets.filter(a=>a.location?.toLowerCase().includes(s.name.toLowerCase())).length })
 
   const TYPE_STYLES = {
-    checkout:    { color: 'var(--blue)',   label: 'OUT' },
-    checkin:     { color: 'var(--green)',  label: 'IN' },
-    maintenance: { color: 'var(--amber)',  label: 'MNT' },
-    created:     { color: 'var(--accent)', label: 'NEW' },
-    updated:     { color: 'var(--text2)',  label: 'UPD' },
-    note:        { color: 'var(--text3)',  label: 'NOTE' },
+    checkout:{ color:'var(--blue)', label:'OUT' }, checkin:{ color:'var(--green)', label:'IN' },
+    maintenance:{ color:'var(--amber)', label:'MNT' }, created:{ color:'var(--accent)', label:'NEW' },
+    updated:{ color:'var(--text2)', label:'UPD' }, note:{ color:'var(--text3)', label:'NOTE' },
   }
+
+  const card = { background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'1rem 1.25rem' }
+  const cardTitle = { fontSize:13, fontWeight:500, marginBottom:'0.75rem', color:'var(--text)' }
+  const row = { display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)', cursor:'pointer' }
+  const linkBtn = { fontSize:12, color:'var(--text2)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }
+
+  const has = (id) => widgets.includes(id)
 
   return (
     <div className="fade-in">
-      {/* Alert banners */}
-      {overdueCheckouts.length > 0 && (
-        <div style={alertStyle('var(--red)', 'var(--red-bg)')} onClick={() => onNav('checkout')} >
-          <span style={{ fontWeight: 500 }}>⚠ {overdueCheckouts.length} overdue check-out{overdueCheckouts.length > 1 ? 's' : ''}</span>
-          <span style={{ fontSize: 12, marginLeft: 8 }}>
-            {overdueCheckouts.map(a => a.name).join(', ')}
-          </span>
-          <span style={{ marginLeft: 'auto', fontSize: 12 }}>View →</span>
-        </div>
-      )}
-      {expiringWarranties.length > 0 && (
-        <div style={alertStyle('var(--amber)', 'var(--amber-bg)')} onClick={() => onNav('inventory')}>
-          <span style={{ fontWeight: 500 }}>⏱ {expiringWarranties.length} warranty expiring within 30 days</span>
-          <span style={{ marginLeft: 'auto', fontSize: 12 }}>View →</span>
-        </div>
-      )}
-      {expiredWarranties.length > 0 && (
-        <div style={alertStyle('var(--text2)', 'var(--bg3)')} onClick={() => onNav('inventory')}>
-          <span style={{ fontWeight: 500 }}>◌ {expiredWarranties.length} expired warranty</span>
-          <span style={{ marginLeft: 'auto', fontSize: 12 }}>View →</span>
-        </div>
-      )}
-
-      {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: '1.5rem' }}>
-        {[
-          { label: 'Total assets', value: stats.total, color: 'var(--text)', nav: 'inventory' },
-          { label: 'Available', value: stats.available, color: 'var(--green)', nav: 'inventory' },
-          { label: 'Checked out', value: stats.checkedOut, color: 'var(--blue)', nav: 'checkout' },
-          { label: 'In maintenance', value: stats.maintenance, color: 'var(--amber)', nav: 'maintenance' },
-        ].map(s => (
-          <div key={s.label} onClick={() => onNav(s.nav)} style={{
-            background: 'var(--bg2)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)', padding: '14px 16px',
-            cursor: 'pointer', transition: 'border-color 0.15s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-          >
-            <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 500, color: s.color, fontFamily: 'var(--mono)' }}>{s.value}</div>
-          </div>
-        ))}
+      {/* Customize button */}
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'1rem' }}>
+        <button onClick={()=>setEditing(e=>!e)} style={{ fontSize:12, color:'var(--text2)', background:'none', border:'1px solid var(--border2)', borderRadius:'var(--radius)', padding:'5px 12px', cursor:'pointer', fontFamily:'var(--font)' }}>
+          {editing ? '✓ Done' : '⊞ Customize dashboard'}
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-        {/* Recently added assets */}
-        <div style={cardStyle}>
-          <div style={cardHeader}>
-            <span style={cardTitle}>Recent assets</span>
-            <button onClick={() => onNav('inventory')} style={linkBtn}>View all →</button>
+      {/* Widget picker */}
+      {editing && (
+        <div style={{ ...card, marginBottom:'1.25rem', background:'var(--bg3)' }}>
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:'0.75rem' }}>Choose widgets to show</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:8 }}>
+            {ALL_WIDGETS.map(w => (
+              <label key={w.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer', padding:'6px 10px', borderRadius:'var(--radius)', background: widgets.includes(w.id)?'var(--accent-bg)':'var(--bg2)', border:`1px solid ${widgets.includes(w.id)?'var(--accent-border)':'var(--border)'}` }}>
+                <input type="checkbox" checked={widgets.includes(w.id)} onChange={()=>toggleWidget(w.id)} style={{ width:'auto', accentColor:'var(--accent)' }} />
+                <span style={{ color: widgets.includes(w.id)?'var(--accent)':'var(--text2)' }}>{w.label}</span>
+              </label>
+            ))}
           </div>
-          {recentAssets.length === 0 ? (
-            <div style={{ color: 'var(--text3)', fontSize: 13, padding: '1rem 0' }}>No assets yet.</div>
-          ) : recentAssets.map(a => (
-            <div key={a.id} onClick={() => onViewAsset(a)} style={rowStyle}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>{a.asset_tag}</div>
-              </div>
-              <Badge status={a.status} />
+        </div>
+      )}
+
+      {/* Alerts */}
+      {has('alerts') && (
+        <>
+          {overdueCheckouts.length>0 && <div onClick={()=>onNav('inventory')} style={{ background:'var(--red-bg)', border:'1px solid var(--red)', borderRadius:'var(--radius)', padding:'8px 14px', fontSize:13, color:'var(--red)', marginBottom:8, display:'flex', alignItems:'center', gap:6, cursor:'pointer' }}>
+            <span style={{ fontWeight:500 }}>⚠ {overdueCheckouts.length} overdue check-out{overdueCheckouts.length>1?'s':''}</span>
+            <span style={{ fontSize:12 }}>{overdueCheckouts.map(a=>a.name).join(', ')}</span>
+            <span style={{ marginLeft:'auto', fontSize:12 }}>View →</span>
+          </div>}
+          {expiringWarranties.length>0 && <div onClick={()=>onNav('reports')} style={{ background:'var(--amber-bg)', border:'1px solid var(--amber)', borderRadius:'var(--radius)', padding:'8px 14px', fontSize:13, color:'var(--amber)', marginBottom:8, display:'flex', alignItems:'center', gap:6, cursor:'pointer' }}>
+            <span style={{ fontWeight:500 }}>⏱ {expiringWarranties.length} warranty expiring within 30 days</span>
+            <span style={{ marginLeft:'auto', fontSize:12 }}>View →</span>
+          </div>}
+          {expiringLicenses.length>0 && <div onClick={()=>onNav('licenses')} style={{ background:'var(--purple-bg)', border:'1px solid var(--purple)', borderRadius:'var(--radius)', padding:'8px 14px', fontSize:13, color:'var(--purple)', marginBottom:8, display:'flex', alignItems:'center', gap:6, cursor:'pointer' }}>
+            <span style={{ fontWeight:500 }}>📋 {expiringLicenses.length} software license{expiringLicenses.length>1?'s':''} expiring soon</span>
+            <span style={{ marginLeft:'auto', fontSize:12 }}>View →</span>
+          </div>}
+        </>
+      )}
+
+      {/* Stats */}
+      {has('stats') && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:'1.25rem' }}>
+          {[['Total assets',stats.total,'var(--text)','inventory'],['Available',stats.available,'var(--green)','inventory'],['Checked out',stats.checkedOut,'var(--blue)','inventory'],['Maintenance',stats.maintenance,'var(--amber)','maintenance']].map(([l,v,c,nav]) => (
+            <div key={l} onClick={()=>onNav(nav)} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'14px 16px', cursor:'pointer' }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor='var(--border2)'}
+              onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}
+            >
+              <div style={{ fontSize:11, color:'var(--text2)', marginBottom:6 }}>{l}</div>
+              <div style={{ fontSize:28, fontWeight:500, color:c, fontFamily:'var(--mono)' }}>{v}</div>
             </div>
           ))}
         </div>
+      )}
 
-        {/* Activity feed */}
-        <div style={cardStyle}>
-          <div style={cardHeader}>
-            <span style={cardTitle}>Recent activity</span>
-            <button onClick={() => onNav('history')} style={linkBtn}>View all →</button>
-          </div>
-          {log.length === 0 ? (
-            <div style={{ color: 'var(--text3)', fontSize: 13, padding: '1rem 0' }}>No activity yet.</div>
-          ) : log.map(e => {
-            const ts = TYPE_STYLES[e.type] || TYPE_STYLES.note
-            return (
-              <div key={e.id} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)', alignItems: 'flex-start' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 500, color: ts.color, background: ts.color + '18', padding: '2px 5px', borderRadius: 3, flexShrink: 0, marginTop: 1 }}>{ts.label}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.message}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>{e.asset_name} · {new Date(e.created_at).toLocaleDateString()}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Overdue checkouts */}
-        {overdueCheckouts.length > 0 && (
-          <div style={{ ...cardStyle, borderColor: 'rgba(255,90,90,0.3)' }}>
-            <div style={cardHeader}>
-              <span style={{ ...cardTitle, color: 'var(--red)' }}>⚠ Overdue check-outs</span>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
+        {/* Recent assets */}
+        {has('recent') && (
+          <div style={card}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
+              <span style={cardTitle}>Recent assets</span>
+              <button onClick={()=>onNav('inventory')} style={linkBtn}>View all →</button>
             </div>
+            {assets.slice(0,5).length===0 ? <div style={{ color:'var(--text3)', fontSize:13 }}>No assets yet.</div> :
+             assets.slice(0,5).map(a => (
+              <div key={a.id} onClick={()=>onViewAsset(a)} style={row}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
+                  <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.asset_tag}</div>
+                </div>
+                <Badge status={a.status} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Activity */}
+        {has('activity') && (
+          <div style={card}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
+              <span style={cardTitle}>Recent activity</span>
+              <button onClick={()=>onNav('history')} style={linkBtn}>View all →</button>
+            </div>
+            {log.length===0 ? <div style={{ color:'var(--text3)', fontSize:13 }}>No activity yet.</div> :
+             log.map((e,i) => {
+               const ts = TYPE_STYLES[e.type]||TYPE_STYLES.note
+               return (
+                 <div key={e.id} style={{ display:'flex', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)', alignItems:'flex-start' }}>
+                   <span style={{ fontFamily:'var(--mono)', fontSize:10, fontWeight:500, color:ts.color, background:ts.color+'18', padding:'2px 5px', borderRadius:3, flexShrink:0, marginTop:1 }}>{ts.label}</span>
+                   <div style={{ flex:1, minWidth:0 }}>
+                     <div style={{ fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.message}</div>
+                     <div style={{ fontSize:11, color:'var(--text3)' }}>{e.asset_name} · {new Date(e.created_at).toLocaleDateString()}</div>
+                   </div>
+                 </div>
+               )
+             })}
+          </div>
+        )}
+
+        {/* Overdue */}
+        {has('overdue') && overdueCheckouts.length>0 && (
+          <div style={{ ...card, borderColor:'rgba(255,90,90,0.3)' }}>
+            <div style={{ ...cardTitle, color:'var(--red)' }}>⚠ Overdue check-outs</div>
             {overdueCheckouts.map(a => (
-              <div key={a.id} onClick={() => onViewAsset(a)} style={rowStyle}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{a.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text2)' }}>Assigned to {a.assigned_to}</div>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--red)' }}>
-                  Due {new Date(a.expected_return).toLocaleDateString()}
-                </div>
+              <div key={a.id} onClick={()=>onViewAsset(a)} style={row}>
+                <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:500 }}>{a.name}</div><div style={{ fontSize:11, color:'var(--text2)' }}>Assigned to {a.assigned_to}</div></div>
+                <div style={{ fontSize:12, color:'var(--red)' }}>Due {new Date(a.expected_return).toLocaleDateString()}</div>
               </div>
             ))}
           </div>
         )}
 
         {/* Expiring warranties */}
-        {expiringWarranties.length > 0 && (
-          <div style={{ ...cardStyle, borderColor: 'rgba(255,184,74,0.3)' }}>
-            <div style={cardHeader}>
-              <span style={{ ...cardTitle, color: 'var(--amber)' }}>⏱ Expiring warranties</span>
-            </div>
+        {has('warranties') && expiringWarranties.length>0 && (
+          <div style={{ ...card, borderColor:'rgba(255,184,74,0.3)' }}>
+            <div style={{ ...cardTitle, color:'var(--amber)' }}>⏱ Expiring warranties</div>
             {expiringWarranties.map(a => (
-              <div key={a.id} onClick={() => onViewAsset(a)} style={rowStyle}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{a.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>{a.asset_tag}</div>
+              <div key={a.id} onClick={()=>onViewAsset(a)} style={row}>
+                <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:500 }}>{a.name}</div><div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.asset_tag}</div></div>
+                <div style={{ fontSize:12, color:'var(--amber)' }}>{new Date(a.warranty_expiry).toLocaleDateString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* License status */}
+        {has('licenses') && licenses.length>0 && (
+          <div style={card}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
+              <span style={cardTitle}>Software licenses</span>
+              <button onClick={()=>onNav('licenses')} style={linkBtn}>View all →</button>
+            </div>
+            {licenses.slice(0,5).map(l => {
+              const exp = l.expiry_date && new Date(l.expiry_date)<today
+              const expSoon = l.expiry_date && !exp && new Date(l.expiry_date)<in30
+              return (
+                <div key={l.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                  <div style={{ flex:1 }}><div style={{ fontSize:13, fontWeight:500 }}>{l.name}</div><div style={{ fontSize:11, color:'var(--text2)' }}>{l.vendor} · {l.license_type}</div></div>
+                  <span style={{ fontSize:11, fontFamily:'var(--mono)', fontWeight:500, color: exp?'var(--red)':expSoon?'var(--amber)':'var(--green)' }}>
+                    {exp?'EXPIRED':expSoon?'EXPIRING':'ACTIVE'}
+                  </span>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--amber)' }}>
-                  {new Date(a.warranty_expiry).toLocaleDateString()}
+              )
+            })}
+          </div>
+        )}
+
+        {/* By category */}
+        {has('byCategory') && topCategories.length>0 && (
+          <div style={card}>
+            <div style={cardTitle}>Assets by category</div>
+            {topCategories.map(([cat, count]) => {
+              const pct = Math.round(count/assets.length*100)
+              return (
+                <div key={cat} style={{ marginBottom:8 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:3 }}>
+                    <span>{cat}</span>
+                    <span style={{ color:'var(--text2)', fontFamily:'var(--mono)' }}>{count}</span>
+                  </div>
+                  <div style={{ height:4, background:'var(--bg4)', borderRadius:2, overflow:'hidden' }}>
+                    <div style={{ width:`${pct}%`, height:'100%', background:'var(--accent)', borderRadius:2 }} />
+                  </div>
                 </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* By site */}
+        {has('bySite') && Object.keys(bySite).length>0 && (
+          <div style={card}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'0.75rem' }}>
+              <span style={cardTitle}>Assets by site</span>
+              <button onClick={()=>onNav('sites')} style={linkBtn}>View all →</button>
+            </div>
+            {Object.entries(bySite).map(([site, count]) => (
+              <div key={site} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
+                <span>{site}</span>
+                <span style={{ fontFamily:'var(--mono)', fontWeight:500, color:'var(--accent)' }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* By status */}
+        {has('byStatus') && (
+          <div style={card}>
+            <div style={cardTitle}>Assets by status</div>
+            {Object.entries(byStatus).map(([status, count]) => (
+              <div key={status} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                <Badge status={status} />
+                <span style={{ fontFamily:'var(--mono)', fontSize:13, fontWeight:500 }}>{count}</span>
               </div>
             ))}
           </div>
@@ -186,35 +299,4 @@ export default function Home({ onNav, onViewAsset }) {
       </div>
     </div>
   )
-}
-
-const alertStyle = (color, bg) => ({
-  background: bg, border: `1px solid ${color}`,
-  borderRadius: 'var(--radius)', padding: '8px 14px',
-  fontSize: 13, color, marginBottom: 10,
-  display: 'flex', alignItems: 'center', gap: 6,
-  cursor: 'pointer',
-})
-
-const cardStyle = {
-  background: 'var(--bg2)', border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem',
-}
-
-const cardHeader = {
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  marginBottom: '0.75rem',
-}
-
-const cardTitle = { fontSize: 13, fontWeight: 500, color: 'var(--text)' }
-
-const linkBtn = {
-  fontSize: 12, color: 'var(--text2)', background: 'none',
-  border: 'none', cursor: 'pointer', fontFamily: 'var(--font)',
-}
-
-const rowStyle = {
-  display: 'flex', alignItems: 'center', gap: 10,
-  padding: '7px 0', borderBottom: '1px solid var(--border)',
-  cursor: 'pointer',
 }
