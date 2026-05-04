@@ -8,19 +8,22 @@ export default function Reports() {
   const [log, setLog] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeReport, setActiveReport] = useState('summary')
+  const [licenses, setLicenses] = useState([])
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: m }, { data: l }] = await Promise.all([
+    const [{ data: a }, { data: m }, { data: l }, { data: lic }] = await Promise.all([
       supabase.from('assets').select('*').order('name'),
       supabase.from('maintenance_records').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }),
+      supabase.from('licenses').select('*').order('name'),
     ])
     setAssets(a || [])
     setMaintenance(m || [])
     setLog(l || [])
+    setLicenses(lic || [])
     setLoading(false)
   }
 
@@ -83,8 +86,35 @@ export default function Reports() {
   return (
     <div className="fade-in">
       <div style={{ display:'flex', gap:8, marginBottom:'1.25rem', flexWrap:'wrap' }}>
-        <Btn onClick={exportCSV} variant="primary">⬇ Export CSV</Btn>
+        <Btn onClick={exportCSV} variant="primary">⬇ Export assets CSV</Btn>
+        <Btn onClick={() => {
+          const headers = ['name','vendor','license_type','seats_total','seats_used','purchase_cost','expiry_date','support_expiry']
+          const rows = licenses.map(l => headers.map(h => { const v = l[h]??''; return String(v).includes(',')?`"${v}"`:v }).join(','))
+          const csv = [headers.join(','), ...rows].join('\n')
+          const blob = new Blob([csv], { type:'text/csv' })
+          const url = URL.createObjectURL(blob)
+          const el = document.createElement('a'); el.href=url; el.download=`licenses-export-${new Date().toISOString().slice(0,10)}.csv`; el.click()
+          URL.revokeObjectURL(url)
+        }}>⬇ Export licenses CSV</Btn>
         <Btn onClick={exportAuditPDF}>🖨 Print audit sheet</Btn>
+        <Btn onClick={() => {
+          const win = window.open('', '_blank')
+          win.document.write(`<html><head><title>Asset QR Labels</title>
+          <style>body{font-family:monospace;padding:20px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.label{border:1px solid #ddd;padding:12px;text-align:center;border-radius:6px}h3{font-size:12px;margin-bottom:4px}p{font-size:10px;color:#666}@media print{button{display:none}}</style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+          </head><body>
+          <button onclick="window.print()" style="margin-bottom:16px;padding:8px 16px;cursor:pointer">🖨 Print all labels</button>
+          <div class="grid">
+          ${assets.map(a => `<div class="label" id="qr-${a.id}"><h3>${a.model||a.asset_tag}</h3><p>${a.asset_tag}</p><div id="qrbox-${a.id}"></div><p>${a.location||''}</p></div>`).join('')}
+          </div>
+          <script>
+          window.onload = () => {
+            ${assets.map(a => `new QRCode(document.getElementById('qrbox-${a.id}'), {text:'${window.location.origin}/asset/${a.id}',width:80,height:80})`).join(';')}
+          }
+          <\/script>
+          </body></html>`)
+          win.document.close()
+        }}>🏷 Print all QR labels</Btn>
       </div>
 
       <div style={{ display:'flex', gap:4, background:'var(--bg2)', padding:4, borderRadius:'var(--radius)', border:'1px solid var(--border)', marginBottom:'1.25rem', width:'fit-content', flexWrap:'wrap' }}>

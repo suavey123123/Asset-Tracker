@@ -21,6 +21,7 @@ export default function Employees({ onViewEmployee }) {
   const [filterDept, setFilterDept] = useState('')
   const [sites, setSites] = useState([])
   const [viewEmp, setViewEmp] = useState(null)
+  const [empHistory, setEmpHistory] = useState([])
   const [selected, setSelected] = useState([])
   const [filterSite, setFilterSite] = useState('')
 
@@ -40,6 +41,11 @@ export default function Employees({ onViewEmployee }) {
   }
 
   function openAdd() { setEditEmp(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
+  async function fetchEmpHistory(emp) {
+    const { data } = await supabase.from('activity_log').select('*').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(20)
+    setEmpHistory(data || [])
+  }
+
   function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null }); setError(''); setModalOpen(true) }
 
   async function save() {
@@ -179,7 +185,7 @@ export default function Employees({ onViewEmployee }) {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <Btn size="sm" onClick={() => setViewEmp(emp)}>View</Btn>
+                        <Btn size="sm" onClick={() => { setViewEmp(emp); fetchEmpHistory(emp) }}>View</Btn>
                         {isAdmin && <Btn size="sm" onClick={() => openEdit(emp)}>Edit</Btn>}
                         {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteEmp(emp)}>Del</Btn>}
                       </div>

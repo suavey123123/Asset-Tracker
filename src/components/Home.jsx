@@ -36,7 +36,11 @@ export default function Home({ onNav, onViewAsset }) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets)) } catch {}
   }, [widgets])
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => {
+    fetchAll()
+    const interval = setInterval(fetchAll, 30000) // refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
 
   async function fetchAll() {
     setLoading(true)

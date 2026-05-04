@@ -37,7 +37,7 @@ export default function Transfer({ onViewAsset }) {
     const from = fromPerson.trim() || asset?.assigned_to || 'Unknown'
 
     // Update asset assignment
-    await supabase.from('assets').update({ assigned_to: toPerson.trim() }).eq('id', selectedAsset)
+    await supabase.from('assets').update({ assigned_to: toPerson.trim(), status: 'Checked Out' }).eq('id', selectedAsset)
 
     // Log transfer record
     await supabase.from('asset_transfers').insert({

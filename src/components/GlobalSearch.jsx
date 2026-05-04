@@ -5,6 +5,8 @@ import { Badge } from './UI'
 export default function GlobalSearch({ onViewAsset }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
+  const [empResults, setEmpResults] = useState([])
+  const [licResults, setLicResults] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const ref = useRef(null)
@@ -23,12 +25,16 @@ export default function GlobalSearch({ onViewAsset }) {
     if (!query.trim()) { setResults([]); setOpen(false); return }
     setLoading(true)
     timer.current = setTimeout(async () => {
-      const { data } = await supabase
-        .from('assets')
-        .select('id, asset_tag, name, status, category, location, assigned_to')
-        .or(`name.ilike.%${query}%,asset_tag.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%,location.ilike.%${query}%,assigned_to.ilike.%${query}%`)
-        .limit(8)
-      setResults(data || [])
+      const [{ data: assets }, { data: emps }, { data: lics }] = await Promise.all([
+        supabase.from('assets').select('id, asset_tag, name, model, status, category, location, assigned_to')
+          .or(`name.ilike.%${query}%,asset_tag.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%,location.ilike.%${query}%,assigned_to.ilike.%${query}%`)
+          .limit(5),
+        supabase.from('employees').select('id, name, email, department').or(`name.ilike.%${query}%,email.ilike.%${query}%,department.ilike.%${query}%`).limit(3),
+        supabase.from('licenses').select('id, name, vendor, license_type').or(`name.ilike.%${query}%,vendor.ilike.%${query}%`).limit(3),
+      ])
+      setResults(assets || [])
+      setEmpResults(emps || [])
+      setLicResults(lics || [])
       setOpen(true)
       setLoading(false)
     }, 250)

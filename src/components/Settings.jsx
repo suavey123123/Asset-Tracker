@@ -6,6 +6,33 @@ import { Btn, FormField } from './UI'
 export default function Settings() {
   const { profile, user, fetchProfile } = useAuth()
   const [tab, setTab] = useState('profile')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme)
+    document.documentElement.setAttribute('data-theme', theme)
+    if (theme === 'light') {
+      document.documentElement.style.setProperty('--bg', '#f5f5f5')
+      document.documentElement.style.setProperty('--bg2', '#ffffff')
+      document.documentElement.style.setProperty('--bg3', '#f0f0f0')
+      document.documentElement.style.setProperty('--bg4', '#e8e8e8')
+      document.documentElement.style.setProperty('--border', '#e0e0e0')
+      document.documentElement.style.setProperty('--border2', '#d0d0d0')
+      document.documentElement.style.setProperty('--text', '#111111')
+      document.documentElement.style.setProperty('--text2', '#555555')
+      document.documentElement.style.setProperty('--text3', '#999999')
+    } else {
+      document.documentElement.style.setProperty('--bg', '#0f0f0f')
+      document.documentElement.style.setProperty('--bg2', '#161616')
+      document.documentElement.style.setProperty('--bg3', '#1e1e1e')
+      document.documentElement.style.setProperty('--bg4', '#262626')
+      document.documentElement.style.setProperty('--border', '#2a2a2a')
+      document.documentElement.style.setProperty('--border2', '#333')
+      document.documentElement.style.setProperty('--text', '#e8e8e8')
+      document.documentElement.style.setProperty('--text2', '#999')
+      document.documentElement.style.setProperty('--text3', '#555')
+    }
+  }, [theme])
 
   // Profile
   const [fullName, setFullName] = useState(profile?.full_name || '')
@@ -84,6 +111,21 @@ export default function Settings() {
             <div>
               <Btn variant="primary" onClick={saveProfile} disabled={profileSaving}>{profileSaving ? 'Saving…' : 'Save profile'}</Btn>
               {msg(profileMsg)}
+          </div>
+          <div style={{ marginTop:'1.5rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
+            <div style={{ fontSize:13, fontWeight:500, marginBottom:8 }}>Appearance</div>
+            <div style={{ display:'flex', gap:8 }}>
+              {['dark','light'].map(t => (
+                <button key={t} onClick={()=>setTheme(t)} style={{
+                  padding:'8px 20px', borderRadius:'var(--radius)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13,
+                  background: theme===t ? 'var(--accent)' : 'var(--bg3)',
+                  color: theme===t ? '#0f0f0f' : 'var(--text2)',
+                  border: `1px solid ${theme===t ? 'var(--accent)' : 'var(--border2)'}`,
+                  fontWeight: theme===t ? 600 : 400,
+                }}>{t==='dark'?'🌙 Dark':'☀ Light'}</button>
+              ))}
+            </div>
+          <div style={{ display:'none' }}>
             </div>
           </div>
         </div>

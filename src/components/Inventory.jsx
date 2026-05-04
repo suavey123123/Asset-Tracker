@@ -35,7 +35,10 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allLicenses, setAllLicenses] = useState([])
   const [formLicenses, setFormLicenses] = useState([])
   const [allSites, setAllSites] = useState([])
-  const [checkoutModal, setCheckoutModal] = useState(null) // asset object
+  const [checkoutModal, setCheckoutModal] = useState(null)
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkSite, setBulkSite] = useState('') // asset object
   const [checkinModal, setCheckinModal] = useState(null)   // asset object
   const [qcPerson, setQcPerson] = useState('')
   const [qcDate, setQcDate] = useState('')
@@ -151,6 +154,21 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     fetchAssets()
   }
 
+  async function doBulkEdit() {
+    if (!bulkStatus && !bulkSite) return
+    const updates = {}
+    if (bulkStatus) updates.status = bulkStatus
+    if (bulkSite) {
+      const site = allSites.find(s => s.id === bulkSite)
+      if (site) updates.location = site.name
+    }
+    for (const id of selected) {
+      await supabase.from('assets').update(updates).eq('id', id)
+    }
+    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite('')
+    fetchAssets()
+  }
+
   async function releaseLicenses(assetId) {
     const { data: assignments } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, seats_used)').eq('asset_id', assetId)
     if (assignments?.length) {
@@ -255,6 +273,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <Btn size="sm" variant="danger" onClick={bulkDelete}>
               🗑 Delete {selected.length} selected
             </Btn>
+            <Btn size="sm" onClick={()=>setBulkEditOpen(true)}>
+              ✎ Edit {selected.length} selected
+            </Btn>
           </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
@@ -270,7 +291,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                 {isAdmin && <th style={{ padding:'10px 14px', width:32 }}>
                   <input type="checkbox" checked={allSelected} onChange={e => setSelected(e.target.checked ? filtered.map(a=>a.id) : [])} style={{ width:'auto', cursor:'pointer' }} />
                 </th>}
-                {['Tag','Name','Category','Status','Assigned To','Location','Actions'].map(h=>(
+                {['Tag','Model / Brand','Category','Status','Assigned To','Site','Actions'].map(h=>(
                   <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -287,8 +308,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     <td style={{ padding:'10px 14px', fontFamily:'var(--mono)', fontSize:12, color:'var(--text2)' }}>{a.asset_tag}</td>
                     <td style={{ padding:'10px 14px' }}>
                       <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--font)' }}>
-                        <div style={{ fontWeight:500, fontSize:13, color:'var(--text)' }}>{a.name}</div>
-                        {a.model && <div style={{ fontSize:11, color:'var(--text2)' }}>{a.model}</div>}
+                        <div style={{ fontWeight:500, fontSize:13, color:'var(--text)' }}>{a.model || a.asset_tag}</div>
+                        {a.serial_number && <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.serial_number}</div>}
                       </button>
                     </td>
                     <td style={{ padding:'10px 14px' }}><Badge status={a.category} /></td>
@@ -344,10 +365,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Brand / Model"><input value={form.model} onChange={e=>setForm(f=>({...f,model:e.target.value}))} /></FormField>
             <FormField label="Serial number"><input value={form.serial_number} onChange={e=>setForm(f=>({...f,serial_number:e.target.value}))} /></FormField>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <FormField label="Location"><input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} /></FormField>
-            <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
-          </div>
+          <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
             <FormField label="Purchase date"><input type="date" value={form.purchase_date} onChange={e=>setForm(f=>({...f,purchase_date:e.target.value}))} /></FormField>
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
@@ -456,6 +474,29 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setCheckinModal(null)}>Cancel</Btn>
             <Btn variant="primary" onClick={doQuickCheckin}>Check in</Btn>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Edit Modal */}
+      <Modal open={bulkEditOpen} onClose={()=>setBulkEditOpen(false)} title={`Edit ${selected.length} asset${selected.length!==1?'s':''}`} width={400}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <FormField label="Change status (optional)">
+            <select value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
+              <option value="">— Keep current status —</option>
+              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Ordered</option><option>Received</option><option>Retired</option>
+            </select>
+          </FormField>
+          <FormField label="Move to site (optional)">
+            <select value={bulkSite} onChange={e=>setBulkSite(e.target.value)}>
+              <option value="">— Keep current site —</option>
+              {allSites.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </FormField>
+          <div style={{ fontSize:12, color:'var(--text3)' }}>This will update all {selected.length} selected assets.</div>
+          <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
+            <Btn onClick={()=>setBulkEditOpen(false)}>Cancel</Btn>
+            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite}>Apply changes</Btn>
           </div>
         </div>
       </Modal>

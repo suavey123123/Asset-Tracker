@@ -163,7 +163,7 @@ export default function Lifecycle({ onViewAsset }) {
                 return (
                   <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', borderLeft: `3px solid ${stageInfo.color}` }}>
                     <td style={{ padding: '10px 14px' }}>
-                      <button onClick={() => onViewAsset?.(a)} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}>
+                      <button onClick={() => onViewAsset && onViewAsset(a)} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}>
                         <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text)' }}>{a.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>{a.asset_tag}</div>
                       </button>
