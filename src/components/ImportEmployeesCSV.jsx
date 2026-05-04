@@ -31,6 +31,36 @@ function cleanCost(val) {
 }
 
 
+const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,,,,,,,iOS 17
+Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
+
+const NOTES = [
+  'One row per asset. If an employee has 2 assets, add 2 rows with the same employee details.',
+  'asset_tag is required per row. All other asset fields are optional.',
+  'If the asset tag already exists it will be assigned. If not, a new asset will be created.',
+  'Employee details only get created once — duplicate names are automatically skipped.',
+  'Dates accept any format: 5/29/2025, 2025-05-29, 29/05/2025 etc.',
+  'Costs accept $ signs and commas: $1,899.00 or 1899.00 both work.',
+]
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim())
+  if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'))
+  const errs = []
+  const rows = lines.slice(1).map((line, i) => {
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+    const row = {}
+    headers.forEach((h, j) => { row[h] = vals[j] || '' })
+    if (!row.name) errs.push(`Row ${i + 2}: missing employee name`)
+    return row
+  })
+  return { rows, errors: errs }
+}
+
+
 export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const [csv, setCsv] = useState('')
   const [preview, setPreview] = useState([])
