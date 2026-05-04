@@ -28,6 +28,54 @@ export default function Employees({ onViewEmployee }) {
   const [importOpen, setImportOpen] = useState(false)
   const [offboardEmp, setOffboardEmp] = useState(null)
   const [offboarding, setOffboarding] = useState(false)
+  const [sortCol, setSortCol] = useState('name')
+  const [sortDir, setSortDir] = useState('asc')
+  const [showColPicker, setShowColPicker] = useState(false)
+  const [visibleCols, setVisibleCols] = useState(() => {
+    try {
+      const saved = localStorage.getItem('emp_cols')
+      if (!saved) return ['name','email','department','site','phone','hire_date','assets','actions']
+      const parsed = JSON.parse(saved)
+      const valid = ['name','email','title','department','site','phone','hire_date','assets','actions']
+      if (!Array.isArray(parsed) || !parsed.every(c => valid.includes(c))) return ['name','email','department','site','phone','hire_date','assets','actions']
+      return parsed
+    } catch { return ['name','email','department','site','phone','hire_date','assets','actions'] }
+  })
+
+  const ALL_EMP_COLS = [
+    { id:'name',       label:'Name',             fixed:true },
+    { id:'email',      label:'Email',            fixed:false },
+    { id:'title',      label:'Job Title',        fixed:false },
+    { id:'department', label:'Department',       fixed:false },
+    { id:'site',       label:'Site',             fixed:false },
+    { id:'phone',      label:'Phone',            fixed:false },
+    { id:'hire_date',  label:'Date of hire',     fixed:false },
+    { id:'assets',     label:'Assets',           fixed:false },
+    { id:'actions',    label:'Actions',          fixed:true },
+  ]
+
+  function toggleEmpCol(id) {
+    if (ALL_EMP_COLS.find(c=>c.id===id)?.fixed) return
+    setVisibleCols(prev => {
+      const updated = prev.includes(id) ? prev.filter(c=>c!==id) : [...prev, id]
+      localStorage.setItem('emp_cols', JSON.stringify(updated))
+      return [...updated]
+    })
+  }
+
+  function hasCol(id) { return visibleCols.includes(id) }
+
+  useEffect(() => {
+    if (!showColPicker) return
+    function close(e) { if (!e.target.closest('[data-colpicker]')) setShowColPicker(false) }
+    setTimeout(() => document.addEventListener('mousedown', close), 100)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showColPicker])
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir(d => d==='asc'?'desc':'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
 
   useEffect(() => { fetchAll() }, [])
 
@@ -128,6 +176,25 @@ export default function Employees({ onViewEmployee }) {
     return true
   })
 
+  // Sort
+  const fieldMap = { name:'name', email:'email', title:'title', department:'department', phone:'phone', hire_date:'hire_date' }
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortCol === 'assets') {
+      const av = getEmployeeAssets(a.name).length
+      const bv = getEmployeeAssets(b.name).length
+      return sortDir==='asc' ? av-bv : bv-av
+    }
+    if (sortCol === 'site') {
+      const av = sites.find(s=>s.id===a.site_id)?.name || ''
+      const bv = sites.find(s=>s.id===b.site_id)?.name || ''
+      return sortDir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+    }
+    const field = fieldMap[sortCol] || 'name'
+    const av = String(a[field]||'').toLowerCase()
+    const bv = String(b[field]||'').toLowerCase()
+    return sortDir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+  })
+
   return (
     <div className="fade-in">
       {!isAdmin && <ViewOnlyBanner />}
@@ -177,50 +244,54 @@ export default function Employees({ onViewEmployee }) {
                     style={{ width:'auto', cursor:'pointer' }}
                   />
                 </th>
-              {['Name', 'Email', 'Department', 'Site', 'Assets checked out', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text2)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                ))}
+              {ALL_EMP_COLS.filter(c=>hasCol(c.id)).map(c => {
+                  const isActive = sortCol === c.id
+                  const canSort = !['actions'].includes(c.id)
+                  return (
+                    <th key={c.id} onClick={()=>canSort&&handleSort(c.id)} style={{ padding:'10px 14px', textAlign:'left', fontSize:11, color:isActive?'var(--accent)':'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', cursor:canSort?'pointer':'default', userSelect:'none', whiteSpace:'nowrap' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                        {c.label}
+                        {canSort && <span style={{ fontSize:10, opacity:isActive?1:0.3 }}>{isActive?(sortDir==='asc'?'▲':'▼'):'⇅'}</span>}
+                      </div>
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(emp => {
+              {sorted.map(emp => {
                 const empAssets = getEmployeeAssets(emp.name)
                 const isSelected = selected.includes(emp.id)
+                const site = sites.find(s => s.id === emp.site_id)
                 return (
-                  <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)', background: isSelected ? 'var(--accent-bg)' : undefined }}>
-                    <td style={{ padding: '10px 14px' }}>
-                      <input type="checkbox" checked={isSelected}
-                        onChange={e => setSelected(s => e.target.checked ? [...s, emp.id] : s.filter(x => x !== emp.id))}
-                        style={{ width: 'auto', cursor: 'pointer' }}
-                      />
+                  <tr key={emp.id} style={{ borderBottom:'1px solid var(--border)', background:isSelected?'var(--accent-bg)':undefined }}>
+                    <td style={{ padding:'10px 14px' }}>
+                      <input type="checkbox" checked={isSelected} onChange={e=>setSelected(s=>e.target.checked?[...s,emp.id]:s.filter(x=>x!==emp.id))} style={{ width:'auto', cursor:'pointer' }} />
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <button onClick={() => setViewEmp(emp)} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}>
-                        <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text)' }}>{emp.name}</div>
-                        {emp.title && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{emp.title}</div>}
+                    {hasCol('name') && <td style={{ padding:'10px 14px' }}>
+                      <button onClick={()=>{setViewEmp(emp);fetchEmpHistory(emp)}} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--font)' }}>
+                        <div style={{ fontWeight:500, fontSize:13 }}>{emp.name}</div>
+                        {hasCol('title') && emp.title && <div style={{ fontSize:11, color:'var(--text2)' }}>{emp.title}</div>}
                       </button>
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{emp.email || '—'}</td>
-                    <td style={{ padding: '10px 14px' }}>
-                      {emp.department
-                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--blue-bg)', color: 'var(--blue)', fontFamily: 'var(--mono)' }}>{emp.department}</span>
-                        : <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      {(() => { const site = sites.find(s => s.id === emp.site_id); return site
-                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--accent-bg)', color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{site.name}</span>
-                        : <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span> })()}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      {empAssets.length > 0
-                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--green-bg)', color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{empAssets.length} asset{empAssets.length !== 1 ? 's' : ''}</span>
-                        : <span style={{ fontSize: 12, color: 'var(--text3)' }}>None</span>}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <Btn size="sm" onClick={() => { setViewEmp(emp); fetchEmpHistory(emp) }}>View</Btn>
-                        {isAdmin && <Btn size="sm" onClick={() => openEdit(emp)}>Edit</Btn>}
-                        {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteEmp(emp)}>Del</Btn>}
+                    </td>}
+                    {hasCol('email') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{emp.email||'—'}</td>}
+                    {!hasCol('name') && hasCol('title') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{emp.title||'—'}</td>}
+                    {hasCol('department') && <td style={{ padding:'10px 14px' }}>
+                      {emp.department ? <span style={{ fontSize:12, padding:'2px 8px', borderRadius:100, background:'var(--blue-bg)', color:'var(--blue)', fontFamily:'var(--mono)' }}>{emp.department}</span> : <span style={{ color:'var(--text3)', fontSize:12 }}>—</span>}
+                    </td>}
+                    {hasCol('site') && <td style={{ padding:'10px 14px' }}>
+                      {site ? <span style={{ fontSize:12, padding:'2px 8px', borderRadius:100, background:'var(--accent-bg)', color:'var(--accent)', fontFamily:'var(--mono)' }}>{site.name}</span> : <span style={{ color:'var(--text3)', fontSize:12 }}>—</span>}
+                    </td>}
+                    {hasCol('phone') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)', fontFamily:'var(--mono)' }}>{emp.phone||'—'}</td>}
+                    {hasCol('hire_date') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{emp.hire_date?new Date(emp.hire_date).toLocaleDateString():'—'}</td>}
+                    {hasCol('assets') && <td style={{ padding:'10px 14px' }}>
+                      {empAssets.length>0 ? <span style={{ fontSize:12, padding:'2px 8px', borderRadius:100, background:'var(--green-bg)', color:'var(--green)', fontFamily:'var(--mono)', fontWeight:500 }}>{empAssets.length} asset{empAssets.length!==1?'s':''}</span> : <span style={{ fontSize:12, color:'var(--text3)' }}>None</span>}
+                    </td>}
+                    <td style={{ padding:'10px 14px' }}>
+                      <div style={{ display:'flex', gap:4 }}>
+                        <Btn size="sm" onClick={()=>{setViewEmp(emp);fetchEmpHistory(emp)}}>View</Btn>
+                        {isAdmin && <Btn size="sm" onClick={()=>openEdit(emp)}>Edit</Btn>}
+                        {isAdmin && <Btn size="sm" variant="danger" onClick={()=>deleteEmp(emp)}>Del</Btn>}
                       </div>
                     </td>
                   </tr>
