@@ -75,7 +75,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [showSaveFilter, setShowSaveFilter] = useState(false)
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('inventory_cols') || 'null') || ['tag','model','category','status','assigned_to','site','actions'] } catch { return ['tag','model','category','status','assigned_to','site','actions'] }
+    try { const saved = localStorage.getItem('inventory_cols'); return saved ? JSON.parse(saved) : ['tag','model','category','status','assigned_to','site','actions'] } catch { return ['tag','model','category','status','assigned_to','site','actions'] }
   })
 
   const ALL_COLS = [
@@ -92,10 +92,18 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   ]
 
   function toggleCol(id) {
-    if (id === 'tag' || id === 'actions') return // always visible
-    const updated = visibleCols.includes(id) ? visibleCols.filter(c => c !== id) : [...visibleCols, id]
-    setVisibleCols(updated)
-    localStorage.setItem('inventory_cols', JSON.stringify(updated))
+    if (id === 'tag' || id === 'actions') return
+    setVisibleCols(prev => {
+      const updated = prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+      localStorage.setItem('inventory_cols', JSON.stringify(updated))
+      return [...updated] // new array ref forces re-render
+    })
+  }
+
+  function resetCols() {
+    const defaults = ['tag','model','category','status','assigned_to','site','actions']
+    setVisibleCols(defaults)
+    localStorage.setItem('inventory_cols', JSON.stringify(defaults))
   }
 
   const has = (id) => visibleCols.includes(id)
@@ -422,7 +430,10 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <button onClick={()=>setShowColPicker(p=>!p)} title="Customize columns" style={{ padding:'6px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background: showColPicker?'var(--bg4)':'var(--bg3)', color:'var(--text2)', cursor:'pointer', fontSize:13, fontFamily:'var(--font)' }}>⊞ Columns</button>
           {showColPicker && (
             <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', zIndex:200, padding:'10px', minWidth:180, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
-              <div style={{ fontSize:11, color:'var(--text3)', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.05em' }}>Show columns</div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                <div style={{ fontSize:11, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.05em' }}>Show columns</div>
+                <button onClick={resetCols} style={{ fontSize:10, color:'var(--accent)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Reset</button>
+              </div>
               {ALL_COLS.map(c => (
                 <label key={c.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 4px', cursor: (c.id==='tag'||c.id==='actions')?'not-allowed':'pointer', opacity:(c.id==='tag'||c.id==='actions')?0.5:1 }}>
                   <input type="checkbox" checked={has(c.id)} disabled={c.id==='tag'||c.id==='actions'} onChange={()=>toggleCol(c.id)} style={{ width:'auto', accentColor:'var(--accent)' }} />
