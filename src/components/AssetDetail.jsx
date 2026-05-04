@@ -17,6 +17,9 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const [maintenance, setMaintenance] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Overview')
+  const [quickNote, setQuickNote] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
+  const [noteSaved, setNoteSaved] = useState(false)
   const qrRef = useRef(null)
 
   useEffect(() => { fetchAll() }, [assetId])
@@ -29,6 +32,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       supabase.from('maintenance_records').select('*').eq('asset_id', assetId).order('performed_date', { ascending: false }),
     ])
     setAsset(a); setLog(l || []); setMaintenance(m || [])
+    setQuickNote(a?.quick_note || '')
     setLoading(false)
   }
 
@@ -50,6 +54,13 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     script.onload = loadQR
     document.head.appendChild(script)
   }, [asset, activeTab])
+
+  async function saveNote() {
+    setNoteSaving(true)
+    await supabase.from('assets').update({ quick_note: quickNote }).eq('id', assetId)
+    setNoteSaving(false); setNoteSaved(true)
+    setTimeout(() => setNoteSaved(false), 2000)
+  }
 
   function printQR() {
     const win = window.open('', '_blank')
@@ -161,6 +172,20 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         </div>
       )}
 
+      {activeTab==='Overview' && (
+        <div style={{ ...card, marginTop:'1rem', background:'rgba(212,255,78,0.04)', border:'1px solid rgba(212,255,78,0.2)' }} className="fade-in">
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:12, fontWeight:500, color:'var(--accent)' }}>📝 Quick note</span>
+            {noteSaved && <span style={{ fontSize:11, color:'var(--green)' }}>✓ Saved</span>}
+          </div>
+          <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)}
+            onBlur={saveNote}
+            placeholder="Add a quick note about this asset — visible immediately, no save button needed…"
+            style={{ width:'100%', minHeight:70, resize:'vertical', fontSize:13, background:'transparent', border:'none', outline:'none', color:'var(--text)', fontFamily:'var(--font)', lineHeight:1.5 }}
+          />
+          <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>Auto-saves when you click away</div>
+        </div>
+      )}
       {activeTab==='Labels' && <div style={card} className="fade-in"><AssetTags assetId={assetId} /></div>}
       {activeTab==='Licenses' && <div style={card} className="fade-in"><AssetLicenses assetId={assetId} /></div>}
       {activeTab==='Photos' && <div style={card} className="fade-in"><AssetPhotos assetId={assetId} assetTag={asset.asset_tag} /></div>}

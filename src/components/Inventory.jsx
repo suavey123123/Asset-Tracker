@@ -75,6 +75,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [showSaveFilter, setShowSaveFilter] = useState(false)
   const [sortCol, setSortCol] = useState('')
   const [sortDir, setSortDir] = useState('asc')
+  const [viewMode, setViewMode] = useState(() => window.innerWidth < 768 ? 'card' : 'table')
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
     try {
@@ -464,6 +465,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
+        <div style={{ display:'flex', gap:4, background:'var(--bg3)', borderRadius:'var(--radius)', padding:3, border:'1px solid var(--border2)' }}>
+          {['table','card'].map(m => (
+            <button key={m} onClick={()=>setViewMode(m)} style={{ padding:'4px 10px', borderRadius:'var(--radius)', fontSize:12, border:'none', cursor:'pointer', fontFamily:'var(--font)', background:viewMode===m?'var(--bg2)':'transparent', color:viewMode===m?'var(--text)':'var(--text3)', fontWeight:viewMode===m?500:400 }}>
+              {m==='table'?'≡ Table':'⊞ Cards'}
+            </button>
+          ))}
+        </div>
         <div style={{ position:'relative' }} data-colpicker>
           <button onClick={()=>setShowColPicker(p=>!p)} title="Customize columns" style={{ padding:'6px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background: showColPicker?'var(--bg4)':'var(--bg3)', color:'var(--text2)', cursor:'pointer', fontSize:13, fontFamily:'var(--font)' }}>⊞ Columns</button>
           {showColPicker && (
@@ -484,7 +492,47 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add asset</Btn>}
       </div>
 
-      <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
+      {/* Card view for mobile */}
+      {viewMode === 'card' && (
+        <div>
+          {loading ? <div style={{ padding:'2rem' }}><Spinner /></div> :
+           sorted.length === 0 ? <div style={{ padding:'2rem', textAlign:'center', color:'var(--text3)' }}>No assets match your filters.</div> :
+           paginated.map(a => {
+             const warn = rowWarning(a)
+             const isSelected = selected.includes(a.id)
+             return (
+               <div key={a.id} style={{ background:'var(--bg2)', border:`1px solid ${warn||'var(--border)'}`, borderRadius:'var(--radius-lg)', padding:'1rem', marginBottom:8, borderLeft:`3px solid ${warn||'var(--border)'}`, opacity: isSelected ? 0.85 : 1 }}>
+                 <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:10 }}>
+                   {isAdmin && <input type="checkbox" checked={isSelected} onChange={e=>setSelected(s=>e.target.checked?[...s,a.id]:s.filter(x=>x!==a.id))} style={{ width:'auto', marginTop:4 }} />}
+                   <LazyAssetPhoto assetId={a.id} onClick={()=>onViewAsset?.(a)} />
+                   <div style={{ flex:1, minWidth:0 }}>
+                     <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left', fontFamily:'var(--font)' }}>
+                       <div style={{ fontWeight:500, fontSize:13, color:'var(--accent)', fontFamily:'var(--mono)' }}>{a.asset_tag}</div>
+                       <div style={{ fontSize:13, color:'var(--text)', marginTop:2 }}>{a.model || <span style={{ color:'var(--text3)' }}>—</span>}</div>
+                     </button>
+                   </div>
+                   <Badge status={a.status} />
+                 </div>
+                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 12px', fontSize:12, marginBottom:10 }}>
+                   <div><span style={{ color:'var(--text3)' }}>Category </span>{a.category}</div>
+                   <div><span style={{ color:'var(--text3)' }}>Site </span>{a.location||'—'}</div>
+                   <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>Assigned to </span>{a.assigned_to||'—'}</div>
+                 </div>
+                 {a.quick_note && <div style={{ fontSize:12, color:'var(--text2)', background:'rgba(212,255,78,0.05)', borderRadius:'var(--radius)', padding:'6px 10px', marginBottom:8 }}>📝 {a.quick_note}</div>}
+                 <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                   <Btn size="sm" onClick={()=>onViewAsset?.(a)}>View</Btn>
+                   {isAdmin && a.status==='Available' && <Btn size="sm" variant="success" onClick={()=>{setCheckoutModal(a);setQcPerson('');setQcDate('');setQcNotes('')}}>Check out</Btn>}
+                   {isAdmin && a.status==='Checked Out' && <Btn size="sm" variant="primary" onClick={()=>{setCheckinModal(a);setQcCondition('Good');setQcNotes('')}}>Check in</Btn>}
+                   {isAdmin && <Btn size="sm" onClick={()=>openEditModal(a)}>Edit</Btn>}
+                 </div>
+               </div>
+             )
+           })}
+        </div>
+      )}
+
+      {/* Table view */}
+      <div style={{ display: viewMode === 'table' ? 'block' : 'none', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
         {loading ? <div style={{ padding:'3rem' }}><Spinner /></div> :
          filtered.length===0 ? <EmptyState message={assets.length===0?'No assets yet. Add your first asset to get started.':'No assets match your filters.'} /> : (
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
