@@ -5,6 +5,7 @@ import { Badge, Btn, Spinner } from './UI'
 import AssetPhotos from './AssetPhotos'
 import AssetComments from './AssetComments'
 import CustomFields from './CustomFields'
+import AssetLicenses from './AssetLicenses'
 
 export default function AssetDetail({ assetId, onBack, onEdit }) {
   const { isAdmin } = useAuth()
@@ -141,6 +142,11 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       {/* Custom fields */}
       <div style={{ ...card, marginBottom:'1rem' }}>
         <CustomFields assetId={assetId} category={asset.category} />
+      </div>
+
+      {/* Licenses */}
+      <div style={{ ...card, marginBottom:'1rem' }}>
+        <AssetLicenses assetId={assetId} />
       </div>
 
       {/* Comments */}

@@ -15,6 +15,7 @@ export default function Licenses() {
   const { isAdmin } = useAuth()
   const [licenses, setLicenses] = useState([])
   const [loading, setLoading] = useState(true)
+  const [assignments, setAssignments] = useState([])
   const [modalOpen, setModalOpen] = useState(false)
   const [editLic, setEditLic] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -27,8 +28,12 @@ export default function Licenses() {
 
   async function fetchLicenses() {
     setLoading(true)
-    const { data } = await supabase.from('licenses').select('*').order('name')
-    setLicenses(data || [])
+    const [{ data: l }, { data: a }] = await Promise.all([
+      supabase.from('licenses').select('*').order('name'),
+      supabase.from('asset_license_assignments').select('*, asset:asset_id(id, name, asset_tag)'),
+    ])
+    setLicenses(l || [])
+    setAssignments(a || [])
     setLoading(false)
   }
 
@@ -151,7 +156,7 @@ export default function Licenses() {
          filtered.length===0 ? <EmptyState message="No licenses yet. Add your first software license." /> : (
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead><tr style={{ borderBottom:'1px solid var(--border)' }}>
-              {['Name','Vendor','Type','Seats','Expiry','Status','Cost','Actions'].map(h=><th key={h} style={thStyle}>{h}</th>)}
+              {['Name','Vendor','Type','Seats used','Seats left','Expiry','Status','Cost','Assigned to','Actions'].map(h=><th key={h} style={thStyle}>{h}</th>)}
             </tr></thead>
             <tbody>
               {filtered.map(l => {
@@ -168,9 +173,23 @@ export default function Licenses() {
                       <span style={{ fontSize:11, padding:'2px 8px', borderRadius:100, background:'var(--bg3)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{l.license_type}</span>
                     </td>
                     <td style={tdStyle}>
-                      {seatStatus ? (
-                        <span style={{ fontSize:12, fontFamily:'var(--mono)', color:seatStatus.color, fontWeight:500 }}>{seatStatus.label}</span>
+                      {l.seats_total ? (
+                        <div>
+                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:3 }}>
+                            <span style={{ color:seatStatus?.color||'var(--text2)', fontFamily:'var(--mono)', fontWeight:500 }}>{l.seats_used||0}/{l.seats_total}</span>
+                          </div>
+                          <div style={{ height:4, background:'var(--bg4)', borderRadius:2, overflow:'hidden', width:80 }}>
+                            <div style={{ width:`${Math.min(100,Math.round((l.seats_used||0)/l.seats_total*100))}%`, height:'100%', background:seatStatus?.color||'var(--green)', borderRadius:2 }} />
+                          </div>
+                        </div>
                       ) : <span style={{ color:'var(--text3)', fontSize:12 }}>—</span>}
+                    </td>
+                    <td style={tdStyle}>
+                      {l.seats_total ? (
+                        <span style={{ fontSize:13, fontFamily:'var(--mono)', fontWeight:500, color: (l.seats_total-(l.seats_used||0))===0?'var(--red)':(l.seats_total-(l.seats_used||0))<=(l.seats_total*0.2)?'var(--amber)':'var(--green)' }}>
+                          {l.seats_total-(l.seats_used||0)}
+                        </span>
+                      ) : <span style={{ color:'var(--text3)', fontSize:12 }}>∞</span>}
                     </td>
                     <td style={{ ...tdStyle, fontSize:12, color:expStatus?.color||'var(--text2)' }}>
                       {l.expiry_date ? new Date(l.expiry_date).toLocaleDateString() : '—'}
@@ -180,6 +199,18 @@ export default function Licenses() {
                     </td>
                     <td style={{ ...tdStyle, fontSize:13, fontFamily:'var(--mono)' }}>
                       {l.purchase_cost ? '$'+parseFloat(l.purchase_cost).toFixed(2) : '—'}
+                    </td>
+                    <td style={{ ...tdStyle, maxWidth:200 }}>
+                      {(() => {
+                        const licAssignments = assignments.filter(a => a.license_id === l.id)
+                        return licAssignments.length === 0
+                          ? <span style={{ fontSize:12, color:'var(--text3)' }}>None</span>
+                          : <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                              {licAssignments.map(a => a.asset && (
+                                <span key={a.id} style={{ fontSize:11, padding:'1px 6px', borderRadius:100, background:'var(--bg4)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.asset.asset_tag}</span>
+                              ))}
+                            </div>
+                      })()}
                     </td>
                     <td style={tdStyle}>
                       {isAdmin && <div style={{ display:'flex', gap:4 }}>
