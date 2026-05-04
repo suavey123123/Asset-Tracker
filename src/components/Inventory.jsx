@@ -720,6 +720,24 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         </div>
       </Modal>
 
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:12, fontSize:13, color:'var(--text2)' }}>
+          <span style={{ fontSize:12 }}>{sorted.length} assets &nbsp;·&nbsp; Page {page} of {totalPages}</span>
+          <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+            <button onClick={()=>setPage(1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>«</button>
+            <button onClick={()=>setPage(p=>p-1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>‹ Prev</button>
+            {Array.from({length:Math.min(5,totalPages)},(_,i)=>{
+              const p=Math.max(1,Math.min(totalPages-4,page-2))+i
+              return p<=totalPages?<button key={p} onClick={()=>setPage(p)} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:p===page?'var(--accent)':'var(--bg3)', color:p===page?'#0f0f0f':'var(--text)', cursor:'pointer', fontFamily:'var(--mono)', fontSize:12, fontWeight:p===page?600:400 }}>{p}</button>:null
+            })}
+            <button onClick={()=>setPage(p=>p+1)} disabled={page===totalPages} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===totalPages?'var(--text3)':'var(--text)', cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>Next ›</button>
+            <button onClick={()=>setPage(totalPages)} disabled={page===totalPages} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===totalPages?'var(--text3)':'var(--text)', cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>»</button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Checkout Modal */}
       <Modal open={!!checkoutModal} onClose={()=>setCheckoutModal(null)} title={`Check out — ${checkoutModal?.name||''}`} width={400}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
