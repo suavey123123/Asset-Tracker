@@ -75,24 +75,35 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [showSaveFilter, setShowSaveFilter] = useState(false)
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
-    try { const saved = localStorage.getItem('inventory_cols'); return saved ? JSON.parse(saved) : ['tag','model','category','status','assigned_to','site','actions'] } catch { return ['tag','model','category','status','assigned_to','site','actions'] }
+    try {
+      const saved = localStorage.getItem('inventory_cols')
+      if (!saved) return ['tag','model','category','status','assigned_to','site','actions']
+      const parsed = JSON.parse(saved)
+      // Validate - must be array with known col ids
+      const valid = ['tag','model','category','status','assigned_to','site','serial','purchase','warranty','actions']
+      if (!Array.isArray(parsed) || !parsed.every(c => valid.includes(c))) {
+        localStorage.removeItem('inventory_cols')
+        return ['tag','model','category','status','assigned_to','site','actions']
+      }
+      return parsed
+    } catch { return ['tag','model','category','status','assigned_to','site','actions'] }
   })
 
   const ALL_COLS = [
-    { id:'tag',         label:'Tag' },
-    { id:'model',       label:'Model / Brand' },
-    { id:'category',    label:'Category' },
-    { id:'status',      label:'Status' },
-    { id:'assigned_to', label:'Assigned To' },
-    { id:'site',        label:'Site' },
-    { id:'serial',      label:'Serial Number' },
-    { id:'purchase',    label:'Purchase Cost' },
-    { id:'warranty',    label:'Warranty Expiry' },
-    { id:'actions',     label:'Actions' },
+    { id:'tag',         label:'Tag',            fixed: true },
+    { id:'model',       label:'Model / Brand',  fixed: false },
+    { id:'category',    label:'Category',       fixed: false },
+    { id:'status',      label:'Status',         fixed: false },
+    { id:'assigned_to', label:'Assigned To',    fixed: false },
+    { id:'site',        label:'Site',           fixed: false },
+    { id:'serial',      label:'Serial Number',  fixed: false },
+    { id:'purchase',    label:'Purchase Cost',  fixed: false },
+    { id:'warranty',    label:'Warranty Expiry',fixed: false },
+    { id:'actions',     label:'Actions',        fixed: true },
   ]
 
   function toggleCol(id) {
-    if (id === 'tag' || id === 'actions') return
+    if (ALL_COLS.find(c=>c.id===id)?.fixed) return
     setVisibleCols(prev => {
       const updated = prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
       localStorage.setItem('inventory_cols', JSON.stringify(updated))
@@ -435,8 +446,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                 <button onClick={resetCols} style={{ fontSize:10, color:'var(--accent)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Reset</button>
               </div>
               {ALL_COLS.map(c => (
-                <label key={c.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 4px', cursor: (c.id==='tag'||c.id==='actions')?'not-allowed':'pointer', opacity:(c.id==='tag'||c.id==='actions')?0.5:1 }}>
-                  <input type="checkbox" checked={has(c.id)} disabled={c.id==='tag'||c.id==='actions'} onChange={()=>toggleCol(c.id)} style={{ width:'auto', accentColor:'var(--accent)' }} />
+                <label key={c.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 4px', cursor: c.fixed?'not-allowed':'pointer', opacity:c.fixed?0.5:1 }}>
+                  <input type="checkbox" checked={has(c.id)} disabled={!!c.fixed} onChange={()=>toggleCol(c.id)} style={{ width:'auto', accentColor:'var(--accent)' }} />
                   <span style={{ fontSize:13 }}>{c.label}</span>
                 </label>
               ))}
