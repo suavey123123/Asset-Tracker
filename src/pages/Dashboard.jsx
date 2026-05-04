@@ -71,6 +71,7 @@ function ShortcutsButton() {
 
 export default function Dashboard() {
   const [tab, setTab] = useState('home')
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
