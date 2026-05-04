@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
   model:'', serial_number:'', location:'', purchase_date:'',
   purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {}, assigned_to: '', assigned_to_team: '', site_id: '',
+  specs: {}, assigned_to: '', assigned_to_team: '', site_id: '', provision_date: '',
 }
 
 function LazyAssetPhoto({ assetId, onClick }) {
@@ -226,7 +226,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   function openEditModal(asset) {
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry||'', notes:asset.notes||'', specs: asset.specs||{} })
-    setForm(f => ({...f, site_id: '', assigned_to_team: asset.assigned_to_team||''}))
+    setForm(f => ({...f, site_id: '', assigned_to_team: asset.assigned_to_team||'', provision_date: asset.provision_date||''}))
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -245,6 +245,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       name: finalName,
       purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
       purchase_date: form.purchase_date || null,
+      provision_date: form.provision_date || null,
       warranty_expiry: form.warranty_expiry || null,
       model: form.model || null,
       serial_number: form.serial_number || null,
