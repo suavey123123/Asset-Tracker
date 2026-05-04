@@ -146,25 +146,36 @@ export default function Employees({ onViewEmployee }) {
             <tbody>
               {filtered.map(emp => {
                 const empAssets = getEmployeeAssets(emp.name)
+                const isSelected = selected.includes(emp.id)
                 return (
-                  <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)', background: isSelected ? 'var(--accent-bg)' : undefined }}>
+                    <td style={{ padding: '10px 14px' }}>
+                      <input type="checkbox" checked={isSelected}
+                        onChange={e => setSelected(s => e.target.checked ? [...s, emp.id] : s.filter(x => x !== emp.id))}
+                        style={{ width: 'auto', cursor: 'pointer' }}
+                      />
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
                       <button onClick={() => setViewEmp(emp)} style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'var(--font)' }}>
                         <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--text)' }}>{emp.name}</div>
-                        {emp.email && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{emp.email}</div>}
+                        {emp.title && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{emp.title}</div>}
                       </button>
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: emp.title ? 'var(--text)' : 'var(--text3)' }}>{emp.title || '—'}</td>
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{emp.email || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      {emp.department ? (
-                        <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--blue-bg)', color: 'var(--blue)', fontFamily: 'var(--mono)' }}>{emp.department}</span>
-                      ) : <span style={{ color: 'var(--text3)' }}>—</span>}
+                      {emp.department
+                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--blue-bg)', color: 'var(--blue)', fontFamily: 'var(--mono)' }}>{emp.department}</span>
+                        : <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{sites.find(s=>s.id===emp.site_id)?.name || '—'}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      {empAssets.length > 0 ? (
-                        <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--green-bg)', color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{empAssets.length} asset{empAssets.length !== 1 ? 's' : ''}</span>
-                      ) : <span style={{ fontSize: 12, color: 'var(--text3)' }}>None</span>}
+                      {(() => { const site = sites.find(s => s.id === emp.site_id); return site
+                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--accent-bg)', color: 'var(--accent)', fontFamily: 'var(--mono)' }}>{site.name}</span>
+                        : <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span> })()}
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {empAssets.length > 0
+                        ? <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 100, background: 'var(--green-bg)', color: 'var(--green)', fontFamily: 'var(--mono)', fontWeight: 500 }}>{empAssets.length} asset{empAssets.length !== 1 ? 's' : ''}</span>
+                        : <span style={{ fontSize: 12, color: 'var(--text3)' }}>None</span>}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
