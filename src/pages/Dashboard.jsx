@@ -87,7 +87,6 @@ export default function Dashboard() {
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
           <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
-          <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
         </div>
         <div style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (
