@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, Badge } from './UI'
 
 const EMPTY_FORM = {
-  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null,
+  name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: '',
 }
 
 export default function Employees({ onViewEmployee }) {
@@ -46,7 +46,7 @@ export default function Employees({ onViewEmployee }) {
     setEmpHistory(data || [])
   }
 
-  function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null }); setError(''); setModalOpen(true) }
+  function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null, hire_date: emp.hire_date||'' }); setError(''); setModalOpen(true) }
 
   async function save() {
     if (!form.name.trim()) { setError('Name is required.'); return }
@@ -205,7 +205,7 @@ export default function Employees({ onViewEmployee }) {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
-                {[['Email', viewEmp.email], ['Title', viewEmp.title], ['Department', viewEmp.department], ['Phone', viewEmp.phone], ['Location', viewEmp.location]].map(([l, v]) => v ? (
+                {[['Email', viewEmp.email], ['Title', viewEmp.title], ['Department', viewEmp.department], ['Phone', viewEmp.phone], ['Location', viewEmp.location], ['Date of hire', viewEmp.hire_date ? new Date(viewEmp.hire_date).toLocaleDateString() : null]].map(([l, v]) => v ? (
                   <div key={l}>
                     <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 2 }}>{l}</div>
                     <div style={{ fontSize: 13 }}>{v}</div>
@@ -261,12 +261,17 @@ export default function Employees({ onViewEmployee }) {
             <FormField label="Phone"><input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="e.g. 555-1234" /></FormField>
             <FormField label="Location"><input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Floor 3, Desk 12" /></FormField>
           </div>
-          <FormField label="Site">
-            <select value={form.site_id||''} onChange={e => setForm(f => ({ ...f, site_id: e.target.value || null }))}>
-              <option value="">No site assigned</option>
-              {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </FormField>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <FormField label="Site">
+              <select value={form.site_id||''} onChange={e => setForm(f => ({ ...f, site_id: e.target.value || null }))}>
+                <option value="">No site assigned</option>
+                {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Date of hire">
+              <input type="date" value={form.hire_date||''} onChange={e => setForm(f => ({ ...f, hire_date: e.target.value }))} />
+            </FormField>
+          </div>
           <FormField label="Notes"><textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any additional info…" /></FormField>
           {error && <div style={{ color: 'var(--red)', fontSize: 12 }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
