@@ -27,7 +27,6 @@ export default function Employees({ onViewEmployee }) {
   const [selected, setSelected] = useState([])
   const [filterSite, setFilterSite] = useState('')
   const [importOpen, setImportOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
   const [offboardEmp, setOffboardEmp] = useState(null)
   const [offboarding, setOffboarding] = useState(false)
 
