@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, Badge } from './UI'
 import ImportEmployeesCSV from './ImportEmployeesCSV'
-import ImportEmployees from './ImportEmployees'
 
 const EMPTY_FORM = {
   name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: '',
@@ -158,7 +157,6 @@ export default function Employees({ onViewEmployee }) {
         {isAdmin && selected.length > 0 && (
           <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
         )}
-        {isAdmin && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
         {isAdmin && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
       </div>
@@ -331,7 +329,6 @@ export default function Employees({ onViewEmployee }) {
         </div>
       </Modal>
 
-      <ImportEmployees open={importOpen} onClose={() => setImportOpen(false)} onDone={fetchAll} sites={sites} />
     </div>
   )
 }
