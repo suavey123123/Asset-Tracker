@@ -122,7 +122,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           asset_tag: r.asset_tag,
           name: r.asset_model || r.asset_tag,
           model: r.asset_model || null,
-          category: (r.asset_category || 'LAPTOP').toUpperCase(),
+          category: (r.asset_category || 'LAPTOP').toUpperCase().trim().replace(/[^A-Z0-9 &()-]/g, '').substring(0, 50) || 'OTHER',
           serial_number: r.asset_serial || null,
           status: 'Checked Out',
           assigned_to: r.name,
