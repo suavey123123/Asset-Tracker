@@ -70,6 +70,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   useEffect(() => { setPage(1) }, [filterStatus, filterCat, filterTag, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(1)
+  const [showAll, setShowAll] = useState(false)
   const PAGE_SIZE = 25
   const [savedFilters, setSavedFilters] = useState(() => {
     try { return JSON.parse(localStorage.getItem('inventory_filters') || '[]') } catch { return [] }
@@ -402,7 +403,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   }) : filtered
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
-  const paginated = sorted.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
+  const paginated = showAll ? sorted : sorted.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE)
 
   const stats = {
     total:assets.length,
@@ -724,9 +725,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {sorted.length > PAGE_SIZE && (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:12, fontSize:13, color:'var(--text2)' }}>
-          <span style={{ fontSize:12 }}>{sorted.length} assets &nbsp;·&nbsp; Page {page} of {totalPages}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span style={{ fontSize:12 }}>{sorted.length} assets {!showAll ? `· Page ${page} of ${totalPages}` : '· Showing all'}</span>
+            <button onClick={()=>{ setShowAll(s=>!s); setPage(1) }} style={{ fontSize:12, color:'var(--accent)', background:'none', border:'1px solid var(--border2)', borderRadius:'var(--radius)', padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>
+              {showAll ? '📄 Show pages' : '⊞ Show all'}
+            </button>
+          </div>
           <div style={{ display:'flex', gap:4, alignItems:'center' }}>
             <button onClick={()=>setPage(1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>«</button>
             <button onClick={()=>setPage(p=>p-1)} disabled={page===1} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===1?'var(--text3)':'var(--text)', cursor:page===1?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>‹ Prev</button>
@@ -735,7 +741,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
               return p<=totalPages?<button key={p} onClick={()=>setPage(p)} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:p===page?'var(--accent)':'var(--bg3)', color:p===page?'#0f0f0f':'var(--text)', cursor:'pointer', fontFamily:'var(--mono)', fontSize:12, fontWeight:p===page?600:400 }}>{p}</button>:null
             })}
             <button onClick={()=>setPage(p=>p+1)} disabled={page===totalPages} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===totalPages?'var(--text3)':'var(--text)', cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>Next ›</button>
-            <button onClick={()=>setPage(totalPages)} disabled={page===totalPages} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:page===totalPages?'var(--text3)':'var(--text)', cursor:page===totalPages?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>»</button>
+            <button onClick={()=>setPage(totalPages)} disabled={page===totalPages||showAll} style={{ padding:'5px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', color:(page===totalPages||showAll)?'var(--text3)':'var(--text)', cursor:(page===totalPages||showAll)?'not-allowed':'pointer', fontFamily:'var(--font)', fontSize:12 }}>»</button>
           </div>
         </div>
       )}

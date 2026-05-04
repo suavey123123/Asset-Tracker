@@ -2,66 +2,34 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Btn, Modal } from './UI'
 
+
 function normalizeDate(val) {
-  if (!val || !val.trim()) return null
-  const v = val.trim()
-  // Already YYYY-MM-DD
+  if (!val || !String(val).trim()) return null
+  const v = String(val).trim()
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
-  // MM/DD/YYYY
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
-    const [m, d, y] = v.split('/')
-    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+    const [m,d,y]=v.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
   }
-  // DD/MM/YYYY
   if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(v)) {
-    const [d, m, y] = v.split('/')
-    return `20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+    const [m,d,y]=v.split('/'); return `20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
   }
-  // MM-DD-YYYY
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(v)) return v.replace(/\//g,'-')
   if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(v)) {
-    const [m, d, y] = v.split('-')
-    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+    const [a,b,y]=v.split('-'); return `${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`
   }
-  // DD.MM.YYYY
   if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(v)) {
-    const [d, m, y] = v.split('.')
-    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+    const [d,m,y]=v.split('.'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
   }
-  // Try native parse as fallback
-  try {
-    const d = new Date(v)
-    if (!isNaN(d)) return d.toISOString().slice(0, 10)
-  } catch {}
+  try { const d=new Date(v); if(!isNaN(d)) return d.toISOString().slice(0,10) } catch {}
   return null
 }
 
-
-const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,2024-01-10,2024-01-15,1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,2024-01-10,2024-01-15,999.00,,,,,,,iOS 17
-Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,2023-05-25,2023-06-01,2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
-
-const NOTES = [
-  'One row per asset. If an employee has 2 assets, add 2 rows with the same employee details.',
-  'asset_tag is required per row. asset_category, asset_model, asset_serial are optional.',
-  'If the asset tag already exists it will be assigned. If not, a new asset will be created.',
-  'Employee details only get created once — duplicates are automatically skipped.',
-]
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim())
-  if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'))
-  const errs = []
-  const rows = lines.slice(1).map((line, i) => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
-    const row = {}
-    headers.forEach((h, j) => { row[h] = vals[j] || '' })
-    if (!row.name) errs.push(`Row ${i + 2}: missing employee name`)
-    return row
-  })
-  return { rows, errors: errs }
+function cleanCost(val) {
+  if (!val) return null
+  const n = parseFloat(String(val).replace(/[$,\s]/g,''))
+  return isNaN(n) ? null : n
 }
+
 
 export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const [csv, setCsv] = useState('')
@@ -160,7 +128,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           serial_number: r.asset_serial || null,
           purchase_date: normalizeDate(r.purchase_date),
           provision_date: normalizeDate(r.provision_date),
-          purchase_cost: r.purchase_cost ? parseFloat(r.purchase_cost) : null,
+          purchase_cost: cleanCost(r.purchase_cost),
           status: 'Checked Out',
           assigned_to: r.name,
           assigned_to_team: null,
