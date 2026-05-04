@@ -3,7 +3,41 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal } from './UI'
 
-const TEMPLATE = `asset_tag,asset_category,asset_model,asset_serial,status,location,assigned_to,assigned_to_team,purchase_date,purchase_cost,warranty_expiry,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,notes
+function normalizeDate(val) {
+  if (!val || !val.trim()) return null
+  const v = val.trim()
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+  // MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
+    const [m, d, y] = v.split('/')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(v)) {
+    const [d, m, y] = v.split('/')
+    return `20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // MM-DD-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(v)) {
+    const [m, d, y] = v.split('-')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // DD.MM.YYYY
+  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(v)) {
+    const [d, m, y] = v.split('.')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // Try native parse as fallback
+  try {
+    const d = new Date(v)
+    if (!isNaN(d)) return d.toISOString().slice(0, 10)
+  } catch {}
+  return null
+}
+
+
+const TEMPLATE = `asset_tag,asset_category,asset_model,asset_serial,status,location,assigned_to,assigned_to_team,purchase_date,provision_date,purchase_cost,warranty_expiry,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,notes
 IT-001,LAPTOP,Apple MacBook Pro 14,C02XL1234,Available,Head Office,,,2024-01-15,2499.00,2027-01-15,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,,00:1A:2B:3C:4D:5E,macOS Sonoma 14.0,
 IT-002,LAPTOP,Dell XPS 15,DL-98765,Checked Out,Head Office,John Smith,,2023-06-01,1899.00,2026-06-01,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,,00:AA:BB:CC:DD:EE,Windows 11 Pro,
 IT-003,PHONE,iPhone 15 Pro,IP-11111,Available,Head Office,,,,,,,,,,,00:BB:CC:DD:EE:FF,iOS 17,

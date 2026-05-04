@@ -2,10 +2,44 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Btn, Modal } from './UI'
 
-const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,,,,,,,,iOS 17
-Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
+function normalizeDate(val) {
+  if (!val || !val.trim()) return null
+  const v = val.trim()
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+  // MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
+    const [m, d, y] = v.split('/')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(v)) {
+    const [d, m, y] = v.split('/')
+    return `20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // MM-DD-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(v)) {
+    const [m, d, y] = v.split('-')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // DD.MM.YYYY
+  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(v)) {
+    const [d, m, y] = v.split('.')
+    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  // Try native parse as fallback
+  try {
+    const d = new Date(v)
+    if (!isNaN(d)) return d.toISOString().slice(0, 10)
+  } catch {}
+  return null
+}
+
+
+const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,2024-01-10,2024-01-15,1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,2024-01-10,2024-01-15,999.00,,,,,,,iOS 17
+Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,2023-05-25,2023-06-01,2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
 
 const NOTES = [
   'One row per asset. If an employee has 2 assets, add 2 rows with the same employee details.',
@@ -93,7 +127,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
         title: r.title || null,
         department: r.department || null,
         phone: r.phone || null,
-        hire_date: r.hire_date || null,
+        hire_date: normalizeDate(r.hire_date),
         site_id: siteId || null,
       })
       if (error) { errors.push(`Employee ${r.name}: ${error.message}`); empSkipped++ }
@@ -124,6 +158,9 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           model: r.asset_model || null,
           category: (r.asset_category || 'LAPTOP').toUpperCase().trim().replace(/[^A-Z0-9 &()-]/g, '').substring(0, 50) || 'OTHER',
           serial_number: r.asset_serial || null,
+          purchase_date: normalizeDate(r.purchase_date),
+          provision_date: normalizeDate(r.provision_date),
+          purchase_cost: r.purchase_cost ? parseFloat(r.purchase_cost) : null,
           status: 'Checked Out',
           assigned_to: r.name,
           assigned_to_team: null,
@@ -214,7 +251,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
             </div>
 
             <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-              name, email, title, department, phone, hire_date, asset_tag, asset_category, asset_model, asset_serial, cpu, gpu, ram, ssd, hdd, mac_wifi, mac_lan, os_version
+              name, email, title, department, phone, hire_date, asset_tag, asset_category, asset_model, asset_serial, purchase_date, provision_date, purchase_cost, cpu, gpu, ram, ssd, hdd, mac_wifi, mac_lan, os_version
             </div>
 
             {/* File upload */}
