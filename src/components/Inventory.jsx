@@ -73,6 +73,42 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   })
   const [saveFilterName, setSaveFilterName] = useState('')
   const [showSaveFilter, setShowSaveFilter] = useState(false)
+  const [showColPicker, setShowColPicker] = useState(false)
+  const [visibleCols, setVisibleCols] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('inventory_cols') || 'null') || ['tag','model','category','status','assigned_to','site','actions'] } catch { return ['tag','model','category','status','assigned_to','site','actions'] }
+  })
+
+  const ALL_COLS = [
+    { id:'tag',         label:'Tag' },
+    { id:'model',       label:'Model / Brand' },
+    { id:'category',    label:'Category' },
+    { id:'status',      label:'Status' },
+    { id:'assigned_to', label:'Assigned To' },
+    { id:'site',        label:'Site' },
+    { id:'serial',      label:'Serial Number' },
+    { id:'purchase',    label:'Purchase Cost' },
+    { id:'warranty',    label:'Warranty Expiry' },
+    { id:'actions',     label:'Actions' },
+  ]
+
+  function toggleCol(id) {
+    if (id === 'tag' || id === 'actions') return // always visible
+    const updated = visibleCols.includes(id) ? visibleCols.filter(c => c !== id) : [...visibleCols, id]
+    setVisibleCols(updated)
+    localStorage.setItem('inventory_cols', JSON.stringify(updated))
+  }
+
+  const has = (id) => visibleCols.includes(id)
+
+  // Close col picker on outside click
+  useEffect(() => {
+    if (!showColPicker) return
+    function close(e) {
+      if (!e.target.closest('[data-colpicker]')) setShowColPicker(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showColPicker])
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
@@ -382,6 +418,20 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
+        <div style={{ position:'relative' }}>
+          <button onClick={()=>setShowColPicker(p=>!p)} title="Customize columns" style={{ padding:'6px 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background: showColPicker?'var(--bg4)':'var(--bg3)', color:'var(--text2)', cursor:'pointer', fontSize:13, fontFamily:'var(--font)' }}>⊞ Columns</button>
+          {showColPicker && (
+            <div style={{ position:'absolute', top:'calc(100% + 4px)', right:0, background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', zIndex:200, padding:'10px', minWidth:180, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
+              <div style={{ fontSize:11, color:'var(--text3)', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.05em' }}>Show columns</div>
+              {ALL_COLS.map(c => (
+                <label key={c.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 4px', cursor: (c.id==='tag'||c.id==='actions')?'not-allowed':'pointer', opacity:(c.id==='tag'||c.id==='actions')?0.5:1 }}>
+                  <input type="checkbox" checked={has(c.id)} disabled={c.id==='tag'||c.id==='actions'} onChange={()=>toggleCol(c.id)} style={{ width:'auto', accentColor:'var(--accent)' }} />
+                  <span style={{ fontSize:13 }}>{c.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add asset</Btn>}
       </div>
 
@@ -444,7 +494,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                         {isAdmin && <Btn size="sm" onClick={()=>duplicateAsset(a)}>Copy</Btn>}
                         {isAdmin && <Btn size="sm" variant="danger" onClick={()=>deleteAsset(a)}>Del</Btn>}
                       </div>
-                    </td>
+                    </td>}
                   </tr>
                 )
               })}
