@@ -433,7 +433,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search assets…" style={{ width:200 }} />
         <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ width:150 }}>
           <option value="">All statuses</option>
-          <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Ordered</option><option>Received</option><option>Retired</option>
+          <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
         </select>
         <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{ width:160 }}>
           <option value="">All categories</option>
@@ -768,7 +768,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <FormField label="Change status (optional)">
             <select value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
               <option value="">— Keep current status —</option>
-              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Ordered</option><option>Received</option><option>Retired</option>
+              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
             </select>
           </FormField>
           <FormField label="Move to site (optional)">

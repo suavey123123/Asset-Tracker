@@ -3,9 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal } from './UI'
 
-const TEMPLATE = `asset_tag,name,category,status,model,serial_number,location,purchase_date,purchase_cost,warranty_expiry,notes
-IT-001,MacBook Pro 14,IT Equipment,Available,Apple MacBook Pro,C02XL1234,Office Desk 1,2024-01-15,2499.00,2027-01-15,Primary dev machine
-TOOL-001,DeWalt Drill,Tools & Equipment,Available,DeWalt DCD791,DW-98765,Tool Cabinet A,2023-06-01,189.00,2025-06-01,`
+const TEMPLATE = `asset_tag,category,status,model,serial_number,location,assigned_to,purchase_date,purchase_cost,warranty_expiry,CPU,GPU,RAM,SSD,HDD,MAC ADDRESS (WIFI),MAC ADDRESS (LAN),OS VERSION,notes
+IT-001,LAPTOP,Available,Apple MacBook Pro 14,C02XL1234,Head Office,,,2024-01-15,2499.00,2027-01-15,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,,Wi-Fi 6E,00:1A:2B:3C:4D:5E,macOS Sonoma 14.0,Primary dev machine
+IT-002,LAPTOP,Checked Out,Dell XPS 15,DL-98765,Head Office,John Smith,2023-06-01,1899.00,2026-06-01,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,Wi-Fi 6,00:AA:BB:CC:DD:EE,Windows 11 Pro,`
 
 export default function ImportCSV({ open, onClose, onDone }) {
   const { profile } = useAuth()
