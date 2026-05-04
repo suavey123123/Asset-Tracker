@@ -35,6 +35,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allLicenses, setAllLicenses] = useState([])
   const [formLicenses, setFormLicenses] = useState([])
   const [allSites, setAllSites] = useState([])
+  const [filterTag, setFilterTag] = useState('')
+  const [allTags, setAllTags] = useState([])
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
@@ -237,7 +239,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const filtered = assets.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
-    if (filterTag) { /* tag filtering handled via separate query */ }
+    // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
       if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number} ${a.assigned_to}`.toLowerCase().includes(q)) return false
