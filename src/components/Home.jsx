@@ -32,7 +32,7 @@ export default function Home({ onNav, onViewAsset }) {
   const [schedules, setSchedules] = useState([])
   const [requests, setRequests] = useState([])
   const [agingAssets, setAgingAssets] = useState([])
-  const [expiringLicenses, setExpiringLicenses] = useState([])
+  const [expiringLicensesList, setExpiringLicensesList] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState(() => {
@@ -78,7 +78,7 @@ export default function Home({ onNav, onViewAsset }) {
       const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
       return yrs >= 3
     }).sort((a,b)=>new Date(a.purchase_date)-new Date(b.purchase_date)))
-    setExpiringLicenses((lic||[]).filter(l => {
+    setExpiringLicensesList((lic||[]).filter(l => {
       const days = (new Date(l.expiry_date)-Date.now())/(1000*60*60*24)
       return days <= 90
     }))
@@ -397,9 +397,9 @@ export default function Home({ onNav, onViewAsset }) {
       {has('licenseexpiry') && (
         <div style={card}>
           <div style={cardTitle}>📋 License expiry (90 days)</div>
-          {expiringLicenses.length === 0
+          {expiringLicensesList.length === 0
             ? <div style={{ fontSize:13, color:'var(--text3)' }}>No licenses expiring soon.</div>
-            : expiringLicenses.map(l => {
+            : expiringLicensesList.map(l => {
                 const days = Math.ceil((new Date(l.expiry_date)-Date.now())/(1000*60*60*24))
                 const expired = days < 0
                 return (
