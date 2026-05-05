@@ -23,6 +23,7 @@ export default function Users() {
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('viewer')
   const [inviting, setInviting] = useState(false)
   const [inviteMsg, setInviteMsg] = useState('')
   const [actionMsg, setActionMsg] = useState({})
@@ -109,13 +110,26 @@ export default function Users() {
   async function sendInvite() {
     if (!inviteEmail.trim()) return
     setInviting(true); setInviteMsg('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email: inviteEmail.trim(),
-      options: { shouldCreateUser: true }
-    })
+    const { data, error } = await supabase.auth.admin
+      ? await (async () => {
+          // Try admin invite first (sets role in user_metadata)
+          return supabase.auth.signInWithOtp({
+            email: inviteEmail.trim(),
+            options: { shouldCreateUser: true, data: { role: inviteRole } }
+          })
+        })()
+      : await supabase.auth.signInWithOtp({
+          email: inviteEmail.trim(),
+          options: { shouldCreateUser: true, data: { role: inviteRole } }
+        })
+    // After invite, try to update the profile role if user already exists
+    if (!error) {
+      const { data: existing } = await supabase.from('profiles').select('id').eq('email', inviteEmail.trim()).maybeSingle()
+      if (existing) await supabase.from('profiles').update({ role: inviteRole }).eq('id', existing.id)
+    }
     setInviting(false)
-    setInviteMsg(error ? 'error:' + error.message : `✓ Invite sent to ${inviteEmail}`)
-    if (!error) setInviteEmail('')
+    setInviteMsg(error ? 'error:' + error.message : `✓ Invite sent to ${inviteEmail} as ${ROLE_COLORS[inviteRole]?.label || inviteRole}`)
+    if (!error) { setInviteEmail(''); setInviteRole('viewer') }
   }
 
   const isError = inviteMsg.startsWith('error:')
@@ -128,6 +142,14 @@ export default function Users() {
         <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>They'll receive a magic link to sign in and set their password.</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendInvite()} placeholder="colleague@company.com" type="email" style={{ flex: 1 }} />
+          <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
+            style={{ fontSize:12, padding:'6px 10px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color: ROLE_COLORS[inviteRole]?.color || 'var(--text)', fontFamily:'var(--font)', fontWeight:500 }}>
+            <option value="viewer">Viewer</option>
+            <option value="technician">Field Technician</option>
+            <option value="auditor">Finance Auditor</option>
+            <option value="manager">Ops Manager</option>
+            <option value="admin">Super Admin</option>
+          </select>
           <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
         </div>
         {inviteMsg && (
