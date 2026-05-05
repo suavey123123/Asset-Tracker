@@ -558,6 +558,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
             <PrintSheet assets={assets.filter(a=>selected.includes(a.id))} />
           </>
         )}
+        <Btn size="sm" onClick={exportFilteredCSV}>⬇ Export CSV</Btn>
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
         <div style={{ display:'flex', gap:4, background:'var(--bg3)', borderRadius:'var(--radius)', padding:3, border:'1px solid var(--border2)' }}>
           {['table','card'].map(m => (
