@@ -271,7 +271,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const pct = progress.total > 0 ? Math.round(progress.current / progress.total * 100) : 0
 
   return (
-    <Modal open={open} onClose={() => { onClose(); reset() }} title="Import employees + assets" width={620}>
+    <Modal open={open} onClose={() => { if (!result) { onClose(); reset() } }} title="Import employees + assets" width={620}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {result ? (
