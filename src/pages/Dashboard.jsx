@@ -83,7 +83,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState(0)
   const [lastRefreshed, setLastRefreshed] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { isAdmin } = useAuth()
+  const { isAdmin, tenant } = useAuth()
 
   useEffect(() => { fetchAlerts() }, [])
 
