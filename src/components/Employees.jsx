@@ -8,7 +8,7 @@ const EMPTY_FORM = {
   name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: null,
 }
 
-export default function Employees({ onViewAsset }) {
+export default function Employees({ onViewAsset, highlightEmployee, onClearHighlight }) {
   const { isAdmin, isAdminOrManager } = useAuth()
   const [employees, setEmployees] = useState([])
   const [assets, setAssets] = useState([])
@@ -79,6 +79,7 @@ export default function Employees({ onViewAsset }) {
   }
 
   useEffect(() => { fetchAll() }, [])
+  useEffect(() => { if (highlightEmployee) { setSearch(highlightEmployee.name || ''); onClearHighlight?.() } }, [highlightEmployee])
 
   async function fetchAll() {
     setLoading(true)

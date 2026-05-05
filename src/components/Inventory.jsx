@@ -63,7 +63,7 @@ function LazyAssetPhoto({ assetId, onClick }) {
   )
 }
 
-export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
+export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, onEditDone }) {
   const { isAdmin, isAdminOrManager, canWriteAssets, isTechnician, canReadFinancials, profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -699,7 +699,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     </td>}
                     {has('assigned_to') && <td style={{ padding:'10px 14px', fontSize:12 }}>
                       {a.assigned_to
-                        ? <span style={{ color:'var(--text)' }}>{a.assigned_to}</span>
+                        ? <span style={{ color:'var(--text)', cursor: onViewEmployee ? 'pointer' : 'default', textDecoration: onViewEmployee ? 'underline' : 'none', textDecorationColor:'var(--border2)' }} onClick={e=>{e.stopPropagation(); if(onViewEmployee){const emp=allEmployees?.find(emp=>emp.name===a.assigned_to); onViewEmployee(emp||{name:a.assigned_to})}}}>{a.assigned_to}</span>
                         : a.assigned_to_team
                           ? <span style={{ color:'var(--blue)', fontSize:11, padding:'2px 8px', borderRadius:100, background:'var(--blue-bg)', fontFamily:'var(--mono)' }}>{a.assigned_to_team}</span>
                           : <span style={{ color:'var(--text3)' }}>—</span>}

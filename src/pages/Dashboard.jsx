@@ -79,6 +79,7 @@ export default function Dashboard() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
   const [viewingAssetFromTab, setViewingAssetFromTab] = useState('inventory')
+  const [viewingEmployee, setViewingEmployee] = useState(null)
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
   const [lastRefreshed, setLastRefreshed] = useState(null)
@@ -122,6 +123,7 @@ export default function Dashboard() {
   }
 
   function handleViewAsset(asset) { setViewingAsset(asset); setViewingAssetFromTab(tab); setSidebarOpen(false) }
+  function handleViewEmployee(emp) { setViewingEmployee(emp); setViewingAsset(null); setTab('employees'); setSidebarOpen(false) }
   function handleNav(newTab) { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }
   function handleEdit(asset) { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }
 
@@ -129,7 +131,7 @@ export default function Dashboard() {
 
   const PAGE = {
     home: <Home onNav={handleNav} onViewAsset={handleViewAsset} />,
-    inventory: <Inventory onViewAsset={handleViewAsset} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />,
+    inventory: <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />,
     checkout: <Checkout onViewAsset={handleViewAsset} />,
     transfer: <Transfer onViewAsset={handleViewAsset} />,
     maintenance: <Maintenance />,
@@ -139,7 +141,7 @@ export default function Dashboard() {
     settings: <Settings />,
     scanner: <Scanner onViewAsset={handleViewAsset} />,
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
-    employees: <Employees onViewAsset={handleViewAsset} />,
+    employees: <Employees onViewAsset={handleViewAsset} highlightEmployee={viewingEmployee} onClearHighlight={()=>setViewingEmployee(null)} />,
     offboarding: <Offboarding />,
     requests: <AssetRequests />,
     scheduled: <ScheduledMaintenance onViewAsset={handleViewAsset} />,
