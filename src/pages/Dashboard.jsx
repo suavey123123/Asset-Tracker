@@ -117,7 +117,6 @@ export default function Dashboard() {
   }
 
   return (
-    <ToastProvider>
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', position:'relative' }}>
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -169,6 +168,5 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
-    </ToastProvider>
   )
 }
