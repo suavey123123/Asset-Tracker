@@ -3,38 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal } from './UI'
 
-
-function normalizeDate(val) {
-  if (!val || !String(val).trim()) return null
-  const v = String(val).trim()
-  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
-    const [m,d,y]=v.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
-  }
-  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(v)) {
-    const [m,d,y]=v.split('/'); return `20${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
-  }
-  if (/^\d{4}\/\d{2}\/\d{2}$/.test(v)) return v.replace(/\//g,'-')
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(v)) {
-    const [a,b,y]=v.split('-'); return `${y}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`
-  }
-  if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(v)) {
-    const [d,m,y]=v.split('.'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
-  }
-  try { const d=new Date(v); if(!isNaN(d)) return d.toISOString().slice(0,10) } catch {}
-  return null
-}
-
-function cleanCost(val) {
-  if (!val) return null
-  const n = parseFloat(String(val).replace(/[$,\s]/g,''))
-  return isNaN(n) ? null : n
-}
-
-const TEMPLATE = `asset_tag,asset_category,asset_model,asset_serial,status,location,assigned_to,assigned_to_team,purchase_date,provision_date,purchase_cost,warranty_expiry,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,notes
-IT-001,LAPTOP,Dell XPS 15,SN-12345,Available,Head Office,,, 5/29/2025,6/1/2025,$1899.00,2027-01-15,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,,00:1A:2B:3C:4D:5E,Windows 11 Pro,,,
-IT-002,MONITOR,Dell S2722DC,SN-67890,Available,Head Office,,,5/29/2025,6/1/2025,$294.99,2027-05-29,,,,,,,,,2560x1440 QHD,27",Shared monitor`
-
+const TEMPLATE = `asset_tag,name,category,status,model,serial_number,location,purchase_date,purchase_cost,warranty_expiry,notes
+IT-001,MacBook Pro 14,IT Equipment,Available,Apple MacBook Pro,C02XL1234,Office Desk 1,2024-01-15,2499.00,2027-01-15,Primary dev machine
+TOOL-001,DeWalt Drill,Tools & Equipment,Available,DeWalt DCD791,DW-98765,Tool Cabinet A,2023-06-01,189.00,2025-06-01,`
 
 export default function ImportCSV({ open, onClose, onDone }) {
   const { profile } = useAuth()
@@ -64,20 +35,6 @@ export default function ImportCSV({ open, onClose, onDone }) {
     return { rows, errors: errs }
   }
 
-  const [fileName, setFileName] = useState('')
-
-  function handleFileUpload(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      handlePaste(ev.target.result)
-      setFileName(file.name)
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
-
   function handlePaste(text) {
     setCsv(text)
     setResult(null)
@@ -100,32 +57,13 @@ export default function ImportCSV({ open, onClose, onDone }) {
     if (errs.length) { setErrors(errs); return }
     setImporting(true)
     const payload = rows.map(r => ({
-      asset_tag: r.asset_tag,
-      name: r.asset_model || r.asset_tag,
-      category: (r.asset_category || 'LAPTOP').toUpperCase(),
+      asset_tag: r.asset_tag, name: r.name,
+      category: r.category || 'IT Equipment',
       status: r.status || 'Available',
-      model: r.asset_model || null,
-      serial_number: r.asset_serial || null,
-      location: r.location || null,
-      assigned_to: r.assigned_to || null,
-      assigned_to_team: r.assigned_to_team || null,
-      purchase_date: normalizeDate(r.purchase_date),
-      provision_date: normalizeDate(r.provision_date),
-      purchase_cost: cleanCost(r.purchase_cost),
-      warranty_expiry: normalizeDate(r.warranty_expiry),
-      notes: r.notes || null,
-      specs: {
-        CPU: r.cpu || '',
-        GPU: r.gpu || '',
-        RAM: r.ram || '',
-        SSD: r.ssd || '',
-        HDD: r.hdd || '',
-        'MAC ADDRESS (WIFI)': r.mac_wifi || '',
-        'MAC ADDRESS (LAN)': r.mac_lan || '',
-        'OS VERSION': r.os_version || '',
-        'RESOLUTION': r.resolution || '',
-        'SIZE': r.size || '',
-      }
+      model: r.model || null, serial_number: r.serial_number || null,
+      location: r.location || null, purchase_date: r.purchase_date?.trim() || null,
+      purchase_cost: r.purchase_cost ? parseFloat(r.purchase_cost) : null,
+      warranty_expiry: r.warranty_expiry?.trim() || null, notes: r.notes || null,
     }))
     const { data, error } = await supabase.from('assets').insert(payload).select()
     if (!error && data) {
@@ -165,40 +103,21 @@ export default function ImportCSV({ open, onClose, onDone }) {
         {preview.length > 0 && !result && (
           <div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preview (first {preview.length} rows)</div>
-            <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
-                <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
-                  <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)', position:'sticky', top:0 }}>
-                    {['Tag','Category','Model','Serial','Status','Assigned To','Location','Purchase Date','Provision Date','Cost','Warranty','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS','Resolution','Size','Notes'].map(h => (
-                      <th key={h} style={{ padding:'6px 10px', textAlign:'left', color:'var(--text2)', fontWeight:500, whiteSpace:'nowrap', fontSize:11 }}>{h}</th>
-                    ))}
-                  </tr></thead>
-                  <tbody>{preview.map((r, i) => (
-                    <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
-                      <td style={{ padding:'6px 10px', fontFamily:'var(--mono)', color:'var(--accent)', whiteSpace:'nowrap' }}>{r.asset_tag||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_category||'—'}</td>
-                      <td style={{ padding:'6px 10px', whiteSpace:'nowrap' }}>{r.asset_model||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.asset_serial||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.status||'—'}</td>
-                      <td style={{ padding:'6px 10px', whiteSpace:'nowrap' }}>{r.assigned_to||r.assigned_to_team||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.location||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.warranty_expiry||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.cpu||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.gpu||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ram||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ssd||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.hdd||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_wifi||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_lan||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.os_version||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.resolution||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.size||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)' }}>{r.notes||'—'}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
+            <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['Tag','Name','Category','Status','Location'].map(h => <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text2)', fontWeight: 500 }}>{h}</th>)}
+                </tr></thead>
+                <tbody>{preview.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '6px 10px', fontFamily: 'var(--mono)' }}>{r.asset_tag}</td>
+                    <td style={{ padding: '6px 10px' }}>{r.name}</td>
+                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.category}</td>
+                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.status}</td>
+                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.location}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
             </div>
           </div>
         )}

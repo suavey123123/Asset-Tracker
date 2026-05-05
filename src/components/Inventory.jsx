@@ -833,13 +833,6 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       </Modal>
 
       <ImportCSV open={importOpen} onClose={()=>setImportOpen(false)} onDone={fetchAssets} />
-      <CheckoutAgreement
-        open={!!agreementModal}
-        onClose={() => setAgreementModal(null)}
-        asset={agreementModal?.asset}
-        employee={agreementModal?.employee}
-        onSign={() => { setAgreementModal(null); doCheckout() }}
-      />
     </div>
   )
 }
