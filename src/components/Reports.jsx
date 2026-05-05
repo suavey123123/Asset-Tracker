@@ -505,9 +505,10 @@ export default function Reports() {
               </tr>
             })}</tbody>
           </table>
+          </div>
         </div>
       )}
-      </>
+      </>}
     </div>
   )
 }
