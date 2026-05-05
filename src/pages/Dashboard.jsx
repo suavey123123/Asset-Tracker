@@ -104,7 +104,7 @@ export default function Dashboard() {
     settings: <Settings />,
     scanner: <Scanner onViewAsset={handleViewAsset} />,
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
-    employees: <Employees />,
+    employees: <Employees onViewAsset={handleViewAsset} />,
     offboarding: <Offboarding />,
     requests: <AssetRequests />,
     scheduled: <ScheduledMaintenance onViewAsset={handleViewAsset} />,
