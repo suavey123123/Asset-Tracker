@@ -681,7 +681,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Warranty expiry"><input type="date" value={form.warranty_expiry} onChange={e=>setForm(f=>({...f,warranty_expiry:e.target.value}))} /></FormField>
             <FormField label="Purchase cost ($)"><input type="number" min="0" step="0.01" value={form.purchase_cost} onChange={e=>setForm(f=>({...f,purchase_cost:e.target.value}))} /></FormField>
           </div>
-          {!editAsset && allLicenses.length > 0 && (
+          {allLicenses.length > 0 && (
             <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
               <div style={{ fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Assign software licenses</div>
               <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:160, overflowY:'auto' }}>
