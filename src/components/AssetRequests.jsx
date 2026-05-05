@@ -128,7 +128,8 @@ export default function AssetRequests() {
 
   async function deleteRequest(id) {
     if (!confirm('Delete this request?')) return
-    await supabase.from('asset_requests').delete().eq('id', id)
+    const { error } = await supabase.from('asset_requests').delete().eq('id', id)
+    if (error) { alert('Delete failed: ' + error.message); return }
     fetchRequests()
   }
 
