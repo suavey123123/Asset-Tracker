@@ -352,7 +352,7 @@ export default function Employees({ onViewEmployee }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {empAssets.map(a => (
                       <div key={a.id}
-                        onClick={() => { setViewEmp(null); onViewAsset?.(a) }}
+                        onClick={() => { setViewEmp(null); if (onViewAsset && a?.id) onViewAsset(a) }}
                         style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:'var(--bg3)', borderRadius:'var(--radius)', border:'1px solid var(--border)', cursor:'pointer', transition:'background 0.1s' }}
                         onMouseEnter={e=>e.currentTarget.style.background='var(--bg4)'}
                         onMouseLeave={e=>e.currentTarget.style.background='var(--bg3)'}>

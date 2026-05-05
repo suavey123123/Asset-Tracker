@@ -86,7 +86,7 @@ export default function Dashboard() {
     setAlerts((data||[]).length)
   }
 
-  function handleViewAsset(asset) { setViewingAsset(asset); setSidebarOpen(false) }
+  function handleViewAsset(asset) { setViewingAsset(asset); setTab('inventory'); setSidebarOpen(false) }
   function handleNav(newTab) { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }
   function handleEdit(asset) { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }
 
