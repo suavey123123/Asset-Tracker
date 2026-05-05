@@ -129,19 +129,18 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   async function doImport() {
     const { rows, errors: errs } = parseCSV(csv)
     if (errs.length) { setErrors(errs); return }
-    setImporting(true)
-
-    try {
-
     // Group rows by employee name to avoid duplicate inserts
     const empMap = {}
     rows.forEach(r => {
       if (!empMap[r.name]) empMap[r.name] = { details: r, assets: [] }
       if (r.asset_tag) empMap[r.name].assets.push(r)
     })
-
     const employees = Object.values(empMap)
     let empCreated = 0, empSkipped = 0, assetCreated = 0, assetAssigned = 0, errors = []
+
+    setImporting(true)
+
+    try {
 
     // Step 1: Create employees
     setProgress({ step: 'Creating employees', current: 0, total: employees.length })
