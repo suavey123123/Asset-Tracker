@@ -540,6 +540,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <Btn size="sm" onClick={()=>setBulkEditOpen(true)}>
               ✎ Edit {selected.length} selected
             </Btn>
+            <PrintSheet assets={assets.filter(a=>selected.includes(a.id))} />
           </>
         )}
         {isAdmin && <Btn size="sm" onClick={()=>setImportOpen(true)}>⬆ Import CSV</Btn>}
