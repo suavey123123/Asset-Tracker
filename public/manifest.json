@@ -1,38 +1,39 @@
 {
-  "name": "Asset Tracker",
-  "short_name": "AssetTracker",
-  "description": "Track and manage your company assets",
+  "name": "NHN Asset Tracker",
+  "short_name": "Asset Tracker",
+  "description": "IT Asset Management System for NHN Global",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0f0f0f",
   "theme_color": "#d4ff4e",
-  "orientation": "any",
+  "categories": ["business", "utilities"],
   "icons": [
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/icons/icon-72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-96.png",   "sizes": "96x96",   "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-128.png",  "sizes": "128x128", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-144.png",  "sizes": "144x144", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-152.png",  "sizes": "152x152", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-192.png",  "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-384.png",  "sizes": "384x384", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
-  "categories": ["business", "productivity", "utilities"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Inventory",
-      "url": "/?tab=inventory",
-      "description": "View asset inventory"
+      "short_name": "Inventory",
+      "description": "View asset inventory",
+      "url": "/#inventory",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Scanner",
-      "url": "/?tab=scanner",
-      "description": "Scan asset QR code"
+      "short_name": "Scan",
+      "description": "Scan asset barcode",
+      "url": "/#scanner",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

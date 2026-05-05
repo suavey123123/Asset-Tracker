@@ -6,6 +6,7 @@ const AuthContext = createContext({})
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [tenant, setTenant] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,6 +33,11 @@ export function AuthProvider({ children }) {
       return
     }
     setProfile(data)
+    // Load tenant info
+    if (data?.tenant_id) {
+      const { data: t } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
+      setTenant(t)
+    }
     setLoading(false)
   }
 

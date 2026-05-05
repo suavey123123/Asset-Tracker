@@ -22,6 +22,7 @@ import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
 import QRLabels from '../components/QRLabels'
 import { ToastProvider } from '../components/Toast'
+import Tenants from '../components/Tenants'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Consumables from '../components/Consumables'
 import ValueDashboard from '../components/ValueDashboard'
@@ -113,6 +114,7 @@ export default function Dashboard() {
     sites: <Sites />,
     licenses: <Licenses />,
     compliance: <Compliance />,
+    tenants: <Tenants />,
     qrlabels: <QRLabels />,
     consumables: <Consumables />,
     valuedashboard: <ValueDashboard />,

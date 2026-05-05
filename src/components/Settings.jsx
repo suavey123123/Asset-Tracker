@@ -4,6 +4,25 @@ import { useAuth } from '../lib/AuthContext'
 import { Btn, FormField } from './UI'
 
 export default function Settings() {
+  const [azureSyncing, setAzureSyncing] = useState(false)
+  const [azureSyncResult, setAzureSyncResult] = useState(null)
+
+  async function runAzureSync() {
+    setAzureSyncing(true); setAzureSyncResult(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/azure-ad-sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      })
+      const result = await res.json()
+      setAzureSyncResult(result)
+    } catch(e) {
+      setAzureSyncResult({ error: e.message })
+    }
+    setAzureSyncing(false)
+  }
+
   const { profile, user, fetchProfile } = useAuth()
   const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
@@ -223,6 +242,39 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+      {/* Azure AD Sync */}
+      <div style={card}>
+        <div style={{ fontSize:14, fontWeight:500, marginBottom:4 }}>Azure AD / Microsoft 365 Sync</div>
+        <div style={{ fontSize:12, color:'var(--text2)', marginBottom:'1rem' }}>
+          Automatically sync employees from your Microsoft directory. New users are created, disabled accounts are offboarded.
+        </div>
+        <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'12px 14px', fontSize:12, color:'var(--text2)', marginBottom:'1rem' }}>
+          <div style={{ fontWeight:500, marginBottom:8, color:'var(--text)' }}>Setup required — add these to Supabase Edge Function Secrets:</div>
+          {[
+            ['AZURE_TENANT_ID', 'Your Azure Directory (tenant) ID'],
+            ['AZURE_CLIENT_ID', 'App registration Client ID'],
+            ['AZURE_CLIENT_SECRET', 'App registration Client Secret'],
+            ['APP_TENANT_ID', 'Your Supabase tenant UUID (from Tenants page)'],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display:'flex', gap:8, marginBottom:4 }}>
+              <code style={{ fontFamily:'var(--mono)', background:'var(--bg4)', padding:'1px 6px', borderRadius:3, fontSize:11, color:'var(--accent)' }}>{k}</code>
+              <span style={{ color:'var(--text3)' }}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          <Btn variant="primary" onClick={runAzureSync} disabled={azureSyncing}>
+            {azureSyncing ? '⟳ Syncing…' : '⟳ Run sync now'}
+          </Btn>
+          {azureSyncResult && (
+            <div style={{ fontSize:12, padding:'6px 10px', borderRadius:'var(--radius)', background: azureSyncResult.error ? 'var(--red-bg)' : 'var(--green-bg)', border:`1px solid ${azureSyncResult.error ? 'var(--red)' : 'var(--green)'}`, color: azureSyncResult.error ? 'var(--red)' : 'var(--green)' }}>
+              {azureSyncResult.error || `✓ ${azureSyncResult.created} created · ${azureSyncResult.updated} updated · ${azureSyncResult.offboarded} offboarded`}
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }
