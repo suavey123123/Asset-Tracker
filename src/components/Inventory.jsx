@@ -98,8 +98,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   })
   const [saveFilterName, setSaveFilterName] = useState('')
   const [showSaveFilter, setShowSaveFilter] = useState(false)
-  const [sortCol, setSortCol] = useState('')
-  const [sortDir, setSortDir] = useState('asc')
+  const [sortCol, setSortCol] = useState(() => sessionStorage.getItem('inv_sort_col') || '')
+  const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('inv_sort_dir') || 'asc')
   const [viewMode, setViewMode] = useState(() => window.innerWidth < 768 ? 'card' : 'table')
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
@@ -159,14 +159,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     if (colId === 'actions' || colId === 'tag') {
       // tag sorts by asset_tag
       const field = colId === 'tag' ? 'asset_tag' : colId
-      if (sortCol === field) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
-      else { setSortCol(field); setSortDir('asc') }
+      if (sortCol === field) { setSortDir(d => { const n = d === 'asc' ? 'desc' : 'asc'; sessionStorage.setItem('inv_sort_dir', n); return n }) }
+      else { setSortCol(field); sessionStorage.setItem('inv_sort_col', field); setSortDir('asc'); sessionStorage.setItem('inv_sort_dir', 'asc') }
       return
     }
     const fieldMap = { model:'model', category:'category', status:'status', assigned_to:'assigned_to', site:'location', serial:'serial_number', purchase:'purchase_cost', warranty:'warranty_expiry' }
     const field = fieldMap[colId] || colId
-    if (sortCol === field) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
-    else { setSortCol(field); setSortDir('asc') }
+    if (sortCol === field) { setSortDir(d => { const n = d === 'asc' ? 'desc' : 'asc'; sessionStorage.setItem('inv_sort_dir', n); return n }) }
+    else { setSortCol(field); sessionStorage.setItem('inv_sort_col', field); setSortDir('asc'); sessionStorage.setItem('inv_sort_dir', 'asc') }
   }
 
   function resetCols() {
