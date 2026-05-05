@@ -624,9 +624,18 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     {has('tag') && <td style={{ padding:'8px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <LazyAssetPhoto assetId={a.id} onClick={()=>onViewAsset?.(a)} />
-                        <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
-                          <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
-                        </button>
+                        <div style={{ display:'flex', alignItems:'center', gap:4 }}
+                          onMouseEnter={e=>{ const btn=e.currentTarget.querySelector('.copy-btn'); if(btn) btn.style.opacity=1 }}
+                          onMouseLeave={e=>{ const btn=e.currentTarget.querySelector('.copy-btn'); if(btn) btn.style.opacity=0 }}>
+                          <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', textAlign:'left', padding:0, fontFamily:'var(--mono)' }}>
+                            <div style={{ fontWeight:500, fontSize:12, color:'var(--accent)' }}>{a.asset_tag}</div>
+                          </button>
+                          <button className="copy-btn" title="Copy tag"
+                            onClick={e=>{ e.stopPropagation(); navigator.clipboard.writeText(a.asset_tag) }}
+                            style={{ opacity:0, transition:'opacity 0.15s', background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:3, cursor:'pointer', fontSize:10, color:'var(--text2)', padding:'1px 5px', lineHeight:1.4, flexShrink:0 }}>
+                            ⎘
+                          </button>
+                        </div>
                       </div>
                     </td>}
                     {has('model') && <td style={{ padding:'10px 14px' }}>
