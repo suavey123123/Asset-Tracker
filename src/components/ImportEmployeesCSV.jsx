@@ -121,7 +121,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   }
 
   function downloadTemplate() {
-    const blob = new Blob([TEMPLATE], { type: 'text/csv' })
+    const blob = new Blob(['\uFEFF' + TEMPLATE], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = 'employee-asset-import.csv'; a.click()
     URL.revokeObjectURL(url)
