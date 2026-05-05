@@ -57,7 +57,7 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('sites').select('id, name'),
       supabase.from('employees').select('id, name, site_id'),
       supabase.from('consumables').select('*').order('name'),
-      supabase.from('maintenance_schedules').select('*').order('next_due'),
+      supabase.from('maintenance_schedules').select('*'),
       supabase.from('asset_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     ])
     setAssets(a || [])
