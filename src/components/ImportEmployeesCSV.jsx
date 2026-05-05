@@ -65,7 +65,7 @@ function parseCSVLine(line) {
 
 function parseCSV(text) {
   // Handle Windows (CRLF) and Mac (CR) line endings
-  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim())
+  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.replace(/,/g,'').trim())
   if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
   const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
   const errs = []
@@ -73,9 +73,9 @@ function parseCSV(text) {
     const vals = parseCSVLine(line)
     const row = {}
     headers.forEach((h, j) => { row[h] = (vals[j] || '').trim() })
-    if (!row.name) errs.push(`Row ${i + 2}: missing employee name`)
     return row
-  })
+  }).filter(row => row.name && row.name.trim())
+  // Only error if a row has some data but no name
   return { rows, errors: errs }
 }
 
