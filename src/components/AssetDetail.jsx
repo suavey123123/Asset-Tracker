@@ -133,7 +133,6 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         <Btn onClick={onBack} size="sm">← Back</Btn>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:18, fontWeight:500 }}>{asset.model || asset.asset_tag}</div>
-          <div style={{ fontSize:12, color:'var(--text2)' }}>{asset.model ? asset.asset_tag : ''}</div>
           <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
             <span style={{ fontFamily:'var(--mono)', fontSize:12, color:'var(--text2)' }}>{asset.asset_tag}</span>
             <Badge status={asset.category} /><Badge status={asset.status} />

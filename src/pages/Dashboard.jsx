@@ -125,7 +125,7 @@ export default function Dashboard() {
   function handleNav(newTab) { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }
   function handleEdit(asset) { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }
 
-  const title = viewingAsset ? viewingAsset.name : TITLES[tab] || 'Asset Tracker'
+  const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
   const PAGE = {
     home: <Home onNav={handleNav} onViewAsset={handleViewAsset} />,
