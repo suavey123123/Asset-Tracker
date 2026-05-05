@@ -623,7 +623,6 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                     </td>}
                     {has('tag') && <td style={{ padding:'8px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <LazyAssetPhoto assetId={a.id} onClick={()=>onViewAsset?.(a)} />
                         <div style={{ display:'flex', alignItems:'center', gap:4 }}
                           onMouseEnter={e=>{ const btn=e.currentTarget.querySelector('.copy-btn'); if(btn) btn.style.opacity=1 }}
                           onMouseLeave={e=>{ const btn=e.currentTarget.querySelector('.copy-btn'); if(btn) btn.style.opacity=0 }}>
