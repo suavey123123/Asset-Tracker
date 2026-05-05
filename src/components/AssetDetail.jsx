@@ -75,16 +75,35 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   }
 
   function printQR() {
-    const win = window.open('', '_blank', 'noopener,noreferrer')
-    win.document.write(`<html><head><title>Asset Label - ${asset.asset_tag}</title>
-    <style>body{font-family:monospace;text-align:center;padding:20px}@media print{button{display:none}}</style>
-    </head><body>
-    <button onclick="window.print()" style="margin-bottom:12px;padding:6px 14px;cursor:pointer">Print</button>
-    <h2>${asset.model || asset.asset_tag}</h2><p>${asset.asset_tag}</p>
-    ${qrRef.current?.innerHTML || ''}
-    <p style="margin-top:8px;font-size:10px">${asset.location||''}</p>
-    </body></html>`)
-    win.document.close()
+    const tag = asset.asset_tag || ''
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + '/#asset=' + tag)}`
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Asset Label - ${tag}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 30px; background: #fff; color: #000 }
+  .label { border: 2px solid #000; border-radius: 8px; padding: 20px 24px; text-align: center; width: 280px }
+  img { display: block; margin: 0 auto 12px }
+  .tag { font-family: monospace; font-size: 16px; font-weight: 700; margin-bottom: 4px }
+  .model { font-size: 13px; color: #333; margin-bottom: 4px }
+  .site { font-size: 11px; color: #666 }
+  .print-btn { margin-bottom: 20px; padding: 8px 20px; font-size: 13px; cursor: pointer; background: #d4ff4e; border: none; border-radius: 4px; font-weight: 600 }
+  @media print { .print-btn { display: none } }
+</style></head>
+<body>
+<button class="print-btn" onclick="window.print()">Print label</button>
+<div class="label">
+  <img src="${qrUrl}" width="180" height="180" />
+  <div class="tag">${tag}</div>
+  <div class="model">${asset.model || asset.category || ''}</div>
+  ${asset.location ? `<div class="site">${asset.location}</div>` : ''}
+</div>
+</body></html>`
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const win = window.open(url, '_blank', 'noopener,noreferrer')
+    if (!win) alert('Please allow popups to print.')
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 
   if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
