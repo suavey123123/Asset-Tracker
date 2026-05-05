@@ -31,7 +31,7 @@ function cleanCost(val) {
 }
 
 
-const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,locked_status,carrier,imei
+const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,assigned_to,assigned_to_team,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,locked_status,carrier,imei
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,,,,,,,iOS 17
 Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
@@ -194,6 +194,8 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
           provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
           purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
+          assigned_to: r.assigned_to || null,
+          assigned_to_team: r.assigned_to_team || null,
           locked_status: r.locked_status || null,
           carrier: r.carrier || null,
           imei: r.imei || null,
@@ -227,6 +229,8 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           assigned_to: r.name,
           assigned_to_team: null,
           location: sites?.find(s => s.id === siteId)?.name || null,
+          assigned_to: r.assigned_to || null,
+          assigned_to_team: r.assigned_to_team || null,
           locked_status: r.locked_status || null,
           carrier: r.carrier || null,
           imei: r.imei || null,
@@ -381,7 +385,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                 <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight:220, WebkitOverflowScrolling:'touch' }}>
                   <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
                     <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
-                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Lock Status','Carrier','IMEI'].map(h=>(
+                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','Assigned To','Team Use','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Lock Status','Carrier','IMEI'].map(h=>(
                         <th key={h} style={{ padding:'6px 12px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11, whiteSpace:'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
@@ -396,6 +400,8 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to_team||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.cpu||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.gpu||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ram||'—'}</td>
