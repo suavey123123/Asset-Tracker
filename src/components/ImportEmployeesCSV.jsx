@@ -75,7 +75,7 @@ function parseCSV(text) {
     const row = {}
     headers.forEach((h, j) => { row[h] = (vals[j] || '').trim() })
     return row
-  }).filter(row => row.name && row.name.trim())
+  }).filter(row => (row.name && row.name.trim()) || (row.asset_tag && row.assigned_to_team))
   // Only error if a row has some data but no name
   return { rows, errors: errs }
 }
@@ -130,9 +130,13 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   async function doImport() {
     const { rows, errors: errs } = parseCSV(csv)
     if (errs.length) { setErrors(errs); return }
-    // Group rows by employee name to avoid duplicate inserts
+    // Separate team-use rows (no name, has assigned_to_team) from employee rows
+    const teamRows = rows.filter(r => !r.name?.trim() && r.asset_tag && r.assigned_to_team)
+    const employeeRows = rows.filter(r => r.name?.trim())
+
+    // Group employee rows by name
     const empMap = {}
-    rows.forEach(r => {
+    employeeRows.forEach(r => {
       if (!empMap[r.name]) empMap[r.name] = { details: r, assets: [] }
       if (r.asset_tag) empMap[r.name].assets.push(r)
     })
