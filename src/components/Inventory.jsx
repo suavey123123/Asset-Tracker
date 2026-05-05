@@ -159,6 +159,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [bulkCategory, setBulkCategory] = useState('')
   const [bulkAssignedTo, setBulkAssignedTo] = useState('')
   const [bulkAssignedTeam, setBulkAssignedTeam] = useState('')
+  const [bulkLicenses, setBulkLicenses] = useState([])
+  const [bulkLicenseMode, setBulkLicenseMode] = useState('add') // 'add' | 'remove'
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
   const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
   const [bulkStatus, setBulkStatus] = useState('')
@@ -337,7 +339,21 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     for (const id of selected) {
       await supabase.from('assets').update(updates).eq('id', id)
     }
-    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam('')
+    // Handle license assignments
+    if (bulkLicenses.length > 0) {
+      for (const assetId of selected) {
+        for (const licenseId of bulkLicenses) {
+          if (bulkLicenseMode === 'add') {
+            await supabase.from('asset_license_assignments').upsert({ asset_id: assetId, license_id: licenseId })
+            await supabase.rpc('increment_license_seats', { license_id: licenseId })
+          } else {
+            await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId).eq('license_id', licenseId)
+            await supabase.rpc('decrement_license_seats', { license_id: licenseId })
+          }
+        }
+      }
+    }
+    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add')
     fetchAssets()
   }
 
@@ -856,6 +872,37 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           <FormField label="Assign to team / department">
             <input value={bulkAssignedTeam} onChange={e=>{setBulkAssignedTeam(e.target.value); if(e.target.value) setBulkAssignedTo('')}} placeholder="e.g. Finance Team, IT Shared" />
           </FormField>
+          {allLicenses.length > 0 && (
+            <div style={{ paddingTop:8, borderTop:'1px solid var(--border)' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                <div style={{ fontSize:11, color:'var(--text2)', fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em' }}>Licenses</div>
+                <div style={{ display:'flex', gap:4 }}>
+                  {['add','remove'].map(m => (
+                    <button key={m} onClick={()=>setBulkLicenseMode(m)} style={{ padding:'3px 10px', fontSize:11, borderRadius:'var(--radius)', border:'1px solid', borderColor:bulkLicenseMode===m?'var(--accent)':'var(--border2)', background:bulkLicenseMode===m?'var(--accent-bg)':'var(--bg3)', color:bulkLicenseMode===m?'var(--accent)':'var(--text3)', cursor:'pointer', fontFamily:'var(--font)' }}>
+                      {m === 'add' ? '+ Assign' : '− Remove'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:4, maxHeight:140, overflowY:'auto' }}>
+                {allLicenses.map(l => {
+                  const checked = bulkLicenses.includes(l.id)
+                  const seatsLeft = l.seats_total ? l.seats_total - (l.seats_used||0) : null
+                  const full = seatsLeft !== null && seatsLeft <= 0 && bulkLicenseMode === 'add'
+                  return (
+                    <label key={l.id} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, cursor:full?'not-allowed':'pointer', opacity:full?0.5:1, padding:'6px 10px', borderRadius:'var(--radius)', background:checked?'var(--accent-bg)':'var(--bg3)', border:`1px solid ${checked?'var(--accent-border,var(--accent))':'var(--border)'}` }}>
+                      <input type="checkbox" checked={checked} disabled={full}
+                        onChange={e=>setBulkLicenses(fl=>e.target.checked?[...fl,l.id]:fl.filter(x=>x!==l.id))}
+                        style={{ width:'auto', accentColor:'var(--accent)' }} />
+                      <span style={{ flex:1, fontWeight:500 }}>{l.name}</span>
+                      {l.vendor && <span style={{ color:'var(--text3)', fontSize:11 }}>{l.vendor}</span>}
+                      {seatsLeft !== null && <span style={{ fontSize:10, fontFamily:'var(--mono)', color:full?'var(--red)':seatsLeft<=3?'var(--amber)':'var(--green)' }}>{full?'Full':`${seatsLeft} left`}</span>}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize:12, color:'var(--amber)', fontWeight:500 }}>
             ⚠ This will update all {selected.length} selected assets immediately.
           </div>
