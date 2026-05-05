@@ -30,7 +30,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Overview')
   const [quickNote, setQuickNote] = useState('')
-  const quickNoteRef = React.useRef('')
+  const quickNoteRef = useRef('')
   const [noteSaving, setNoteSaving] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
   const qrRef = useRef(null)
