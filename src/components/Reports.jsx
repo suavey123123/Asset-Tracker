@@ -10,7 +10,7 @@ export default function Reports() {
   const [log, setLog] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeReport, setActiveReport] = useState('utilization')
-  const [budgetYear, setBudgetYear] = useState(() => localStorage.getItem('it_budget_year') || String(new Date().getFullYear()))
+  const [budgetYear, setBudgetYear] = useState(String(new Date().getFullYear()))
   const [budgets, setBudgets] = useState(() => {
     try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: 0, software: 0, maintenance: 0, total: 0 } } catch { return { hardware: 0, software: 0, maintenance: 0, total: 0 } }
   })
