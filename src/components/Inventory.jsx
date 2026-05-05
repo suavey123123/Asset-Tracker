@@ -154,6 +154,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [agreementModal, setAgreementModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [bulkCategory, setBulkCategory] = useState('')
+  const [bulkAssignedTo, setBulkAssignedTo] = useState('')
+  const [bulkAssignedTeam, setBulkAssignedTeam] = useState('')
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
   const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
   const [bulkStatus, setBulkStatus] = useState('')
@@ -322,17 +325,17 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   }
 
   async function doBulkEdit() {
-    if (!bulkStatus && !bulkSite) return
+    if (!bulkStatus && !bulkSite && !bulkCategory && bulkAssignedTo === undefined && bulkAssignedTeam === undefined) return
     const updates = {}
     if (bulkStatus) updates.status = bulkStatus
-    if (bulkSite) {
-      const site = allSites.find(s => s.id === bulkSite)
-      if (site) updates.location = site.name
-    }
+    if (bulkSite) { const site = allSites.find(s => s.id === bulkSite); if (site) updates.location = site.name }
+    if (bulkCategory) updates.category = bulkCategory.toUpperCase()
+    if (bulkAssignedTo) updates.assigned_to = bulkAssignedTo
+    if (bulkAssignedTeam) { updates.assigned_to_team = bulkAssignedTeam; updates.assigned_to = null }
     for (const id of selected) {
       await supabase.from('assets').update(updates).eq('id', id)
     }
-    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite('')
+    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam('')
     fetchAssets()
   }
 
@@ -815,24 +818,40 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       </Modal>
 
       {/* Bulk Edit Modal */}
-      <Modal open={bulkEditOpen} onClose={()=>setBulkEditOpen(false)} title={`Edit ${selected.length} asset${selected.length!==1?'s':''}`} width={400}>
+      <Modal open={bulkEditOpen} onClose={()=>setBulkEditOpen(false)} title={`Bulk edit — ${selected.length} asset${selected.length!==1?'s':''}`} width={480}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <FormField label="Change status (optional)">
-            <select value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
-              <option value="">— Keep current status —</option>
-              <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
-            </select>
+          <div style={{ fontSize:12, color:'var(--text2)', background:'var(--bg3)', borderRadius:'var(--radius)', padding:'8px 12px' }}>
+            Leave fields blank to keep current values. Only filled fields will be updated.
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <FormField label="Change status">
+              <select value={bulkStatus} onChange={e=>setBulkStatus(e.target.value)}>
+                <option value="">— Keep current —</option>
+                <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
+              </select>
+            </FormField>
+            <FormField label="Change category">
+              <input value={bulkCategory} onChange={e=>setBulkCategory(e.target.value)} placeholder="e.g. LAPTOP, MONITOR" />
+            </FormField>
+            <FormField label="Move to site">
+              <select value={bulkSite} onChange={e=>setBulkSite(e.target.value)}>
+                <option value="">— Keep current —</option>
+                {allSites.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Assign to employee">
+              <input value={bulkAssignedTo} onChange={e=>{setBulkAssignedTo(e.target.value); if(e.target.value) setBulkAssignedTeam('')}} placeholder="Employee name" />
+            </FormField>
+          </div>
+          <FormField label="Assign to team / department">
+            <input value={bulkAssignedTeam} onChange={e=>{setBulkAssignedTeam(e.target.value); if(e.target.value) setBulkAssignedTo('')}} placeholder="e.g. Finance Team, IT Shared" />
           </FormField>
-          <FormField label="Move to site (optional)">
-            <select value={bulkSite} onChange={e=>setBulkSite(e.target.value)}>
-              <option value="">— Keep current site —</option>
-              {allSites.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </FormField>
-          <div style={{ fontSize:12, color:'var(--text3)' }}>This will update all {selected.length} selected assets.</div>
+          <div style={{ fontSize:12, color:'var(--amber)', fontWeight:500 }}>
+            ⚠ This will update all {selected.length} selected assets immediately.
+          </div>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setBulkEditOpen(false)}>Cancel</Btn>
-            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite}>Apply changes</Btn>
+            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam}>Apply to {selected.length} assets</Btn>
           </div>
         </div>
       </Modal>

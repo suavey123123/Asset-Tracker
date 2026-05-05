@@ -9,7 +9,7 @@ export default function Tenants() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editTenant, setEditTenant] = useState(null)
-  const [form, setForm] = useState({ name: '', slug: '' })
+  const [form, setForm] = useState({ name: '', slug: '', accent_color: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [stats, setStats] = useState({})
@@ -43,7 +43,7 @@ export default function Tenants() {
 
   function openEdit(t) {
     setEditTenant(t)
-    setForm({ name: t.name, slug: t.slug })
+    setForm({ name: t.name, slug: t.slug, accent_color: t.accent_color || '' })
     setError('')
     setModalOpen(true)
   }
@@ -52,7 +52,7 @@ export default function Tenants() {
     if (!form.name.trim() || !form.slug.trim()) { setError('Name and slug are required.'); return }
     setSaving(true); setError('')
     const slug = form.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    const payload = { name: form.name.trim(), slug }
+    const payload = { name: form.name.trim(), slug, accent_color: form.accent_color || null }
 
     const { error: err } = editTenant
       ? await supabase.from('tenants').update(payload).eq('id', editTenant.id)
@@ -88,7 +88,6 @@ export default function Tenants() {
     await supabase.from('profiles').update({ tenant_id: t.id }).eq('id', profile.id)
     await fetchProfile(profile.id)
     setSwitching(null)
-    // Reload page to refresh all data
     window.location.reload()
   }
 
@@ -120,7 +119,7 @@ export default function Tenants() {
             return (
               <div key={t.id} style={{ ...card, borderLeft: `3px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, opacity: switching && switching !== t.id ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 8, background: isCurrent ? 'var(--accent-bg)' : 'var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏢</div>
+                  <div style={{ width: 38, height: 38, borderRadius: 8, background: t.accent_color || (isCurrent ? 'var(--accent)' : 'var(--bg4)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏢</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {t.name}
@@ -166,6 +165,15 @@ export default function Tenants() {
             <input value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: editTenant ? f.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-') }))}
               placeholder="e.g. NHN America" />
+          </FormField>
+          <FormField label="Accent color (optional)">
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <input type="color" value={form.accent_color || '#d4ff4e'}
+                onChange={e => setForm(f => ({ ...f, accent_color: e.target.value }))}
+                style={{ width:48, height:36, padding:2, borderRadius:'var(--radius)', cursor:'pointer', border:'1px solid var(--border2)', background:'var(--bg3)' }} />
+              <input value={form.accent_color} onChange={e => setForm(f => ({ ...f, accent_color: e.target.value }))} placeholder="#d4ff4e" style={{ flex:1, fontFamily:'var(--mono)' }} />
+              <button onClick={() => setForm(f => ({ ...f, accent_color: '' }))} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Reset</button>
+            </div>
           </FormField>
           <FormField label="Slug" required>
             <input value={form.slug}

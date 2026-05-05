@@ -6,6 +6,50 @@ import { Btn, FormField } from './UI'
 export default function Settings() {
   const [azureSyncing, setAzureSyncing] = useState(false)
   const [azureSyncResult, setAzureSyncResult] = useState(null)
+  const [mfaFactors, setMfaFactors] = useState([])
+  const [mfaEnrolling, setMfaEnrolling] = useState(false)
+  const [mfaQR, setMfaQR] = useState(null)
+  const [mfaSecret, setMfaSecret] = useState(null)
+  const [mfaFactorId, setMfaFactorId] = useState(null)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaError, setMfaError] = useState('')
+  const [mfaSuccess, setMfaSuccess] = useState('')
+
+  useEffect(() => { checkMFA() }, [])
+
+  async function checkMFA() {
+    const { data } = await supabase.auth.mfa.listFactors()
+    setMfaFactors(data?.totp || [])
+  }
+
+  async function enrollMFA() {
+    setMfaEnrolling(true); setMfaError('')
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Authenticator App' })
+    if (error) { setMfaError(error.message); setMfaEnrolling(false); return }
+    setMfaQR(data.totp.qr_code)
+    setMfaSecret(data.totp.secret)
+    setMfaFactorId(data.id)
+    setMfaEnrolling(false)
+  }
+
+  async function verifyMFA() {
+    if (!mfaCode || mfaCode.length < 6) { setMfaError('Enter the 6-digit code from your authenticator app'); return }
+    setMfaError('')
+    const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId })
+    if (challengeErr) { setMfaError(challengeErr.message); return }
+    const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challengeData.id, code: mfaCode })
+    if (verifyErr) { setMfaError('Invalid code — try again'); return }
+    setMfaQR(null); setMfaSecret(null); setMfaFactorId(null); setMfaCode('')
+    setMfaSuccess('✓ Two-factor authentication enabled!')
+    checkMFA()
+  }
+
+  async function unenrollMFA(factorId) {
+    if (!confirm('Remove two-factor authentication? Your account will be less secure.')) return
+    await supabase.auth.mfa.unenroll({ factorId })
+    setMfaSuccess('')
+    checkMFA()
+  }
 
   async function runAzureSync() {
     setAzureSyncing(true); setAzureSyncResult(null)
@@ -242,6 +286,58 @@ export default function Settings() {
           </div>
         </div>
       )}
+
+
+      {/* Two-Factor Authentication */}
+      <div style={card}>
+        <div style={{ fontSize:14, fontWeight:500, marginBottom:4 }}>Two-factor authentication (2FA)</div>
+        <div style={{ fontSize:12, color:'var(--text2)', marginBottom:'1rem' }}>
+          Add an extra layer of security using Google Authenticator, Authy, or any TOTP app.
+        </div>
+
+        {mfaSuccess && <div style={{ fontSize:12, color:'var(--green)', background:'var(--green-bg)', border:'1px solid var(--green)', borderRadius:'var(--radius)', padding:'8px 12px', marginBottom:12 }}>{mfaSuccess}</div>}
+
+        {mfaFactors.length > 0 ? (
+          <div>
+            <div style={{ fontSize:13, color:'var(--green)', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+              <span>✓</span> 2FA is enabled
+            </div>
+            {mfaFactors.map(f => (
+              <div key={f.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'var(--bg3)', borderRadius:'var(--radius)', marginBottom:6 }}>
+                <span style={{ fontSize:13, flex:1 }}>🔐 {f.friendly_name || 'Authenticator app'}</span>
+                <span style={{ fontSize:11, color:'var(--text3)' }}>Added {new Date(f.created_at).toLocaleDateString()}</span>
+                <Btn size="sm" variant="danger" onClick={() => unenrollMFA(f.id)}>Remove</Btn>
+              </div>
+            ))}
+          </div>
+        ) : mfaQR ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ fontSize:13, color:'var(--text2)' }}>
+              1. Open your authenticator app (Google Authenticator, Authy, etc.)<br/>
+              2. Scan the QR code or enter the secret manually<br/>
+              3. Enter the 6-digit code to verify
+            </div>
+            <div style={{ display:'flex', gap:16, alignItems:'flex-start' }}>
+              <img src={mfaQR} alt="QR Code" style={{ width:160, height:160, border:'4px solid white', borderRadius:8 }} />
+              <div>
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>Manual entry key:</div>
+                <code style={{ fontSize:12, fontFamily:'var(--mono)', background:'var(--bg3)', padding:'6px 10px', borderRadius:'var(--radius)', display:'block', letterSpacing:'0.1em' }}>{mfaSecret}</code>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <input value={mfaCode} onChange={e=>setMfaCode(e.target.value.replace(/\D/,'').slice(0,6))}
+                placeholder="000000" maxLength={6}
+                style={{ width:120, fontFamily:'var(--mono)', fontSize:18, textAlign:'center', letterSpacing:'0.2em' }}
+                onKeyDown={e=>e.key==='Enter'&&verifyMFA()} />
+              <Btn variant="primary" onClick={verifyMFA} disabled={mfaCode.length < 6}>Verify & enable</Btn>
+              <Btn onClick={()=>{setMfaQR(null);setMfaSecret(null);setMfaFactorId(null)}}>Cancel</Btn>
+            </div>
+            {mfaError && <div style={{ fontSize:12, color:'var(--red)' }}>{mfaError}</div>}
+          </div>
+        ) : (
+          <Btn onClick={enrollMFA} disabled={mfaEnrolling}>{mfaEnrolling ? 'Setting up…' : '+ Enable 2FA'}</Btn>
+        )}
+      </div>
 
       {/* Azure AD Sync */}
       <div style={card}>

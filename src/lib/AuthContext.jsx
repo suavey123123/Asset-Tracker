@@ -37,6 +37,15 @@ export function AuthProvider({ children }) {
     if (data?.tenant_id) {
       const { data: t } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
       setTenant(t)
+    // Apply tenant accent color to CSS
+    if (t?.accent_color) {
+      document.documentElement.style.setProperty('--accent', t.accent_color)
+      // Derive bg from accent
+      document.documentElement.style.setProperty('--accent-bg', t.accent_color + '18')
+    } else {
+      document.documentElement.style.removeProperty('--accent')
+      document.documentElement.style.removeProperty('--accent-bg')
+    }
     }
     setLoading(false)
   }

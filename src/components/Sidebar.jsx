@@ -36,6 +36,7 @@ const NAV_GROUPS = [
       { id: 'consumables',   label: 'Consumables',    icon: '⊞' },
       { id: 'reports',       label: 'Reports',        icon: '⊟' },
       { id: 'compliance',    label: 'Compliance',     icon: '✓' },
+    { id: 'reportbuilder', label: 'Report Builder',  icon: '📊' },
     ]
   },
   {

@@ -21,6 +21,7 @@ import AssetRequests from '../components/AssetRequests'
 import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
 import QRLabels from '../components/QRLabels'
+import ReportBuilder from '../components/ReportBuilder'
 import { ToastProvider } from '../components/Toast'
 import Tenants from '../components/Tenants'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -45,6 +46,7 @@ function ShortcutsButton() {
     { key: 'H', desc: 'Go to Dashboard' },
     { key: 'I', desc: 'Go to Inventory' },
     { key: 'M', desc: 'Go to Maintenance' },
+    { key: 'S', desc: 'Go to Scanner' },
   ]
   return (
     <div style={{ position: 'relative' }}>
@@ -116,6 +118,7 @@ export default function Dashboard() {
     compliance: <Compliance />,
     tenants: <Tenants />,
     qrlabels: <QRLabels />,
+    reportbuilder: <ReportBuilder />,
     consumables: <Consumables />,
     valuedashboard: <ValueDashboard />,
 
