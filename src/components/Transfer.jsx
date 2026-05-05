@@ -152,10 +152,7 @@ export default function Transfer({ onViewAsset }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Asset to transfer *</label>
-              <select style={sel} value={selectedAsset} onChange={e => handleAssetSelect(e.target.value)}>
-                <option value="">Select checked-out asset…</option>
-                {assets.map(a => <option key={a.id} value={a.id}>{a.asset_tag} — {a.name} ({a.assigned_to || 'unassigned'})</option>)}
-              </select>
+              <AssetAutocomplete assets={assets} onSelect={a => { if (a) { setSelectedAsset(a.id); setFromPerson(a.assigned_to || '') } else { setSelectedAsset(''); setFromPerson('') } }} />
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Transfer from</label>
