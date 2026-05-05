@@ -51,8 +51,10 @@ export function AuthProvider({ children }) {
     if (data?.tenant_id) {
       const { data: t } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
       setTenant(t)
-    // Apply tenant accent color to CSS vars (only on actual tenant load)
-    applyTenantColor(t?.accent_color)
+    // Only apply color for the user's own active tenant
+    if (data?.tenant_id === t?.id) {
+      applyTenantColor(t?.accent_color)
+    }
     }
     setLoading(false)
   }
