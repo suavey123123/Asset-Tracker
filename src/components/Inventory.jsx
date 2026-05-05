@@ -273,7 +273,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
 
   function openEditModal(asset) {
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
+    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -297,6 +297,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       model: form.model || null,
       serial_number: form.serial_number || null,
       notes: form.notes || null,
+      locked_status: form.locked_status || null,
+      carrier: form.carrier || null,
       specs: form.specs || {},
       site_id: form.site_id || null,
       location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || null) : form.location || null,

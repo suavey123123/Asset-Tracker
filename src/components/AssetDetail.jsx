@@ -30,6 +30,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Overview')
   const [quickNote, setQuickNote] = useState('')
+  const quickNoteRef = React.useRef('')
   const [noteSaving, setNoteSaving] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
   const qrRef = useRef(null)
@@ -45,6 +46,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     ])
     setAsset(a); setLog(l || []); setMaintenance(m || [])
     setQuickNote(a?.quick_note || '')
+    quickNoteRef.current = a?.quick_note || ''
     setLoading(false)
   }
 
@@ -69,7 +71,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
 
   async function saveNote() {
     setNoteSaving(true)
-    await supabase.from('assets').update({ quick_note: quickNote }).eq('id', assetId)
+    await supabase.from('assets').update({ quick_note: quickNoteRef.current }).eq('id', assetId)
     setNoteSaving(false); setNoteSaved(true)
     setTimeout(() => setNoteSaved(false), 2000)
   }
@@ -105,6 +107,8 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     if (!win) alert('Please allow popups to print.')
     setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
+
+  const isPhone = asset?.category?.toUpperCase() === 'PHONE'
 
   if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
   if (!asset) return <div style={{ color:'var(--text2)' }}>Asset not found.</div>
@@ -210,7 +214,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
             <span style={{ fontSize:12, fontWeight:500, color:'var(--accent)' }}>📝 Quick note</span>
             {noteSaved && <span style={{ fontSize:11, color:'var(--green)' }}>✓ Saved</span>}
           </div>
-          <textarea value={quickNote} onChange={e => setQuickNote(e.target.value)}
+          <textarea value={quickNote} onChange={e => { setQuickNote(e.target.value); quickNoteRef.current = e.target.value }}
             onBlur={saveNote}
             placeholder="Add a quick note about this asset — visible immediately, no save button needed…"
             style={{ width:'100%', minHeight:70, resize:'vertical', fontSize:13, background:'transparent', border:'none', outline:'none', color:'var(--text)', fontFamily:'var(--font)', lineHeight:1.5 }}
