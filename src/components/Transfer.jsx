@@ -1,8 +1,58 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, EmptyState, Spinner, ViewOnlyBanner } from './UI'
 import EmployeeSelect from './EmployeeSelect'
+
+function AssetAutocomplete({ assets, onSelect }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handler(e) { if (!ref.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const filtered = query.trim()
+    ? assets.filter(a => `${a.asset_tag} ${a.name||''} ${a.model||''} ${a.assigned_to||''}`.toLowerCase().includes(query.toLowerCase())).slice(0, 10)
+    : assets.slice(0, 10)
+
+  return (
+    <div ref={ref} style={{ position:'relative' }}>
+      <input value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); if (!e.target.value) onSelect(null) }}
+        onFocus={() => setOpen(true)}
+        placeholder="Search by tag, model or employee…"
+        autoComplete="off" />
+      {open && filtered.length > 0 && (
+        <div style={{ position:'fixed', zIndex:9999, background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius)', boxShadow:'0 8px 24px rgba(0,0,0,0.5)', maxHeight:260, overflowY:'auto' }}
+          ref={el => {
+            if (el && ref.current) {
+              const r = ref.current.getBoundingClientRect()
+              el.style.top = (r.bottom + 4) + 'px'
+              el.style.left = r.left + 'px'
+              el.style.width = r.width + 'px'
+            }
+          }}>
+          {filtered.map(a => (
+            <div key={a.id}
+              onMouseDown={e => { e.preventDefault(); setQuery(`${a.asset_tag} — ${a.model || a.name || ''}`); onSelect(a); setOpen(false) }}
+              style={{ padding:'9px 12px', fontSize:13, cursor:'pointer', borderBottom:'1px solid var(--border)' }}
+              onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+              onMouseLeave={e => e.currentTarget.style.background=''}>
+              <span style={{ fontFamily:'var(--mono)', color:'var(--accent)', fontWeight:500, marginRight:8 }}>{a.asset_tag}</span>
+              <span>{a.model || a.name || ''}</span>
+              {a.assigned_to && <span style={{ color:'var(--text3)', fontSize:11, marginLeft:8 }}>→ {a.assigned_to}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 
 export default function Transfer({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
