@@ -348,12 +348,12 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
             {/* Preview */}
             {preview.length > 0 && !errors.length && (
-              <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
+              <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)', overflow:'hidden' }}>
                 <div style={{ padding:'6px 12px', background:'var(--bg3)', fontSize:11, color:'var(--text2)', fontWeight:500, display:'flex', justifyContent:'space-between' }}>
                   <span>PREVIEW ({preview.length} rows)</span>
                   <span>{Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
                 </div>
-                <div style={{ overflow:'auto', maxHeight:220, borderRadius:'0 0 var(--radius) var(--radius)' }}>
+                <div style={{ overflowX:'auto', overflowY:'auto', maxHeight:220 }}>
                   <table style={{ borderCollapse:'collapse', fontSize:12, width:'max-content', minWidth:'100%' }}>
                     <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
                       {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost'].map(h=>(
