@@ -13,6 +13,7 @@ export const IT_CATEGORIES = [
   'LENS',
   'LIGHTING',
   'MICROPHONE',
+  'MONITOR',
   'MOUSE',
   'PHONE',
   'PORTABLE STORAGE',
