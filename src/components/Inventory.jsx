@@ -796,6 +796,21 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
               </div>
             </div>
           )}
+          {form.category?.toUpperCase() === 'PHONE' && (
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <FormField label="Lock status">
+                <select value={form.locked_status||''} onChange={e=>setForm(f=>({...f,locked_status:e.target.value}))}>
+                  <option value="">— Select —</option>
+                  <option>Unlocked</option>
+                  <option>Locked</option>
+                  <option>Carrier Locked</option>
+                </select>
+              </FormField>
+              <FormField label="Carrier / Provider">
+                <input value={form.carrier||''} onChange={e=>setForm(f=>({...f,carrier:e.target.value}))} placeholder="e.g. AT&T, Verizon, T-Mobile" />
+              </FormField>
+            </div>
+          )}
           <FormField label="Notes"><textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></FormField>
           {error && <div style={{ color:'var(--red)', fontSize:12 }}>{error}</div>}
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
