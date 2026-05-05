@@ -165,21 +165,42 @@ export default function ImportCSV({ open, onClose, onDone }) {
         {preview.length > 0 && !result && (
           <div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preview (first {preview.length} rows)</div>
-            <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Tag','Name','Category','Status','Location'].map(h => <th key={h} style={{ padding: '6px 10px', textAlign: 'left', color: 'var(--text2)', fontWeight: 500 }}>{h}</th>)}
-                </tr></thead>
-                <tbody>{preview.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '6px 10px', fontFamily: 'var(--mono)' }}>{r.asset_tag}</td>
-                    <td style={{ padding: '6px 10px' }}>{r.name}</td>
-                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.category}</td>
-                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.status}</td>
-                    <td style={{ padding: '6px 10px', color: 'var(--text2)' }}>{r.location}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
+            <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)', overflow:'hidden' }}>
+              <div style={{ overflow:'auto', maxHeight:240 }}>
+                <table style={{ borderCollapse:'collapse', fontSize:12, width:'max-content', minWidth:'100%' }}>
+                  <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)', position:'sticky', top:0 }}>
+                    {['Tag','Category','Model','Serial','Status','Assigned To','Location','Purchase Date','Provision Date','Cost','Warranty','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS','Resolution','Size','Notes'].map(h => (
+                      <th key={h} style={{ padding:'6px 10px', textAlign:'left', color:'var(--text2)', fontWeight:500, whiteSpace:'nowrap', fontSize:11 }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>{preview.map((r, i) => (
+                    <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+                      <td style={{ padding:'6px 10px', fontFamily:'var(--mono)', color:'var(--accent)', whiteSpace:'nowrap' }}>{r.asset_tag||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_category||'—'}</td>
+                      <td style={{ padding:'6px 10px', whiteSpace:'nowrap' }}>{r.asset_model||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.asset_serial||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.status||'—'}</td>
+                      <td style={{ padding:'6px 10px', whiteSpace:'nowrap' }}>{r.assigned_to||r.assigned_to_team||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.location||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.warranty_expiry||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.cpu||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.gpu||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ram||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ssd||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.hdd||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_wifi||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_lan||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.os_version||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.resolution||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.size||'—'}</td>
+                      <td style={{ padding:'6px 10px', color:'var(--text2)' }}>{r.notes||'—'}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
