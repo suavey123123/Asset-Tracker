@@ -43,6 +43,7 @@ const NAV_GROUPS = [
     adminOnly: true,
     items: [
       { id: 'users',       label: 'Users',        icon: '◉', adminOnly: true },
+      { id: 'tenants',     label: 'Tenants',      icon: '🏢', adminOnly: true },
     ]
   },
 ]
