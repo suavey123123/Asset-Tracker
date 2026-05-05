@@ -918,7 +918,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
               </select>
             </FormField>
             <FormField label="Assign to employee">
-              <input value={bulkAssignedTo} onChange={e=>{setBulkAssignedTo(e.target.value); if(e.target.value) setBulkAssignedTeam('')}} placeholder="Employee name" />
+              <EmployeeSelect value={bulkAssignedTo} onChange={v=>{setBulkAssignedTo(v); if(v) setBulkAssignedTeam('')}} placeholder="Search employee…" />
             </FormField>
             <FormField label="Model / Brand">
               <input value={bulkModel} onChange={e=>setBulkModel(e.target.value)} placeholder="e.g. MacBook Pro 16&quot;" />
