@@ -66,7 +66,6 @@ function ShortcutsButton() {
         </div>
       )}
     </div>
-  </ToastProvider>
   )
 }
 
@@ -130,8 +129,7 @@ export default function Dashboard() {
       </div>
 
       <main style={{ flex:1, overflow:'auto', background:'var(--bg)', minWidth:0 }}>
-        <ToastProvider>
-    <div style={{ display:'flex', alignItems:'center', gap:12, padding:'0.75rem 1rem', borderBottom:'1px solid var(--border)', background:'var(--bg)', position:'sticky', top:0, zIndex:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'0.75rem 1rem', borderBottom:'1px solid var(--border)', background:'var(--bg)', position:'sticky', top:0, zIndex:10 }}>
           <button onClick={()=>setSidebarOpen(s=>!s)} className="mobile-menu-btn" style={{ display:'none', background:'none', border:'none', color:'var(--text)', fontSize:18, cursor:'pointer', padding:'4px', flexShrink:0 }}>☰</button>
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
@@ -141,13 +139,11 @@ export default function Dashboard() {
           {showShortcuts && (
             <div onClick={()=>setShowShortcuts(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
               <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', padding:'1.5rem', minWidth:320, boxShadow:'0 16px 48px rgba(0,0,0,0.5)' }}>
-                <ToastProvider>
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
                   <div style={{ fontSize:14, fontWeight:500 }}>Keyboard shortcuts</div>
                   <button onClick={()=>setShowShortcuts(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:18, lineHeight:1 }}>×</button>
                 </div>
-                <ToastProvider>
-    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                   {[
                     ['N', 'New asset (on Inventory page)'],
                     ['/', 'Focus search bar'],
@@ -173,6 +169,6 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
-  </ToastProvider>
+    </ToastProvider>
   )
 }
