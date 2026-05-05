@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function EmployeeSelect({ value, onChange, placeholder = 'Employee name or type new…' }) {
+  const [fetchError, setFetchError] = useState('')
   const [employees, setEmployees] = useState([])
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(value || '')

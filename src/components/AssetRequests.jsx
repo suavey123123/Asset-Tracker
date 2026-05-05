@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Badge, Spinner, Modal, FormField } from './UI'
+import { useToast } from './Toast'
 
 const STATUS = {
   pending:  { color: 'var(--amber)', bg: 'var(--amber-bg,rgba(251,191,36,0.1))', label: 'Pending' },
@@ -62,9 +63,11 @@ function EmployeeAutocomplete({ value, onChange, employees }) {
 
 export default function AssetRequests() {
   const { profile, isAdmin } = useAuth()
+  const toast = useToast()
   const [requests, setRequests] = useState([])
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [tab, setTab] = useState('pending')
   const [form, setForm] = useState({ requester_name: '', category: '', notes: '', urgency: 'Normal' })
   const [saving, setSaving] = useState(false)
@@ -129,7 +132,7 @@ export default function AssetRequests() {
   async function deleteRequest(id) {
     if (!confirm('Delete this request?')) return
     const { error } = await supabase.from('asset_requests').delete().eq('id', id)
-    if (error) { alert('Delete failed: ' + error.message); return }
+    if (error) { toast('Delete failed: ' + error.message, 'error'); return }
     fetchRequests()
   }
 

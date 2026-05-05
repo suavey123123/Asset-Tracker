@@ -7,6 +7,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 export default function Users() {
   const { profile } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null)

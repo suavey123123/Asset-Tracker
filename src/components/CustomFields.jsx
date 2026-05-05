@@ -11,6 +11,7 @@ const SUGGESTIONS = {
 
 export default function CustomFields({ assetId, category, readOnly }) {
   const { isAdmin } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [fields, setFields] = useState([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)

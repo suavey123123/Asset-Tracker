@@ -11,17 +11,27 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [activeReport, setActiveReport] = useState('utilization')
   const [budgetYear, setBudgetYear] = useState(String(new Date().getFullYear()))
-  const [budgets, setBudgets] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: 0, software: 0, maintenance: 0, total: 0 } } catch { return { hardware: 0, software: 0, maintenance: 0, total: 0 } }
-  })
-  const [budgetInputs, setBudgetInputs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: '', software: '', maintenance: '', total: '' } } catch { return { hardware: '', software: '', maintenance: '', total: '' } }
-  })
+  const [budgets, setBudgets] = useState({ hardware: 0, software: 0, maintenance: 0, total: 0 })
+  const [budgetInputs, setBudgetInputs] = useState({ hardware: '', software: '', maintenance: '', total: '' })
   const [drilldown, setDrilldown] = useState('hardware')
   const [budgetSite, setBudgetSite] = useState('')
   const [budgetView, setBudgetView] = useState('annual') // 'annual' | 'monthly'
 
   useEffect(() => { fetchAll() }, [])
+
+  useEffect(() => {
+    async function loadBudget() {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', `budget_${budgetYear}`).maybeSingle()
+      if (data?.value) {
+        setBudgets(data.value)
+        setBudgetInputs(data.value)
+      } else {
+        setBudgets({ hardware: 0, software: 0, maintenance: 0, total: 0 })
+        setBudgetInputs({ hardware: '', software: '', maintenance: '', total: '' })
+      }
+    }
+    loadBudget()
+  }, [budgetYear])
 
   async function fetchAll() {
     setLoading(true)
@@ -89,11 +99,10 @@ export default function Reports() {
   const monthRequestsApproved = monthRequests.filter(r => r.status === 'approved')
   const expiringLicenses = licenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= in30 && new Date(l.expiry_date) >= today)
 
-  function saveBudgets() {
+  async function saveBudgets() {
     const vals = { hardware: parseFloat(budgetInputs.hardware)||0, software: parseFloat(budgetInputs.software)||0, maintenance: parseFloat(budgetInputs.maintenance)||0, total: parseFloat(budgetInputs.total)||0 }
     setBudgets(vals)
-    localStorage.setItem('it_budgets_v2', JSON.stringify(vals))
-    localStorage.setItem('it_budget_year', budgetYear)
+    await supabase.from('app_settings').upsert({ key: `budget_${budgetYear}`, value: vals, updated_at: new Date().toISOString() })
   }
 
   function exportCSV(data, filename, headers) {

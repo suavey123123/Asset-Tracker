@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function NotificationCenter({ onNav, onViewAsset }) {
+  const [fetchError, setFetchError] = useState('')
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)

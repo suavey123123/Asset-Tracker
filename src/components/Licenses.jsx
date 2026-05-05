@@ -13,6 +13,7 @@ const LICENSE_TYPES = ['Perpetual', 'Subscription', 'Volume', 'OEM', 'Open Sourc
 
 export default function Licenses() {
   const { isAdmin } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [licenses, setLicenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [assignments, setAssignments] = useState([])

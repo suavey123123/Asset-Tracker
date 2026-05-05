@@ -5,6 +5,7 @@ import { Btn, Spinner } from './UI'
 
 export default function AssetLicenses({ assetId }) {
   const { isAdmin } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [assigned, setAssigned] = useState([])
   const [allLicenses, setAllLicenses] = useState([])
   const [loading, setLoading] = useState(true)

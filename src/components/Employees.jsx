@@ -13,6 +13,7 @@ export default function Employees({ onViewAsset }) {
   const [employees, setEmployees] = useState([])
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editEmp, setEditEmp] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)

@@ -5,6 +5,7 @@ import { Btn, FormField } from './UI'
 
 export default function Settings() {
   const { profile, user, fetchProfile } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [tab, setTab] = useState('profile')
 
   // Profile

@@ -8,6 +8,7 @@ const CATEGORIES = ['Batteries', 'Cables', 'Printer Paper', 'Toner / Ink', 'Clea
 
 export default function Consumables() {
   const { isAdmin, profile } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)

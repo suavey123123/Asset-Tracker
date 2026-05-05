@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Btn, Spinner, Badge } from './UI'
 
 export default function Compliance() {
+  const [fetchError, setFetchError] = useState('')
   const [assets, setAssets] = useState([])
   const [licenses, setLicenses] = useState([])
   const [maintenance, setMaintenance] = useState([])

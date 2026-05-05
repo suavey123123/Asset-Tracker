@@ -6,6 +6,7 @@ const SUGGESTIONS = ['needs-repair', 'loaner', 'executive', 'shared', 'spare', '
 
 export default function AssetTags({ assetId }) {
   const { isAdmin } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [tags, setTags] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)

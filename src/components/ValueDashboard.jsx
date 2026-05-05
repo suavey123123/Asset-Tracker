@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Spinner } from './UI'
 
 export default function ValueDashboard() {
+  const [fetchError, setFetchError] = useState('')
   const [assets, setAssets] = useState([])
   const [maintenance, setMaintenance] = useState([])
   const [sites, setSites] = useState([])

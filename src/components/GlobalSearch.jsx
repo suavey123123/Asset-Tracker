@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Badge } from './UI'
 
 export default function GlobalSearch({ onViewAsset }) {
+  const [fetchError, setFetchError] = useState('')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [empResults, setEmpResults] = useState([])

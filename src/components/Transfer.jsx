@@ -5,6 +5,7 @@ import { Badge, Btn, EmptyState, Spinner, ViewOnlyBanner } from './UI'
 import EmployeeSelect from './EmployeeSelect'
 
 function AssetAutocomplete({ assets, onSelect }) {
+  const [fetchError, setFetchError] = useState('')
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -67,6 +68,7 @@ export default function Transfer({ onViewAsset }) {
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState('')
+  const [msgType, setMsgType] = useState('error')
   const [search, setSearch] = useState('')
 
   useEffect(() => { fetchAll() }, [])
@@ -169,7 +171,7 @@ export default function Transfer({ onViewAsset }) {
           </div>
           <div style={{ marginTop: 12 }}>
             <Btn variant="primary" onClick={doTransfer} disabled={saving || !selectedAsset || !toPerson.trim()}>
-              {saving ? 'Transferring…' : '⇄ Transfer asset'}
+              {saving ? <><span style={{display:'inline-block',animation:'spin 1s linear infinite',marginRight:6}}>⟳</span>Transferring…</> : '⇄ Transfer asset'}
             </Btn>
           </div>
         </div>

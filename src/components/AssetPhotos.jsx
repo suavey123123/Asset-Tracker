@@ -5,6 +5,7 @@ import { Btn, Spinner } from './UI'
 
 export default function AssetPhotos({ assetId, assetTag }) {
   const { isAdmin } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)

@@ -14,6 +14,7 @@ const STAGE_ORDER = ['Available','Checked Out','Maintenance','Retired']
 
 export default function Lifecycle({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [assets, setAssets] = useState([])
   const [lifecycles, setLifecycles] = useState({})
   const [loading, setLoading] = useState(true)

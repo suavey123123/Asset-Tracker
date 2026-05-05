@@ -13,6 +13,7 @@ const TYPE_STYLES = {
 }
 
 export default function History({ onViewAsset }) {
+  const [fetchError, setFetchError] = useState('')
   const [log, setLog] = useState([])
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)

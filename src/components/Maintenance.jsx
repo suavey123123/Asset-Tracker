@@ -5,6 +5,7 @@ import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner } from './UI
 
 export default function Maintenance() {
   const { isAdmin, profile } = useAuth()
+  const [fetchError, setFetchError] = useState('')
   const [records, setRecords] = useState([])
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
