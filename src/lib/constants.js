@@ -60,11 +60,12 @@ export const SPEC_FIELDS = {
     { key: 'MAC ADDRESS (WIFI)', placeholder: 'e.g. 00:1A:2B:3C:4D:5E' },
     { key: 'MAC ADDRESS (LAN)',  placeholder: 'e.g. 00:1A:2B:3C:4D:5F' },
     { key: 'OS VERSION', placeholder: 'e.g. Windows 11 Pro 23H2' },
+    { key: 'RESOLUTION', placeholder: 'e.g. 2560x1440 QHD, 3840x2160 4K' },
   ],
 }
 
 // Which categories get tech spec fields
 export const TECH_SPEC_CATEGORIES = [
   'LAPTOP', 'DESKTOP', 'TABLET', 'PHONE', 'AR HEADSET',
-  'HOTSPOT DEVICE', 'ROUTER', 'STREAMING DEVICE', 'VC',
+  'HOTSPOT DEVICE', 'ROUTER', 'STREAMING DEVICE', 'VC', 'MONITOR', 'TV', 'PROJECTOR',
 ]

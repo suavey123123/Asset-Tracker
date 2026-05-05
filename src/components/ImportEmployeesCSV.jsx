@@ -31,7 +31,7 @@ function cleanCost(val) {
 }
 
 
-const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version
+const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,,,,,,,iOS 17
 Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
@@ -201,6 +201,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
             'MAC ADDRESS (WIFI)': r.mac_wifi || '',
             'MAC ADDRESS (LAN)': r.mac_lan || '',
             'OS VERSION': r.os_version || '',
+            'RESOLUTION': r.resolution || '',
           }
         }).eq('id', existing.id)
         await supabase.from('activity_log').insert({ asset_id: existing.id, asset_tag: existing.asset_tag, asset_name: existing.asset_tag, type: 'checkout', message: `Assigned to ${r.name} via bulk import` })
@@ -229,6 +230,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
             'MAC ADDRESS (WIFI)': r.mac_wifi || '',
             'MAC ADDRESS (LAN)': r.mac_lan || '',
             'OS VERSION': r.os_version || '',
+            'RESOLUTION': r.resolution || '',
           }
         }).select().single()
 
