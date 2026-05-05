@@ -16,7 +16,20 @@ export function AuthProvider({ children }) {
       else setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Intercept invite and password recovery - redirect to set password page
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        const hash = window.location.hash
+        const params = new URLSearchParams(hash.replace('#', '?'))
+        const type = params.get('type')
+        if (type === 'invite' || type === 'recovery' || event === 'PASSWORD_RECOVERY') {
+          // Don't set user session yet - send to set-password page
+          if (window.location.pathname !== '/set-password' && window.location.pathname !== '/reset-password') {
+            window.location.href = '/set-password' + window.location.hash
+            return
+          }
+        }
+      }
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else { setProfile(null); setLoading(false) }

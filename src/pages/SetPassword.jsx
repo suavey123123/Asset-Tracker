@@ -10,13 +10,23 @@ export default function SetPassword() {
   const [mode, setMode] = useState('invite') // 'invite' | 'recovery'
 
   useEffect(() => {
-    // Parse hash params from Supabase redirect
     const hash = window.location.hash
     const params = new URLSearchParams(hash.replace('#', '?'))
     const type = params.get('type')
     if (type === 'recovery') setMode('recovery')
+    if (type === 'invite') setMode('invite')
 
-    // Supabase auth handles the session from the hash automatically
+    // Exchange the token for a session so updateUser works
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        // Try to sign in with the token from the URL
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+        if (accessToken && refreshToken) {
+          supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        }
+      }
+    })
   }, [])
 
   async function handleSubmit(e) {
