@@ -31,14 +31,14 @@ export default function ReportBuilder() {
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedFields, setSelectedFields] = useState(['asset_tag', 'model', 'category', 'status', 'assigned_to', 'purchase_cost'])
-  const [filters, setFilters] = useState({ status: '', category: '', assigned_to: '', location: '' })
+  const [filters, setFilters] = useState({ status: 'Checked Out', category: '', assigned_to: '', location: '' })
   const [sortField, setSortField] = useState('asset_tag')
   const [sortDir, setSortDir] = useState('asc')
   const [savedReports, setSavedReports] = useState(() => { try { return JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') } catch { return [] } })
   const [reportName, setReportName] = useState('')
   const [categories, setCategories] = useState([])
 
-  useEffect(() => { fetchCategories() }, [])
+  useEffect(() => { fetchCategories().then(() => runReport()) }, [])
 
   async function fetchCategories() {
     const { data } = await supabase.from('assets').select('category').limit(500)

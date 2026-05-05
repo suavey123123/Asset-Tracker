@@ -78,6 +78,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState('home')
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
+  const [viewingAssetFromTab, setViewingAssetFromTab] = useState('inventory')
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -91,7 +92,7 @@ export default function Dashboard() {
     setAlerts((data||[]).length)
   }
 
-  function handleViewAsset(asset) { setViewingAsset(asset); setTab('inventory'); setSidebarOpen(false) }
+  function handleViewAsset(asset) { setViewingAsset(asset); setViewingAssetFromTab(tab); setSidebarOpen(false) }
   function handleNav(newTab) { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }
   function handleEdit(asset) { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }
 
@@ -141,6 +142,11 @@ export default function Dashboard() {
           <button onClick={()=>setSidebarOpen(s=>!s)} className="mobile-menu-btn" style={{ display:'none', background:'none', border:'none', color:'var(--text)', fontSize:18, cursor:'pointer', padding:'4px', flexShrink:0 }}>☰</button>
           <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
           <GlobalSearch onViewAsset={handleViewAsset} />
+          {lastRefreshed && (
+            <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>
+              ↻ {Math.floor((new Date()-lastRefreshed)/60000) < 1 ? 'just now' : `${Math.floor((new Date()-lastRefreshed)/60000)}m ago`}
+            </span>
+          )}
           <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
           <button onClick={()=>setShowShortcuts(s=>!s)} title="Keyboard shortcuts" style={{ fontSize:13, color:'var(--text3)', cursor:'pointer', padding:'4px 8px', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontFamily:'var(--mono)', background:'none' }}>⌨</button>
 
@@ -172,7 +178,7 @@ export default function Dashboard() {
         </div>
         <div style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (
-            <AssetDetail assetId={viewingAsset.id} onBack={()=>setViewingAsset(null)} onEdit={handleEdit} />
+            <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
           ) : PAGE[tab]}
         </div>
       </main>

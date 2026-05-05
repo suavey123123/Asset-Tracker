@@ -84,6 +84,7 @@ export default function Tenants() {
 
   async function switchTenant(t) {
     if (t.id === tenant?.id) return
+    if (!confirm(`Switch to ${t.name}?\n\nAll data will switch to this tenant's context.`)) return
     setSwitching(t.id)
     await supabase.from('profiles').update({ tenant_id: t.id }).eq('id', profile.id)
     await fetchProfile(profile.id)

@@ -159,7 +159,7 @@ export default function Transfer({ onViewAsset }) {
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Transfer from</label>
-              <input value={fromPerson} onChange={e => setFromPerson(e.target.value)} placeholder="Auto-filled from asset" />
+              <input value={fromPerson} readOnly placeholder="Auto-filled from asset" style={{ opacity: fromPerson ? 1 : 0.5, cursor:'default', background:'var(--bg3)' }} />
             </div>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text2)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 }}>Transfer to *</label>

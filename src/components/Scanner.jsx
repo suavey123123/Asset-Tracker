@@ -8,6 +8,7 @@ export default function Scanner({ onViewAsset }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [pulse, setPulse] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -37,6 +38,9 @@ export default function Scanner({ onViewAsset }) {
       setLoading(false)
       if (!data) { setError(`No asset found for tag: "${tag.trim()}"`); return }
       setResult(data)
+    setPulse(true); setTimeout(()=>setPulse(false), 600)
+    // Play success beep
+    try { const ctx=new AudioContext(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=880; g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3); o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3) } catch {}
     } catch(e) {
       // Try offline cache
       try {
@@ -178,7 +182,7 @@ export default function Scanner({ onViewAsset }) {
 
       {/* Result */}
       {result && (
-        <div style={{ background:'var(--bg2)', border:'1px solid var(--green)', borderRadius:'var(--radius-lg)', padding:'1.25rem' }} className="fade-in">
+        <div style={{ background:'var(--bg2)', border:`2px solid ${pulse?'var(--accent)':'var(--green)'}`, borderRadius:'var(--radius-lg)', padding:'1.25rem', transition:'border-color 0.3s', boxShadow:pulse?'0 0 20px rgba(212,255,78,0.3)':'none' }} className="fade-in">
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:'1rem' }}>
             <div style={{ fontSize:20 }}>✓</div>
             <div>

@@ -14,6 +14,7 @@ const LICENSE_TYPES = ['Perpetual', 'Subscription', 'Volume', 'OEM', 'Open Sourc
 export default function Licenses() {
   const { isAdmin } = useAuth()
   const [saveError, setSaveError] = useState('')
+  const [saveMsg, setSaveMsg] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [licenses, setLicenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -234,7 +235,7 @@ export default function Licenses() {
       <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title={editLic?'Edit license':'Add software license'} width={560}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <FormField label="Software name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Microsoft 365" /></FormField>
+            <FormField label="Software name" required><input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Microsoft 365" onKeyDown={e=>e.key==='Enter'&&saveLicense()} /></FormField>
             <FormField label="Vendor"><input value={form.vendor} onChange={e=>setForm(f=>({...f,vendor:e.target.value}))} placeholder="e.g. Microsoft" /></FormField>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>

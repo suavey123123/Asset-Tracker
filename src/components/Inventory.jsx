@@ -37,8 +37,17 @@ function LazyAssetPhoto({ assetId, onClick }) {
   }, [assetId])
 
   return (
-    <div ref={ref} onClick={onClick} style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, overflow:'hidden', cursor:'pointer' }}>
+    <div ref={ref} onClick={onClick}
+      onMouseEnter={()=>url&&setHovered(true)}
+      onMouseLeave={()=>setHovered(false)}
+      style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, overflow:'hidden', cursor:'pointer', position:'relative' }}>
       {url ? <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'var(--text3)' }}>▦</div>}
+      {hovered && url && (
+        <div style={{ position:'fixed', zIndex:9999, width:200, height:200, borderRadius:8, overflow:'hidden', border:'2px solid var(--border2)', boxShadow:'0 8px 24px rgba(0,0,0,0.6)', pointerEvents:'none' }}
+          ref={el=>{if(el&&ref.current){const r=ref.current.getBoundingClientRect();el.style.top=(r.bottom+4)+'px';el.style.left=r.left+'px'}}}>
+          <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+        </div>
+      )}
 
     </div>
   )
@@ -160,7 +169,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [bulkAssignedTo, setBulkAssignedTo] = useState('')
   const [bulkAssignedTeam, setBulkAssignedTeam] = useState('')
   const [bulkLicenses, setBulkLicenses] = useState([])
-  const [bulkLicenseMode, setBulkLicenseMode] = useState('add') // 'add' | 'remove'
+  const [bulkLicenseMode, setBulkLicenseMode] = useState('add')
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState('') // 'add' | 'remove'
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
   const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
   const [bulkStatus, setBulkStatus] = useState('')
@@ -355,6 +365,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     }
     setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add')
     fetchAssets()
+    // Show success via toast if available
+    setBulkSuccessMsg(`✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`)
+    setTimeout(()=>setBulkSuccessMsg(''),3000)
   }
 
   async function releaseLicenses(assetId) {

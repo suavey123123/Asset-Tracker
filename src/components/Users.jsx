@@ -11,6 +11,7 @@ export default function Users() {
   const [fetchError, setFetchError] = useState('')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
@@ -127,6 +128,10 @@ export default function Users() {
         )}
       </div>
 
+      {/* Search */}
+      <div style={{ marginBottom:'1rem' }}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search users by name or email…" style={{ width:'100%', maxWidth:360 }} />
+      </div>
       {/* Users table */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
         {loading ? <div style={{ padding: '2rem' }}><Spinner /></div> :
@@ -138,7 +143,7 @@ export default function Users() {
               ))}
             </tr></thead>
             <tbody>
-              {users.map(u => (
+              {users.filter(u => !search || `${u.full_name||''} ${u.email||''}`.toLowerCase().includes(search.toLowerCase())).map(u => (
                 <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', opacity: u.blocked ? 0.65 : 1 }}>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ fontWeight: 500, fontSize: 13 }}>{u.full_name || u.email}</div>

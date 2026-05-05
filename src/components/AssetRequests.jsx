@@ -180,6 +180,7 @@ export default function AssetRequests() {
                     <div style={{ display:'flex', gap:4 }}>
                       {isAdmin && r.status === 'pending' && <Btn size="sm" variant="primary" onClick={() => openReview(r)}>Review</Btn>}
                       {r.assigned_asset_tag && <span style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--accent)' }}>{r.assigned_asset_tag}</span>}
+                      {r.reviewed_at && <span style={{ fontSize:10, color:'var(--text3)' }}>{new Date(r.reviewed_at).toLocaleDateString()}</span>}
                       {r.status === 'denied' && isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteRequest(r.id)}>Delete</Btn>}
                     </div>
                   </td>
