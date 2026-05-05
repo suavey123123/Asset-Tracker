@@ -179,10 +179,6 @@ export default function Dashboard() {
             )}
           </div>
           <GlobalSearch onViewAsset={handleViewAsset} />
-          <button onClick={()=>setDarkMode(d=>!d)} title={darkMode?'Switch to light mode':'Switch to dark mode'}
-            style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'6px 10px', cursor:'pointer', fontSize:14, color:'var(--text2)' }}>
-            {darkMode ? '☀' : '🌙'}
-          </button>
           {lastRefreshed && (
             <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>
               ↻ {Math.floor((new Date()-lastRefreshed)/60000) < 1 ? 'just now' : `${Math.floor((new Date()-lastRefreshed)/60000)}m ago`}
