@@ -50,7 +50,7 @@ export function Btn({ children, onClick, variant = 'default', size = 'md', disab
 export function Modal({ open, onClose, title, children, width = 480 }) {
   if (!open) return null
   return (
-    <div onClick={onClose} style={{
+    <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, padding: '1rem',
