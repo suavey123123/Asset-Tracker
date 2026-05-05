@@ -257,9 +257,8 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       setErrors(prev => [...prev, 'Unexpected error: ' + e.message])
     } finally {
       setImporting(false)
-      setProgress({ step: '', current: 0, total: 0 })
+      setProgress({ step: '', current: 0, total: 0, subStep: '' })
       setResult({ empCreated, empSkipped, assetCreated, assetAssigned, errors })
-      onDone?.()
     }
   }
 
@@ -292,7 +291,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                 {result.errors.map((e, i) => <div key={i} style={{ fontSize: 12, color: 'var(--red)' }}>{e}</div>)}
               </div>
             )}
-            <Btn variant="primary" onClick={() => { onClose(); reset() }}>✓ Done</Btn>
+            <Btn variant="primary" onClick={() => { onDone?.(); onClose(); reset() }}>✓ Done</Btn>
           </div>
         ) : importing ? (
           <div style={{ padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
