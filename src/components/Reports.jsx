@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase'
 import { Btn, Spinner } from './UI'
 
 export default function Reports({ onViewAsset }) {
-  const [depSort, setDepSort] = useState({ col: 'purchase_cost', dir: 'desc' })
+  const [hoveredRow, setHoveredRow] = useState(null)
+  const [depSort, setDepSort] = useState(() => { try { return JSON.parse(sessionStorage.getItem('dep_sort') || 'null') || { col: 'purchase_cost', dir: 'desc' } } catch { return { col: 'purchase_cost', dir: 'desc' } } })
   function toggleDepSort(col) {
-    setDepSort(s => ({ col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }))
+    setDepSort(s => { const next = { col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }; sessionStorage.setItem('dep_sort', JSON.stringify(next)); return next })
   }
   const [saveError, setSaveError] = useState('')
   const [assets, setAssets] = useState([])
@@ -14,7 +15,7 @@ export default function Reports({ onViewAsset }) {
   const [requests, setRequests] = useState([])
   const [log, setLog] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeReport, setActiveReport] = useState('utilization')
+  const [activeReport, setActiveReport] = useState(() => sessionStorage.getItem('reports_tab') || 'utilization')
   const [budgetYear, setBudgetYear] = useState(String(new Date().getFullYear()))
   const [budgets, setBudgets] = useState({ hardware: 0, software: 0, maintenance: 0, total: 0 })
   const [budgetInputs, setBudgetInputs] = useState({ hardware: '', software: '', maintenance: '', total: '' })
@@ -464,7 +465,7 @@ export default function Reports({ onViewAsset }) {
               const expired = exp<today
               const soon = !expired && exp<=in30
               return <tr key={a.id}>
-                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12, cursor: onViewAsset ? 'pointer' : 'default' }} onClick={() => onViewAsset?.(a)}>{a.asset_tag}</td>
+                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
                 <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
                 <td style={{ ...tdStyle, color:expired?'var(--red)':soon?'var(--amber)':'var(--text2)' }}>{exp.toLocaleDateString()}</td>
@@ -489,6 +490,7 @@ export default function Reports({ onViewAsset }) {
                 { label:'Model', col:'model' },
                 { label:'Category', col:'category' },
                 { label:'Purchase Cost', col:'purchase_cost' },
+                { label:'Purchase Date', col:'purchase_date' },
                 { label:'Current Value', col:'current_value' },
                 { label:'Depreciation %', col:'dep_pct' },
                 { label:'Age', col:'age' },
@@ -511,16 +513,21 @@ export default function Reports({ onViewAsset }) {
             }).sort((a,b) => {
               const col = depSort.col
               const dir = depSort.dir === 'asc' ? 1 : -1
-              const av = col==='purchase_cost'?a._cost : col==='current_value'?a._current??-1 : col==='dep_pct'?a._depPct??-1 : col==='age'?a._age??-1 : (a[col]||'').toString().toLowerCase()
-              const bv = col==='purchase_cost'?b._cost : col==='current_value'?b._current??-1 : col==='dep_pct'?b._depPct??-1 : col==='age'?b._age??-1 : (b[col]||'').toString().toLowerCase()
+              const av = col==='purchase_cost'?a._cost : col==='current_value'?a._current??-1 : col==='dep_pct'?a._depPct??-1 : col==='age'?a._age??-1 : col==='purchase_date'?(a.purchase_date||'') : (a[col]||'').toString().toLowerCase()
+              const bv = col==='purchase_cost'?b._cost : col==='current_value'?b._current??-1 : col==='dep_pct'?b._depPct??-1 : col==='age'?b._age??-1 : col==='purchase_date'?(b.purchase_date||'') : (b[col]||'').toString().toLowerCase()
               return typeof av === 'number' ? (av-bv)*dir : av < bv ? -dir : av > bv ? dir : 0
             }).map(a => {
               const cost = a._cost; const age = a._age; const current = a._current; const depPct = a._depPct; const hasDate = !!a.purchase_date
-              return <tr key={a.id}>
-                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12, cursor: onViewAsset ? 'pointer' : 'default' }} onClick={() => onViewAsset?.(a)}>{a.asset_tag}</td>
+              return <tr key={a.id}
+                onMouseEnter={()=>setHoveredRow(a.id)}
+                onMouseLeave={()=>setHoveredRow(null)}
+                style={{ background: hoveredRow===a.id ? 'var(--bg3)' : 'transparent', cursor: onViewAsset ? 'pointer' : 'default', transition:'background 0.1s' }}
+                onClick={()=>onViewAsset?.(a)}>
+                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
                 <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)' }}>${cost.toFixed(0)}</td>
+                <td style={{ ...tdStyle, fontSize:12, color:'var(--text2)' }}>{a.purchase_date ? new Date(a.purchase_date).toLocaleDateString() : '—'}</td>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--green)' }}>{current!==null?`$${current.toFixed(0)}`:'—'}</td>
                 <td style={tdStyle}>
                   {depPct!==null ? <div style={{ display:'flex', alignItems:'center', gap:8 }}>

@@ -135,7 +135,7 @@ export default function Dashboard() {
     maintenance: <Maintenance />,
     history: <History onViewAsset={handleViewAsset} />,
     users: isAdmin ? <Users /> : null,
-    reports: <Reports onViewAsset={handleViewAsset} />,
+    reports: <Reports onViewAsset={(asset) => { handleViewAsset(asset) }} />,
     settings: <Settings />,
     scanner: <Scanner onViewAsset={handleViewAsset} />,
     lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
