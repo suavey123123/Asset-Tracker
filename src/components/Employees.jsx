@@ -351,12 +351,17 @@ export default function Employees({ onViewEmployee }) {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {empAssets.map(a => (
-                      <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--bg3)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500 }}>{a.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>{a.asset_tag} · {a.category}</div>
+                      <div key={a.id}
+                        onClick={() => { setViewEmp(null); onViewAsset?.(a) }}
+                        style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:'var(--bg3)', borderRadius:'var(--radius)', border:'1px solid var(--border)', cursor:'pointer', transition:'background 0.1s' }}
+                        onMouseEnter={e=>e.currentTarget.style.background='var(--bg4)'}
+                        onMouseLeave={e=>e.currentTarget.style.background='var(--bg3)'}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:13, fontWeight:500 }}>{a.model || a.name}</div>
+                          <div style={{ fontSize:11, color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.asset_tag} · {a.category}</div>
                         </div>
                         <Badge status={a.status} />
+                        <span style={{ fontSize:12, color:'var(--text3)' }}>→</span>
                       </div>
                     ))}
                   </div>
