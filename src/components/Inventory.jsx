@@ -39,13 +39,7 @@ function LazyAssetPhoto({ assetId, onClick }) {
   return (
     <div ref={ref} onClick={onClick} style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, overflow:'hidden', cursor:'pointer' }}>
       {url ? <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'var(--text3)' }}>▦</div>}
-      <CheckoutAgreement
-        open={!!agreementModal}
-        onClose={() => setAgreementModal(null)}
-        asset={agreementModal?.asset}
-        employee={agreementModal?.employee}
-        onSign={() => { setAgreementModal(null); doQuickCheckout() }}
-      />
+
     </div>
   )
 }
@@ -842,6 +836,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </div>
         </div>
       </Modal>
+
+      <CheckoutAgreement
+        open={!!agreementModal}
+        onClose={() => setAgreementModal(null)}
+        asset={agreementModal?.asset}
+        employee={agreementModal?.employee}
+        onSign={() => { setAgreementModal(null); doQuickCheckout() }}
+      />
 
       <ImportCSV open={importOpen} onClose={()=>setImportOpen(false)} onDone={fetchAssets} />
     </div>
