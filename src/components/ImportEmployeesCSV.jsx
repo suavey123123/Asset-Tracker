@@ -183,8 +183,26 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       const { data: existing } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', r.asset_tag).maybeSingle()
 
       if (existing) {
-        // Assign existing asset to employee
-        await supabase.from('assets').update({ assigned_to: r.name, status: 'Checked Out' }).eq('id', existing.id)
+        // Update existing asset with all fields + assign to employee
+        await supabase.from('assets').update({
+          assigned_to: r.name,
+          status: 'Checked Out',
+          model: r.asset_model || existing.model || null,
+          serial_number: r.asset_serial || existing.serial_number || null,
+          purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
+          provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
+          purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
+          specs: {
+            CPU: r.cpu || '',
+            GPU: r.gpu || '',
+            RAM: r.ram || '',
+            SSD: r.ssd || '',
+            HDD: r.hdd || '',
+            'MAC ADDRESS (WIFI)': r.mac_wifi || '',
+            'MAC ADDRESS (LAN)': r.mac_lan || '',
+            'OS VERSION': r.os_version || '',
+          }
+        }).eq('id', existing.id)
         await supabase.from('activity_log').insert({ asset_id: existing.id, asset_tag: existing.asset_tag, asset_name: existing.asset_tag, type: 'checkout', message: `Assigned to ${r.name} via bulk import` })
         assetAssigned++
       } else {
