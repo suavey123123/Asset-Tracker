@@ -152,6 +152,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     return () => document.removeEventListener('mousedown', close)
   }, [showColPicker])
   const [checkoutModal, setCheckoutModal] = useState(null)
+  const [tagExists, setTagExists] = useState(false)
+  const [checkingTag, setCheckingTag] = useState(false)
   const [agreementModal, setAgreementModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCategory, setBulkCategory] = useState('')
@@ -359,6 +361,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     }
     setSelected([])
     fetchAssets()
+  }
+
+  async function checkTagExists(tag) {
+    if (!tag.trim()) { setTagExists(false); return }
+    setCheckingTag(true)
+    const { data } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', tag.trim()).maybeSingle()
+    setTagExists(!!data)
+    setCheckingTag(false)
   }
 
   function initiateCheckout() {

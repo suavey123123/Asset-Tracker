@@ -84,9 +84,10 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   const [csv, setCsv] = useState('')
   const [fileName, setFileName] = useState('')
   const [preview, setPreview] = useState([])
+  const [showPreview, setShowPreview] = useState(false)
   const [errors, setErrors] = useState([])
   const [importing, setImporting] = useState(false)
-  const [progress, setProgress] = useState({ step: '', current: 0, total: 0 })
+  const [progress, setProgress] = useState({ step: '', current: 0, total: 0, subStep: '' })
   const [result, setResult] = useState(null)
   const [siteId, setSiteId] = useState('')
 
@@ -144,7 +145,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     setProgress({ step: 'Creating employees', current: 0, total: employees.length })
     for (let i = 0; i < employees.length; i++) {
       const { details: r } = employees[i]
-      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length })
+      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: r.details.name })
 
       // Check if employee already exists — update if so, create if not
       const { data: existing } = await supabase.from('employees').select('id').ilike('name', r.name).maybeSingle()
@@ -177,7 +178,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
     for (let i = 0; i < assetRows.length; i++) {
       const r = assetRows[i]
-      setProgress({ step: 'Assigning assets', current: i + 1, total: assetRows.length })
+      setProgress({ step: 'Assigning assets', current: i + 1, total: assetRows.length, subStep: `${r.asset_tag} → ${r.name}` })
 
       // Check if asset already exists
       const { data: existing } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', r.asset_tag).maybeSingle()
@@ -284,12 +285,28 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
             <Btn onClick={() => { onDone?.(); onClose(); reset() }}>Close</Btn>
           </div>
         ) : importing ? (
-          <div style={{ padding: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-            <div style={{ fontSize: 13, color: 'var(--text2)' }}>{progress.step}… ({progress.current}/{progress.total})</div>
-            <div style={{ width: '100%', height: 8, background: 'var(--bg4)', borderRadius: 4, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 4, transition: 'width 0.3s' }} />
+          <div style={{ padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Overall progress */}
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:13 }}>
+                <span style={{ fontWeight:500 }}>{progress.step}</span>
+                <span style={{ fontFamily:'var(--mono)', color:'var(--accent)' }}>{pct}%</span>
+              </div>
+              <div style={{ height:10, background:'var(--bg4)', borderRadius:5, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${pct}%`, background:'var(--accent)', borderRadius:5, transition:'width 0.2s ease' }} />
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:4, fontSize:11, color:'var(--text3)' }}>
+                <span>{progress.current} of {progress.total}</span>
+                <span>{progress.total - progress.current} remaining</span>
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>{pct}%</div>
+            {/* Current item */}
+            {progress.subStep && (
+              <div style={{ fontSize:12, color:'var(--text2)', background:'var(--bg3)', borderRadius:'var(--radius)', padding:'8px 12px', fontFamily:'var(--mono)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                ⟳ {progress.subStep}
+              </div>
+            )}
+            <div style={{ fontSize:11, color:'var(--text3)', textAlign:'center' }}>Please keep this window open until import completes</div>
           </div>
         ) : (
           <>

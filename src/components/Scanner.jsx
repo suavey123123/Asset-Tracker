@@ -16,13 +16,41 @@ export default function Scanner({ onViewAsset }) {
 
   useEffect(() => () => stopCamera(), [])
 
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false)
+    const onOffline = () => setIsOffline(true)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline) }
+  }, [])
+
   async function lookup(tag) {
     if (!tag.trim()) return
     setLoading(true); setError(''); setResult(null)
-    const { data } = await supabase.from('assets').select('*').or(`asset_tag.ilike.${tag.trim()},id.eq.${tag.trim().match(/^[0-9a-f-]{36}$/) ? tag.trim() : '00000000-0000-0000-0000-000000000000'}`).limit(1).maybeSingle()
-    setLoading(false)
-    if (!data) { setError(`No asset found for tag: "${tag.trim()}"`); return }
-    setResult(data)
+
+    try {
+      const { data } = await supabase.from('assets').select('*')
+        .or(`asset_tag.ilike.${tag.trim()},id.eq.${tag.trim().match(/^[0-9a-f-]{36}$/) ? tag.trim() : '00000000-0000-0000-0000-000000000000'}`)
+        .limit(1).maybeSingle()
+      setLoading(false)
+      if (!data) { setError(`No asset found for tag: "${tag.trim()}"`); return }
+      setResult(data)
+    } catch(e) {
+      // Try offline cache
+      try {
+        const cached = localStorage.getItem('offline_assets')
+        if (cached) {
+          const assets = JSON.parse(cached)
+          const found = assets.find(a => a.asset_tag?.toLowerCase() === tag.trim().toLowerCase())
+          setLoading(false)
+          if (found) { setResult(found); return }
+        }
+      } catch {}
+      setLoading(false)
+      setError(isOffline ? `Offline — no cached data for "${tag.trim()}"` : `No asset found for tag: "${tag.trim()}"`)
+    }
   }
 
   async function startCamera() {
