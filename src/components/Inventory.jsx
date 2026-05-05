@@ -84,6 +84,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [allLicenses, setAllLicenses] = useState([])
   const [formLicenses, setFormLicenses] = useState([])
   const [allSites, setAllSites] = useState([])
+  const [allEmployees, setAllEmployees] = useState([])
   const [filterTag, setFilterTag] = useState('')
   const [allTags, setAllTags] = useState([])
 
@@ -240,6 +241,8 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   async function fetchSites() {
     const { data } = await supabase.from('sites').select('id, name').order('name')
     setAllSites(data || [])
+    const { data: emps } = await supabase.from('employees').select('id, name, email, title, department, phone').limit(500)
+    setAllEmployees(emps || [])
   }
 
   function saveFilter() {
