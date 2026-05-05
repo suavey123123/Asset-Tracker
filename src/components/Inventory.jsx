@@ -131,8 +131,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   ]
 
   function exportFilteredCSV() {
-    const cols = ['asset_tag','model','category','status','assigned_to','assigned_to_team','location','serial_number','purchase_date','purchase_cost','warranty_expiry','provision_date']
-    const headers = ['Asset Tag','Model','Category','Status','Assigned To','Assigned Team','Site','Serial Number','Purchase Date','Purchase Cost','Warranty Expiry','Provision Date']
+    const cols = ['asset_tag','model','category','status','assigned_to','assigned_to_team','location','serial_number','purchase_date','purchase_cost','warranty_expiry','provision_date','locked_status','carrier','imei']
+    const headers = ['Asset Tag','Model','Category','Status','Assigned To','Assigned Team','Site','Serial Number','Purchase Date','Purchase Cost','Warranty Expiry','Provision Date','Lock Status','Carrier','IMEI']
     const rows = filtered.map(a => cols.map(c => {
       const v = a[c] ?? ''
       return String(v).includes(',') ? `"${v}"` : v
