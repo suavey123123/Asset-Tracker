@@ -195,7 +195,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [bulkAssignedTeam, setBulkAssignedTeam] = useState('')
   const [bulkLicenses, setBulkLicenses] = useState([])
   const [bulkLicenseMode, setBulkLicenseMode] = useState('add')
-  const [bulkSuccessMsg, setBulkSuccessMsg] = useState('') // 'add' | 'remove'
+  const [bulkSuccessMsg, setBulkSuccessMsg] = useState('')
+  const [bulkModel, setBulkModel] = useState('')
+  const [bulkPurchaseCost, setBulkPurchaseCost] = useState('') // 'add' | 'remove'
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
   const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
   const [bulkStatus, setBulkStatus] = useState('')
@@ -371,6 +373,8 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     if (bulkCategory) updates.category = bulkCategory.toUpperCase()
     if (bulkAssignedTo) updates.assigned_to = bulkAssignedTo
     if (bulkAssignedTeam) { updates.assigned_to_team = bulkAssignedTeam; updates.assigned_to = null }
+    if (bulkModel) updates.model = bulkModel
+    if (bulkPurchaseCost) updates.purchase_cost = parseFloat(bulkPurchaseCost.replace(/[^0-9.]/g, ''))
     for (const id of selected) {
       await supabase.from('assets').update(updates).eq('id', id)
     }
@@ -388,7 +392,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
         }
       }
     }
-    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add')
+    setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add'); setBulkModel(''); setBulkPurchaseCost('')
     fetchAssets()
     // Show success via toast if available
     setBulkSuccessMsg(`✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`)
@@ -916,6 +920,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
             <FormField label="Assign to employee">
               <input value={bulkAssignedTo} onChange={e=>{setBulkAssignedTo(e.target.value); if(e.target.value) setBulkAssignedTeam('')}} placeholder="Employee name" />
             </FormField>
+            <FormField label="Model / Brand">
+              <input value={bulkModel} onChange={e=>setBulkModel(e.target.value)} placeholder="e.g. MacBook Pro 16&quot;" />
+            </FormField>
+            <FormField label="Purchase cost ($)">
+              <input value={bulkPurchaseCost} onChange={e=>setBulkPurchaseCost(e.target.value)} placeholder="e.g. 1299" />
+            </FormField>
           </div>
           <FormField label="Assign to team / department">
             <input value={bulkAssignedTeam} onChange={e=>{setBulkAssignedTeam(e.target.value); if(e.target.value) setBulkAssignedTo('')}} placeholder="e.g. Finance Team, IT Shared" />
@@ -956,7 +966,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </div>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setBulkEditOpen(false)}>Cancel</Btn>
-            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam && bulkLicenses.length === 0}>Apply to {selected.length} assets</Btn>
+            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam && !bulkModel && !bulkPurchaseCost && bulkLicenses.length === 0}>Apply to {selected.length} assets</Btn>
           </div>
         </div>
       </Modal>
