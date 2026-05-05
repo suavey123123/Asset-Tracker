@@ -10,9 +10,16 @@ export default function Reports() {
   const [log, setLog] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeReport, setActiveReport] = useState('utilization')
-  const [budget, setBudget] = useState(() => parseFloat(localStorage.getItem('it_budget') || '0'))
-  const [budgetInput, setBudgetInput] = useState(localStorage.getItem('it_budget') || '')
   const [budgetYear, setBudgetYear] = useState(() => localStorage.getItem('it_budget_year') || String(new Date().getFullYear()))
+  const [budgets, setBudgets] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: 0, software: 0, maintenance: 0, total: 0 } } catch { return { hardware: 0, software: 0, maintenance: 0, total: 0 } }
+  })
+  const [budgetInputs, setBudgetInputs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: '', software: '', maintenance: '', total: '' } } catch { return { hardware: '', software: '', maintenance: '', total: '' } }
+  })
+  const [drilldown, setDrilldown] = useState(null) // 'hardware' | 'software' | 'maintenance'
+  const [budgetSite, setBudgetSite] = useState('')
+  const [budgetView, setBudgetView] = useState('annual') // 'annual' | 'monthly'
 
   useEffect(() => { fetchAll() }, [])
 
@@ -46,8 +53,31 @@ export default function Reports() {
   const assetSpend = yearAssets.reduce((s, a) => s + (parseFloat(a.purchase_cost) || 0), 0)
   const maintSpend = yearMaint.reduce((s, m) => s + (parseFloat(m.cost) || 0), 0)
   const totalSpend = assetSpend + maintSpend
-  const budgetRemaining = budget - totalSpend
-  const budgetPct = budget > 0 ? Math.min(100, Math.round(totalSpend / budget * 100)) : 0
+  const budgetRemaining = budgets.total - totalSpend
+  const budgetPct = budgets.total > 0 ? Math.min(100, Math.round(totalSpend / budgets.total * 100)) : 0
+
+  // Category buckets
+  const SW_CATS = ['SOFTWARE','LICENSE','SAAS','SUBSCRIPTION']
+  const HW_CATS = ['LAPTOP','DESKTOP','MONITOR','PHONE','TABLET','SERVER','PRINTER','PROJECTOR','TV','ROUTER','SWITCH','ACCESS POINT','UPS','CAMERA','SCANNER']
+
+  const filteredAssets = budgetSite ? yearAssets.filter(a => { const s = sites?.find(s=>s.id===a.site_id); return s?.name === budgetSite || a.location === budgetSite }) : yearAssets
+  const filteredMaint  = budgetSite ? yearMaint.filter(m => assets.find(a=>a.id===m.asset_id)?.location === budgetSite) : yearMaint
+
+  const hwAssets  = filteredAssets.filter(a => HW_CATS.includes(a.category?.toUpperCase()) || !SW_CATS.includes(a.category?.toUpperCase()))
+  const swAssets  = filteredAssets.filter(a => SW_CATS.includes(a.category?.toUpperCase()))
+  const hwSpend   = hwAssets.reduce((s,a)=>s+(parseFloat(a.purchase_cost)||0),0)
+  const swSpend   = swAssets.reduce((s,a)=>s+(parseFloat(a.purchase_cost)||0),0)
+  const maintSpendFiltered = filteredMaint.reduce((s,m)=>s+(parseFloat(m.cost)||0),0)
+
+  // Monthly breakdown
+  const months = Array.from({length:12},(_,i)=>i)
+  const monthlyHW   = months.map(m=>hwAssets.filter(a=>new Date(a.purchase_date).getMonth()===m).reduce((s,a)=>s+(parseFloat(a.purchase_cost)||0),0))
+  const monthlySW   = months.map(m=>swAssets.filter(a=>new Date(a.purchase_date).getMonth()===m).reduce((s,a)=>s+(parseFloat(a.purchase_cost)||0),0))
+  const monthlyMaint= months.map(m=>filteredMaint.filter(a=>new Date(a.performed_date).getMonth()===m).reduce((s,a)=>s+(parseFloat(a.cost)||0),0))
+  const monthNames  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const maxMonthly  = Math.max(...months.map(m=>monthlyHW[m]+monthlySW[m]+monthlyMaint[m]),1)
+
+  const uniqueSites = [...new Set(assets.map(a=>a.location).filter(Boolean))]
 
   // Monthly summary
   const thisMonth = new Date(); thisMonth.setDate(1); thisMonth.setHours(0,0,0,0)
@@ -59,10 +89,10 @@ export default function Reports() {
   const monthRequestsApproved = monthRequests.filter(r => r.status === 'approved')
   const expiringLicenses = licenses.filter(l => l.expiry_date && new Date(l.expiry_date) <= in30 && new Date(l.expiry_date) >= today)
 
-  function saveBudget() {
-    const val = parseFloat(budgetInput) || 0
-    setBudget(val)
-    localStorage.setItem('it_budget', String(val))
+  function saveBudgets() {
+    const vals = { hardware: parseFloat(budgetInputs.hardware)||0, software: parseFloat(budgetInputs.software)||0, maintenance: parseFloat(budgetInputs.maintenance)||0, total: parseFloat(budgetInputs.total)||0 }
+    setBudgets(vals)
+    localStorage.setItem('it_budgets_v2', JSON.stringify(vals))
     localStorage.setItem('it_budget_year', budgetYear)
   }
 
@@ -227,58 +257,145 @@ export default function Reports() {
 
       {/* BUDGET */}
       {activeReport==='budget' && (
-        <div>
+        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+          {/* Controls */}
+          <div style={{ ...card, padding:'1rem', display:'flex', gap:12, alignItems:'flex-end', flexWrap:'wrap' }}>
+            <div>
+              <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>Year</div>
+              <select value={budgetYear} onChange={e=>setBudgetYear(e.target.value)} style={{ width:90 }}>
+                {[2023,2024,2025,2026,2027].map(y=><option key={y}>{y}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>Site / Location</div>
+              <select value={budgetSite} onChange={e=>setBudgetSite(e.target.value)} style={{ width:160 }}>
+                <option value="">All sites</option>
+                {uniqueSites.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div style={{ display:'flex', gap:4, background:'var(--bg3)', padding:3, borderRadius:'var(--radius)', border:'1px solid var(--border2)' }}>
+              {['annual','monthly'].map(v=>(
+                <button key={v} onClick={()=>setBudgetView(v)} style={{ padding:'4px 12px', borderRadius:'var(--radius)', fontSize:12, border:'none', cursor:'pointer', fontFamily:'var(--font)', background:budgetView===v?'var(--bg2)':'transparent', color:budgetView===v?'var(--text)':'var(--text3)', fontWeight:budgetView===v?500:400 }}>{v.charAt(0).toUpperCase()+v.slice(1)}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Budget inputs */}
           <div style={card}>
-            <div style={{ fontSize:14, fontWeight:500, marginBottom:'1rem' }}>IT Budget tracker</div>
-            <div style={{ display:'flex', gap:8, marginBottom:'1.5rem', alignItems:'flex-end' }}>
-              <div>
-                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>Annual budget ($)</div>
-                <input type="number" value={budgetInput} onChange={e=>setBudgetInput(e.target.value)} placeholder="e.g. 50000" style={{ width:160 }} />
+            <div style={{ fontSize:14, fontWeight:500, marginBottom:'1rem' }}>Set budgets for {budgetYear}</div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:12 }}>
+              {[['total','Total IT Budget','var(--text)'],['hardware','Hardware','var(--blue)'],['software','Software / Licenses','var(--purple,#a78bfa)'],['maintenance','Maintenance','var(--amber)']].map(([k,label,color])=>(
+                <div key={k} style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'12px' }}>
+                  <div style={{ fontSize:11, color:color, fontWeight:500, marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>{label}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+                    <span style={{ color:'var(--text3)' }}>$</span>
+                    <input type="number" value={budgetInputs[k]||''} onChange={e=>setBudgetInputs(p=>({...p,[k]:e.target.value}))} placeholder="0" style={{ width:'100%', fontSize:14, fontFamily:'var(--mono)' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Btn variant="primary" onClick={saveBudgets}>Save budgets</Btn>
+          </div>
+
+          {/* Spend overview */}
+          {budgets.total > 0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+              {[
+                ['Total budget', '$'+budgets.total.toLocaleString(), budgets.total, budgets.total, 'var(--text)'],
+                ['Hardware spend', '$'+hwSpend.toLocaleString(), hwSpend, budgets.hardware||budgets.total, 'var(--blue)'],
+                ['Software spend', '$'+swSpend.toLocaleString(), swSpend, budgets.software||budgets.total, 'var(--accent)'],
+                ['Maintenance spend', '$'+maintSpendFiltered.toLocaleString(), maintSpendFiltered, budgets.maintenance||budgets.total, 'var(--amber)'],
+              ].map(([label,val,spend,budget,color])=>{
+                const pct = budget>0?Math.min(100,Math.round(spend/budget*100)):0
+                return (
+                  <div key={label} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 16px' }}>
+                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:6 }}>{label}</div>
+                    <div style={{ fontSize:22, fontWeight:500, color, fontFamily:'var(--mono)', marginBottom:8 }}>{val}</div>
+                    <div style={{ height:6, background:'var(--bg4)', borderRadius:3, overflow:'hidden', marginBottom:4 }}>
+                      <div style={{ width:pct+'%', height:'100%', background:pct>90?'var(--red)':pct>70?'var(--amber)':color, borderRadius:3, transition:'width 0.5s' }} />
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--text3)' }}>{pct}% of budget</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Remaining banner */}
+          {budgets.total > 0 && (
+            <div style={{ background: budgetRemaining>=0?'var(--green-bg)':'var(--red-bg)', border:`1px solid ${budgetRemaining>=0?'var(--green)':'var(--red)'}`, borderRadius:'var(--radius)', padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:13, color:budgetRemaining>=0?'var(--green)':'var(--red)', fontWeight:500 }}>{budgetRemaining>=0?'Remaining budget':'Over budget'}</span>
+              <span style={{ fontFamily:'var(--mono)', fontSize:16, fontWeight:600, color:budgetRemaining>=0?'var(--green)':'var(--red)' }}>{budgetRemaining>=0?'$'+budgetRemaining.toLocaleString():'-$'+Math.abs(budgetRemaining).toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Monthly breakdown */}
+          {budgetView==='monthly' && (
+            <div style={card}>
+              <div style={{ fontSize:14, fontWeight:500, marginBottom:'1rem' }}>Monthly spend — {budgetYear}</div>
+              <div style={{ display:'flex', gap:6, alignItems:'flex-end', height:140, marginBottom:8 }}>
+                {months.map(m=>{
+                  const hw=monthlyHW[m], sw=monthlySW[m], mn=monthlyMaint[m], total=hw+sw+mn
+                  const h=Math.round((total/maxMonthly)*120)
+                  const hwH=Math.round((hw/maxMonthly)*120), swH=Math.round((sw/maxMonthly)*120), mnH=Math.round((mn/maxMonthly)*120)
+                  return (
+                    <div key={m} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                      {total>0&&<div style={{ fontSize:9, color:'var(--text3)', fontFamily:'var(--mono)' }}>${Math.round(total/1000)}k</div>}
+                      <div style={{ width:'100%', display:'flex', flexDirection:'column', justifyContent:'flex-end', height:120, gap:1 }}>
+                        {mnH>0&&<div style={{ height:mnH, background:'var(--amber)', borderRadius:2, opacity:0.8 }} title={`Maintenance: $${mn.toFixed(0)}`} />}
+                        {swH>0&&<div style={{ height:swH, background:'var(--accent)', borderRadius:2, opacity:0.8 }} title={`Software: $${sw.toFixed(0)}`} />}
+                        {hwH>0&&<div style={{ height:hwH, background:'var(--blue)', borderRadius:2, opacity:0.8 }} title={`Hardware: $${hw.toFixed(0)}`} />}
+                      </div>
+                      <div style={{ fontSize:9, color:'var(--text3)' }}>{monthNames[m]}</div>
+                    </div>
+                  )
+                })}
               </div>
-              <div>
-                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>Year</div>
-                <select value={budgetYear} onChange={e=>setBudgetYear(e.target.value)} style={{ width:100 }}>
-                  {[2023,2024,2025,2026,2027].map(y=><option key={y}>{y}</option>)}
-                </select>
+              <div style={{ display:'flex', gap:16, fontSize:11, color:'var(--text2)', justifyContent:'center' }}>
+                {[['var(--blue)','Hardware'],['var(--accent)','Software'],['var(--amber)','Maintenance']].map(([c,l])=>(
+                  <div key={l} style={{ display:'flex', alignItems:'center', gap:4 }}><div style={{ width:10,height:10,background:c,borderRadius:2 }}/>{l}</div>
+                ))}
               </div>
-              <Btn variant="primary" onClick={saveBudget}>Save budget</Btn>
+            </div>
+          )}
+
+          {/* Drilldown */}
+          <div style={card}>
+            <div style={{ display:'flex', gap:8, marginBottom:'1rem' }}>
+              {[['hardware','Hardware'],['software','Software'],['maintenance','Maintenance']].map(([k,l])=>(
+                <button key={k} onClick={()=>setDrilldown(drilldown===k?null:k)} style={{ padding:'6px 14px', fontSize:12, borderRadius:'var(--radius)', border:'1px solid', borderColor:drilldown===k?'var(--accent)':'var(--border2)', background:drilldown===k?'var(--accent-bg)':'var(--bg3)', color:drilldown===k?'var(--accent)':'var(--text2)', cursor:'pointer', fontFamily:'var(--font)', fontWeight:drilldown===k?500:400 }}>{l}</button>
+              ))}
+              {drilldown && <span style={{ marginLeft:'auto', fontSize:12, color:'var(--text2)' }}>Showing {drilldown} purchases</span>}
             </div>
 
-            {budget > 0 && (
-              <>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:'1.5rem' }}>
-                  {[['Total budget','$'+budget.toLocaleString(),'var(--text)'],['Asset spend','$'+assetSpend.toLocaleString(),'var(--blue)'],['Maintenance spend','$'+maintSpend.toLocaleString(),'var(--amber)'],['Remaining',`${budgetRemaining>=0?'$'+budgetRemaining.toLocaleString():'-$'+Math.abs(budgetRemaining).toLocaleString()}`,budgetRemaining>=0?'var(--green)':'var(--red)']].map(([l,v,c])=>(
-                    <div key={l} style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'12px 14px' }}>
-                      <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4 }}>{l}</div>
-                      <div style={{ fontSize:18, fontWeight:500, color:c, fontFamily:'var(--mono)' }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginBottom:8, fontSize:12, color:'var(--text2)', display:'flex', justifyContent:'space-between' }}>
-                  <span>Budget used</span><span style={{ fontFamily:'var(--mono)', fontWeight:500, color:budgetPct>90?'var(--red)':budgetPct>70?'var(--amber)':'var(--green)' }}>{budgetPct}%</span>
-                </div>
-                <div style={{ height:12, background:'var(--bg4)', borderRadius:6, overflow:'hidden', marginBottom:'1.5rem' }}>
-                  <div style={{ width:`${budgetPct}%`, height:'100%', background:budgetPct>90?'var(--red)':budgetPct>70?'var(--amber)':'var(--green)', borderRadius:6, transition:'width 0.5s' }} />
-                </div>
-              </>
+            {!drilldown && <div style={{ fontSize:13, color:'var(--text3)', textAlign:'center', padding:'1rem' }}>Select a category above to drill down into individual purchases</div>}
+
+            {drilldown==='hardware' && (
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead><tr>{['Tag','Model','Category','Site','Date','Cost'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+                <tbody>{hwAssets.filter(a=>a.purchase_cost).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>(
+                  <tr key={a.id}><td style={{...tdStyle,fontFamily:'var(--mono)',color:'var(--accent)',fontSize:12}}>{a.asset_tag}</td><td style={tdStyle}>{a.model||'—'}</td><td style={{...tdStyle,fontSize:11}}>{a.category}</td><td style={{...tdStyle,color:'var(--text2)'}}>{a.location||'—'}</td><td style={{...tdStyle,color:'var(--text2)'}}>{a.purchase_date?new Date(a.purchase_date).toLocaleDateString():'—'}</td><td style={{...tdStyle,fontFamily:'var(--mono)',fontWeight:500,color:'var(--blue)'}}>${parseFloat(a.purchase_cost).toFixed(2)}</td></tr>
+                ))}</tbody>
+              </table>
             )}
 
-            {yearAssets.length > 0 && (
-              <>
-                <div style={{ fontSize:13, fontWeight:500, marginBottom:8 }}>Asset purchases in {budgetYear}</div>
-                <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                  <thead><tr>{['Tag','Model','Category','Date','Cost'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-                  <tbody>{yearAssets.filter(a=>a.purchase_cost).map(a=>(
-                    <tr key={a.id}>
-                      <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
-                      <td style={tdStyle}>{a.model||'—'}</td>
-                      <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
-                      <td style={{ ...tdStyle, color:'var(--text2)' }}>{a.purchase_date?new Date(a.purchase_date).toLocaleDateString():'—'}</td>
-                      <td style={{ ...tdStyle, fontFamily:'var(--mono)', fontWeight:500 }}>${parseFloat(a.purchase_cost).toFixed(2)}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              </>
+            {drilldown==='software' && (
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead><tr>{['Tag','Model','Category','Date','Cost'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+                <tbody>{swAssets.filter(a=>a.purchase_cost).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>(
+                  <tr key={a.id}><td style={{...tdStyle,fontFamily:'var(--mono)',color:'var(--accent)',fontSize:12}}>{a.asset_tag}</td><td style={tdStyle}>{a.model||'—'}</td><td style={{...tdStyle,fontSize:11}}>{a.category}</td><td style={{...tdStyle,color:'var(--text2)'}}>{a.purchase_date?new Date(a.purchase_date).toLocaleDateString():'—'}</td><td style={{...tdStyle,fontFamily:'var(--mono)',fontWeight:500,color:'var(--accent)'}}>${parseFloat(a.purchase_cost).toFixed(2)}</td></tr>
+                ))}</tbody>
+              </table>
+            )}
+
+            {drilldown==='maintenance' && (
+              <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                <thead><tr>{['Asset','Type','Date','Performed By','Cost'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
+                <tbody>{filteredMaint.filter(m=>m.cost).sort((a,b)=>parseFloat(b.cost)-parseFloat(a.cost)).map(m=>(
+                  <tr key={m.id}><td style={{...tdStyle,fontFamily:'var(--mono)',color:'var(--accent)',fontSize:12}}>{m.asset_tag||'—'}</td><td style={tdStyle}>{m.maintenance_type||'—'}</td><td style={{...tdStyle,color:'var(--text2)'}}>{m.performed_date?new Date(m.performed_date).toLocaleDateString():'—'}</td><td style={{...tdStyle,color:'var(--text2)'}}>{m.performed_by||'—'}</td><td style={{...tdStyle,fontFamily:'var(--mono)',fontWeight:500,color:'var(--amber)'}}>${parseFloat(m.cost).toFixed(2)}</td></tr>
+                ))}</tbody>
+              </table>
             )}
           </div>
         </div>
