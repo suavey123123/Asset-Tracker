@@ -195,6 +195,9 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
           provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
           purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
+          locked_status: r.locked_status || null,
+          carrier: r.carrier || null,
+          imei: r.imei || null,
           specs: {
             CPU: r.cpu || '',
             GPU: r.gpu || '',
