@@ -902,7 +902,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </div>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setBulkEditOpen(false)}>Cancel</Btn>
-            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam}>Apply to {selected.length} assets</Btn>
+            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam && bulkLicenses.length === 0}>Apply to {selected.length} assets</Btn>
           </div>
         </div>
       </Modal>
