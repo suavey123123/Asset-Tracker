@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [viewingAssetFromTab, setViewingAssetFromTab] = useState('inventory')
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
+  const [lastRefreshed, setLastRefreshed] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isAdmin } = useAuth()
 
