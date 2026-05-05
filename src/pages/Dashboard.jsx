@@ -141,7 +141,15 @@ export default function Dashboard() {
       <main style={{ flex:1, overflow:'auto', background:'var(--bg)', minWidth:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'0.75rem 1rem', borderBottom:'1px solid var(--border)', background:'var(--bg)', position:'sticky', top:0, zIndex:10 }}>
           <button onClick={()=>setSidebarOpen(s=>!s)} className="mobile-menu-btn" style={{ display:'none', background:'none', border:'none', color:'var(--text)', fontSize:18, cursor:'pointer', padding:'4px', flexShrink:0 }}>☰</button>
-          <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{title}</h1>
+          <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+            <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', margin:0 }}>{title}</h1>
+            {tenant && (
+              <span style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:100, padding:'2px 10px', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
+                <span style={{ width:6, height:6, borderRadius:'50%', background: tenant.accent_color || 'var(--accent)', display:'inline-block' }} />
+                {tenant.name}
+              </span>
+            )}
+          </div>
           <GlobalSearch onViewAsset={handleViewAsset} />
           {lastRefreshed && (
             <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>
