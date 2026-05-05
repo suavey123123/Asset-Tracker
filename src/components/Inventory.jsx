@@ -6,6 +6,7 @@ import CategorySelect from './CategorySelect'
 import { SPEC_FIELDS, TECH_SPEC_CATEGORIES } from '../lib/constants'
 import EmployeeSelect from './EmployeeSelect'
 import ImportCSV from './ImportCSV'
+import CheckoutAgreement from './CheckoutAgreement'
 
 const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
@@ -43,7 +44,7 @@ function LazyAssetPhoto({ assetId, onClick }) {
         onClose={() => setAgreementModal(null)}
         asset={agreementModal?.asset}
         employee={agreementModal?.employee}
-        onSign={() => { setAgreementModal(null); doCheckout() }}
+        onSign={() => { setAgreementModal(null); doQuickCheckout() }}
       />
     </div>
   )
@@ -361,6 +362,16 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     }
     setSelected([])
     fetchAssets()
+  }
+
+  function initiateCheckout() {
+    const agreementCats = ['LAPTOP','DESKTOP','PHONE','TABLET','SERVER']
+    if (agreementCats.includes(checkoutModal?.category?.toUpperCase()) && qcPerson.trim()) {
+      setAgreementModal({ asset: checkoutModal, employee: qcPerson.trim() })
+      setCheckoutModal(null)
+    } else {
+      doQuickCheckout()
+    }
   }
 
   async function doQuickCheckout() {
@@ -768,7 +779,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
           </FormField>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setCheckoutModal(null)}>Cancel</Btn>
-            <Btn variant="primary" onClick={doQuickCheckout} disabled={!qcPerson.trim()}>Check out</Btn>
+            <Btn variant="primary" onClick={initiateCheckout} disabled={!qcPerson.trim()}>Check out</Btn>
           </div>
         </div>
       </Modal>
