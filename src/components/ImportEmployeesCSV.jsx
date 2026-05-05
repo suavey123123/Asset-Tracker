@@ -379,7 +379,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                 <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight:220, WebkitOverflowScrolling:'touch' }}>
                   <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
                     <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
-                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size'].map(h=>(
+                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Lock Status','Carrier','IMEI'].map(h=>(
                         <th key={h} style={{ padding:'6px 12px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11, whiteSpace:'nowrap' }}>{h}</th>
                       ))}
                     </tr></thead>
@@ -404,6 +404,9 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.os_version||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.resolution||'—'}</td>
                         <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.size||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.locked_status||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.carrier||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.imei||'—'}</td>
                       </tr>
                     ))}</tbody>
                   </table>
