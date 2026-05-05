@@ -18,6 +18,7 @@ const EMPTY_FORM = {
 function LazyAssetPhoto({ assetId, onClick }) {
   const [url, setUrl] = React.useState(null)
   const [loaded, setLoaded] = React.useState(false)
+  const [hovered, setHovered] = React.useState(false)
   const ref = useRef()
 
   useEffect(() => {
