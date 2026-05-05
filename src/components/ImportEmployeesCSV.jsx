@@ -256,9 +256,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       setImporting(false)
       setProgress({ step: '', current: 0, total: 0 })
       setResult({ empCreated, empSkipped, assetCreated, assetAssigned, errors })
-      if (!errors.length) {
-        setTimeout(() => { onDone?.(); onClose(); reset() }, 3000)
-      }
+      onDone?.()
     }
   }
 
@@ -291,7 +289,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                 {result.errors.map((e, i) => <div key={i} style={{ fontSize: 12, color: 'var(--red)' }}>{e}</div>)}
               </div>
             )}
-            <Btn onClick={() => { onDone?.(); onClose(); reset() }}>Close</Btn>
+            <Btn variant="primary" onClick={() => { onClose(); reset() }}>✓ Done</Btn>
           </div>
         ) : importing ? (
           <div style={{ padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
