@@ -7,7 +7,7 @@ import Employees from './Employees'
 const EMPTY_SITE = { name: '', address: '', city: '', state: '', country: '', phone: '', notes: '' }
 
 export default function Sites() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAdminOrManager } = useAuth()
   const [saveError, setSaveError] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
   const [search, setSearch] = useState('')
@@ -118,8 +118,8 @@ export default function Sites() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.25rem' }}>
           <Btn size="sm" onClick={() => setActiveSite(null)}>← All sites</Btn>
           <div style={{ flex: 1 }} />
-          {isAdmin && <Btn size="sm" onClick={() => openEdit(activeSite)}>Edit site</Btn>}
-          {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteSite(activeSite)}>Delete site</Btn>}
+          {isAdminOrManager && <Btn size="sm" onClick={() => openEdit(activeSite)}>Edit site</Btn>}
+          {isAdminOrManager && <Btn size="sm" variant="danger" onClick={() => deleteSite(activeSite)}>Delete site</Btn>}
         </div>
 
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '1.25rem' }}>
@@ -155,7 +155,7 @@ export default function Sites() {
               }}>{label}</button>
             ))}
           </div>
-          {isAdmin && activeTab === 'employees' && (
+          {isAdminOrManager && activeTab === 'employees' && (
             <Btn variant="primary" size="sm" onClick={() => { setEmpForm({ name:'', email:'', department:'', title:'', phone:'', location:'', notes:'', site_id: activeSite?.id }); setEmpError(''); setEmpModalOpen(true) }}>
               + Add employee
             </Btn>
@@ -179,7 +179,7 @@ export default function Sites() {
                       <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>{e.title || '—'}</td>
                       <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text2)' }}>{e.department || '—'}</td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text2)' }}>{e.email || '—'}</td>
-                      {isAdmin && <td style={{ padding: '10px 14px' }}>
+                      {isAdminOrManager && <td style={{ padding: '10px 14px' }}>
                         <div style={{ display:'flex', gap:4 }}>
                           <Btn size="sm" onClick={() => {
                             setEmpForm({ name:e.name||'', email:e.email||'', department:e.department||'', title:e.title||'', phone:e.phone||'', location:e.location||'', notes:e.notes||'', site_id:e.site_id, _editId: e.id })
@@ -258,7 +258,7 @@ export default function Sites() {
       {!isAdmin && <ViewOnlyBanner />}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add site</Btn>}
+        {isAdminOrManager && <Btn variant="primary" onClick={openAdd}>+ Add site</Btn>}
       </div>
 
       {loading ? <div style={{ padding: '2rem' }}><Spinner /></div> :
@@ -267,7 +267,7 @@ export default function Sites() {
           <div style={{ fontSize: 32, marginBottom: 12 }}>🏢</div>
           <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>No sites yet</div>
           <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: '1.5rem' }}>Add your office locations, warehouses, or branches.</div>
-          {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add first site</Btn>}
+          {isAdminOrManager && <Btn variant="primary" onClick={openAdd}>+ Add first site</Btn>}
         </div>
        ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
@@ -287,7 +287,7 @@ export default function Sites() {
                       {[site.city, site.state, site.country].filter(Boolean).join(', ') || 'No address set'}
                     </div>
                   </div>
-                  {isAdmin && (
+                  {isAdminOrManager && (
                     <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
                       <Btn size="sm" onClick={() => openEdit(site)}>Edit</Btn>
                       <Btn size="sm" variant="danger" onClick={() => deleteSite(site)}>Del</Btn>

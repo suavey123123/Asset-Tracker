@@ -5,6 +5,15 @@ import { Badge, Btn, EmptyState, Spinner, Modal, FormField } from './UI'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
+
+const ROLE_COLORS = {
+  admin: { bg:'var(--accent-bg)', color:'var(--accent)', label:'Super Admin' },
+  manager: { bg:'rgba(56,138,221,0.15)', color:'#378ADD', label:'Ops Manager' },
+  technician: { bg:'rgba(186,117,23,0.15)', color:'#BA7517', label:'Field Tech' },
+  auditor: { bg:'rgba(153,53,86,0.15)', color:'#993556', label:'Finance Auditor' },
+  viewer: { bg:'var(--bg4)', color:'var(--text2)', label:'Viewer' },
+}
+
 export default function Users() {
   const { profile } = useAuth()
   const [saveError, setSaveError] = useState('')

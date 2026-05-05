@@ -63,10 +63,18 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const role = profile?.role || 'viewer'
+  const isAdmin = role === 'admin'                                    // Super admin only
+  const isManager = role === 'manager'                               // Ops manager
+  const isTechnician = role === 'technician'                         // Field tech
+  const isAuditor = role === 'auditor'                               // Finance auditor
+  const isAdminOrManager = isAdmin || isManager                      // Can manage assets/employees
+  const canWriteAssets = isAdmin || isManager || isTechnician        // Can update asset status
+  const canReadFinancials = isAdmin || isManager || isAuditor        // Can see cost/depreciation
+  const canManageUsers = isAdmin                                     // Only super admin
 
   return (
-    <AuthContext.Provider value={{ user, profile, tenant, loading, signIn, signOut, isAdmin, fetchProfile }}>
+    <AuthContext.Provider value={{ user, profile, tenant, role, loading, signIn, signOut, isAdmin, isManager, isTechnician, isAuditor, isAdminOrManager, canWriteAssets, canReadFinancials, canManageUsers, fetchProfile }}>
       {children}
     </AuthContext.Provider>
   )

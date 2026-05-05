@@ -12,7 +12,7 @@ const EMPTY_FORM = {
 const LICENSE_TYPES = ['Perpetual', 'Subscription', 'Volume', 'OEM', 'Open Source', 'Trial', 'Freeware']
 
 export default function Licenses() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAdminOrManager } = useAuth()
   const [saveError, setSaveError] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
   const [fetchError, setFetchError] = useState('')
@@ -151,7 +151,7 @@ export default function Licenses() {
           {LICENSE_TYPES.map(t=><option key={t}>{t}</option>)}
         </select>
         <div style={{ flex:1 }} />
-        {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add license</Btn>}
+        {isAdminOrManager && <Btn variant="primary" onClick={openAdd}>+ Add license</Btn>}
       </div>
 
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', overflow:'hidden' }}>
@@ -219,7 +219,7 @@ export default function Licenses() {
                       })()}
                     </td>
                     <td style={tdStyle}>
-                      {isAdmin && <div style={{ display:'flex', gap:4 }}>
+                      {isAdminOrManager && <div style={{ display:'flex', gap:4 }}>
                         <Btn size="sm" onClick={()=>openEdit(l)}>Edit</Btn>
                         <Btn size="sm" variant="danger" onClick={()=>deleteLic(l)}>Del</Btn>
                       </div>}

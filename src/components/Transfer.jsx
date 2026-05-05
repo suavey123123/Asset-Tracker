@@ -142,7 +142,7 @@ export default function Transfer({ onViewAsset }) {
     <div className="fade-in">
       {!isAdmin && <ViewOnlyBanner />}
 
-      {isAdmin && (
+      {isAdminOrManager && (
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontSize: 14, fontWeight: 500, marginBottom: '1rem' }}>Transfer asset between employees</h3>
 

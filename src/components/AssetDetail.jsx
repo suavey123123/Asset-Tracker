@@ -23,7 +23,7 @@ function calcDepreciation(cost, purchase_date, useful_life_years = 3) {
 }
 
 export default function AssetDetail({ assetId, onBack, onEdit }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAdminOrManager, canReadFinancials } = useAuth()
   const [asset, setAsset] = useState(null)
   const [log, setLog] = useState([])
   const [maintenance, setMaintenance] = useState([])
@@ -138,7 +138,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
             <Badge status={asset.category} /><Badge status={asset.status} />
           </div>
         </div>
-        {isAdmin && <Btn size="sm" variant="primary" onClick={() => onEdit(asset)}>Edit asset</Btn>}
+        {isAdminOrManager && <Btn size="sm" variant="primary" onClick={() => onEdit(asset)}>Edit asset</Btn>}
       </div>
 
       {/* Alerts */}

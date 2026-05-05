@@ -48,7 +48,7 @@ export default function Maintenance() {
       {!isAdmin && <ViewOnlyBanner />}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 style={{ fontSize: 14, fontWeight: 500 }}>Maintenance records</h2>
-        {isAdmin && <Btn variant="primary" onClick={() => { setForm({ asset_id: '', maintenance_type: 'Inspection', performed_date: new Date().toISOString().slice(0, 10), performed_by: '', cost: '', notes: '' }); setError(''); setModalOpen(true) }}>+ Log maintenance</Btn>}
+        {canWriteAssets && <Btn variant="primary" onClick={() => { setForm({ asset_id: '', maintenance_type: 'Inspection', performed_date: new Date().toISOString().slice(0, 10), performed_by: '', cost: '', notes: '' }); setError(''); setModalOpen(true) }}>+ Log maintenance</Btn>}
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>

@@ -171,6 +171,11 @@ export default function Dashboard() {
           <button onClick={()=>setSidebarOpen(s=>!s)} className="mobile-menu-btn" style={{ display:'none', background:'none', border:'none', color:'var(--text)', fontSize:18, cursor:'pointer', padding:'4px', flexShrink:0 }}>☰</button>
           <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
             <h1 style={{ fontSize:15, fontWeight:500, letterSpacing:'-0.02em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', margin:0 }}>{title}</h1>
+            {role && role !== 'admin' && (
+              <span style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:100, padding:'2px 8px' }}>
+                {{ admin:'Super Admin', manager:'Ops Manager', technician:'Field Tech', auditor:'Finance Auditor', viewer:'Viewer' }[role] || role}
+              </span>
+            )}
             {tenant && (
               <span style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:100, padding:'2px 10px', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
                 <span style={{ width:6, height:6, borderRadius:'50%', background: tenant.accent_color || 'var(--accent)', display:'inline-block' }} />

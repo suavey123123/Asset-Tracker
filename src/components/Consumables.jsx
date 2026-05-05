@@ -136,7 +136,7 @@ export default function Consumables() {
           {CATEGORIES.map(c => <option key={c}>{c}</option>)}
         </select>
         <div style={{ flex: 1 }} />
-        {isAdmin && <Btn variant="primary" onClick={() => { setEditItem(null); setForm(EMPTY_FORM); setErrors({}); setModalOpen(true) }}>+ Add item</Btn>}
+        {isAdminOrManager && <Btn variant="primary" onClick={() => { setEditItem(null); setForm(EMPTY_FORM); setErrors({}); setModalOpen(true) }}>+ Add item</Btn>}
       </div>
 
       {/* Table */}
@@ -177,9 +177,9 @@ export default function Consumables() {
                   </td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      {isAdmin && <Btn size="sm" variant="primary" onClick={() => { setAdjustModal(item); setAdjustQty(''); setAdjustNote(''); setAdjustType('use') }}>± Adjust</Btn>}
-                      {isAdmin && <Btn size="sm" onClick={() => openEdit(item)}>Edit</Btn>}
-                      {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteItem(item)}>Del</Btn>}
+                      {isAdminOrManager && <Btn size="sm" variant="primary" onClick={() => { setAdjustModal(item); setAdjustQty(''); setAdjustNote(''); setAdjustType('use') }}>± Adjust</Btn>}
+                      {isAdminOrManager && <Btn size="sm" onClick={() => openEdit(item)}>Edit</Btn>}
+                      {isAdminOrManager && <Btn size="sm" variant="danger" onClick={() => deleteItem(item)}>Del</Btn>}
                     </div>
                   </td>
                 </tr>

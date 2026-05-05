@@ -46,6 +46,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'users',       label: 'Users',        icon: '◉', adminOnly: true },
       { id: 'tenants',     label: 'Tenants',      icon: '🏢', adminOnly: true },
+      { id: 'settings',    label: 'Settings',     icon: '⚙', adminOnly: true },
     ]
   },
 ]
@@ -68,7 +69,11 @@ export default function Sidebar({ active, onNav, alerts = 0 }) {
 
       {/* Nav groups */}
       <nav style={s.nav}>
-        {NAV_GROUPS.filter(g => !g.adminOnly || isAdmin).map(group => (
+        {NAV_GROUPS.filter(g => {
+          if (g.adminOnly && !isAdmin) return false
+          if (g.technicianHide && isTechnician) return false
+          return true
+        }).map(group => (
           <div key={group.label} style={s.group}>
             <div style={s.groupLabel}>{group.label}</div>
             {group.items.filter(n => !n.adminOnly || isAdmin).map(n => (

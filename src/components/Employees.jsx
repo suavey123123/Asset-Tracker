@@ -250,8 +250,8 @@ export default function Employees({ onViewAsset }) {
           <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
         )}
         <Btn size="sm" onClick={exportEmployeesAssets}>⬇ Export CSV</Btn>
-        {isAdmin && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
-        {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
+        {isAdminOrManager && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
+        {isAdminOrManager && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
@@ -313,8 +313,8 @@ export default function Employees({ onViewAsset }) {
                     <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', gap:4 }}>
                         <Btn size="sm" onClick={()=>{setViewEmp(emp);fetchEmpHistory(emp)}}>View</Btn>
-                        {isAdmin && <Btn size="sm" onClick={()=>openEdit(emp)}>Edit</Btn>}
-                        {isAdmin && <Btn size="sm" variant="danger" onClick={()=>deleteEmp(emp)}>Del</Btn>}
+                        {isAdminOrManager && <Btn size="sm" onClick={()=>openEdit(emp)}>Edit</Btn>}
+                        {isAdminOrManager && <Btn size="sm" variant="danger" onClick={()=>deleteEmp(emp)}>Del</Btn>}
                       </div>
                     </td>
                   </tr>
