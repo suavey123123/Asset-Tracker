@@ -67,9 +67,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const { isAdmin, profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterCat, setFilterCat] = useState('')
+  const [search, setSearch] = useState(() => sessionStorage.getItem('inv_search') || '')
+  const [filterStatus, setFilterStatus] = useState(() => sessionStorage.getItem('inv_status') || '')
+  const [filterCat, setFilterCat] = useState(() => sessionStorage.getItem('inv_cat') || '')
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -88,9 +88,9 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   const [allTags, setAllTags] = useState([])
 
   // Reset page on filter changes
-  useEffect(() => { setPage(1) }, [filterStatus, filterCat, filterTag, search])
+  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, search])
   const [assetPhotos, setAssetPhotos] = useState({})
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
   const PAGE_SIZE = 25
   const [savedFilters, setSavedFilters] = useState(() => {
@@ -515,12 +515,12 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       </div>
 
       <div style={{ display:'flex', gap:8, marginBottom:'1rem', flexWrap:'wrap', alignItems:'center' }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search assets…" style={{ width:200 }} />
-        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ width:150 }}>
+        <input value={search} onChange={e=>{setSearch(e.target.value);sessionStorage.setItem('inv_search',e.target.value)}} placeholder="Search assets…" style={{ width:200 }} />
+        <select value={filterStatus} onChange={e=>{setFilterStatus(e.target.value);sessionStorage.setItem('inv_status',e.target.value)}} style={{ width:150 }}>
           <option value="">All statuses</option>
           <option>Available</option><option>Checked Out</option><option>Maintenance</option><option>Retired</option>
         </select>
-        <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{ width:160 }}>
+        <select value={filterCat} onChange={e=>{setFilterCat(e.target.value);sessionStorage.setItem('inv_cat',e.target.value)}} style={{ width:160 }}>
           <option value="">All categories</option>
           <option>LAPTOP</option><option>DESKTOP</option><option>PHONE</option><option>TABLET</option><option>CAMERA</option><option>TV</option><option>PRINTER</option><option>ROUTER</option><option>MOUSE</option><option>KEYBOARD</option><option>MONITOR</option><option>Tools & Equipment</option>
         </select>
