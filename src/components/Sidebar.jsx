@@ -9,6 +9,7 @@ const NAV_GROUPS = [
       { id: 'inventory',   label: 'Inventory',    icon: '▦' },
       { id: 'lifecycle',   label: 'Lifecycle',    icon: '◎' },
       { id: 'scanner',     label: 'Scanner',      icon: '◈' },
+    { id: 'qrlabels',    label: 'QR Labels',    icon: '⬛' },
     ]
   },
   {
