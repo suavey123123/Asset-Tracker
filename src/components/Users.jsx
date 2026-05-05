@@ -154,7 +154,7 @@ export default function Users() {
               <option value="manager">Ops Manager</option>
               <option value="admin">Super Admin</option>
             </select>
-            <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()} style={{ flex:1, justifyContent:'center' }}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
+            <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
           </div>
         </div>
         {inviteMsg && (
@@ -221,7 +221,7 @@ export default function Users() {
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                         <select value={u.role || 'viewer'} disabled={!!saving || u.id === profile?.id}
                           onChange={e => setRole(u.id, e.target.value)}
-                          style={{ fontSize:12, padding:'4px 8px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color:'var(--text)', fontFamily:'var(--font)', cursor:'pointer' }}>
+                          style={{ fontSize:12, padding:'4px 8px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color:'var(--text)', fontFamily:'var(--font)', cursor:'pointer', width:150 }}>
                           <option value="viewer">Viewer</option>
                           <option value="technician">Field Technician</option>
                           <option value="auditor">Finance Auditor</option>
