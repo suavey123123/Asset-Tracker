@@ -16,6 +16,8 @@ const ALL_WIDGETS = [
   { id:'consumables',   label:'Low stock consumables',     default:true },
   { id:'maintenance',   label:'Upcoming maintenance',      default:true },
   { id:'requests',      label:'Pending asset requests',    default:true },
+  { id:'aging',         label:'Assets due for replacement',  default:true },
+  { id:'licenseexpiry', label:'License expiry alerts',       default:true },
 ]
 
 const STORAGE_KEY = 'dashboard_widgets_v1'
@@ -29,6 +31,8 @@ export default function Home({ onNav, onViewAsset }) {
   const [consumables, setConsumables] = useState([])
   const [schedules, setSchedules] = useState([])
   const [requests, setRequests] = useState([])
+  const [agingAssets, setAgingAssets] = useState([])
+  const [expiringLicenses, setExpiringLicenses] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState(() => {
@@ -50,7 +54,7 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }] = await Promise.all([
+    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }, { data: lic }] = await Promise.all([
       supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
       supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
@@ -59,6 +63,8 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('consumables').select('*').order('name'),
       supabase.from('maintenance_schedules').select('*'),
       supabase.from('asset_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('assets').select('asset_tag,model,category,purchase_date,status').not('purchase_date','is',null).eq('status','Checked Out').limit(500),
+      supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
     setAssets(a || [])
     setLicenses(l || [])
@@ -68,6 +74,14 @@ export default function Home({ onNav, onViewAsset }) {
     setConsumables(c || [])
     setSchedules(ms || [])
     setRequests(rq || [])
+    setAgingAssets((ag||[]).filter(a => {
+      const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
+      return yrs >= 3
+    }).sort((a,b)=>new Date(a.purchase_date)-new Date(b.purchase_date)))
+    setExpiringLicenses((lic||[]).filter(l => {
+      const days = (new Date(l.expiry_date)-Date.now())/(1000*60*60*24)
+      return days <= 90
+    }))
     setLoading(false)
   }
 
@@ -351,6 +365,52 @@ export default function Home({ onNav, onViewAsset }) {
                       <div style={{ fontSize:11, color:'var(--text2)' }}>{s.maintenance_type||'—'}</div>
                     </div>
                     <span style={{ fontSize:11, fontFamily:'var(--mono)', color: overdue ? 'var(--red)' : 'var(--amber)', fontWeight:500 }}>{overdue ? 'OVERDUE' : due.toLocaleDateString()}</span>
+                  </div>
+                )
+              })
+          }
+        </div>
+      )}
+
+      {has('aging') && (
+        <div style={card}>
+          <div style={cardTitle}>🔴 Assets due for replacement</div>
+          {agingAssets.length === 0
+            ? <div style={{ fontSize:13, color:'var(--text3)' }}>No assets older than 3 years.</div>
+            : agingAssets.slice(0,6).map(a => {
+                const yrs = ((Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)).toFixed(1)
+                return (
+                  <div key={a.asset_tag} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:500, fontFamily:'var(--mono)', color:'var(--accent)' }}>{a.asset_tag}</div>
+                      <div style={{ fontSize:11, color:'var(--text2)' }}>{a.model||a.category}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontFamily:'var(--mono)', fontWeight:600, color: yrs>=4?'var(--red)':'var(--amber)', background: yrs>=4?'var(--red)':'var(--amber)', WebkitBackgroundClip:'unset', backgroundClip:'unset', padding:'2px 6px', borderRadius:3, backgroundColor: yrs>=4?'rgba(255,80,80,0.15)':'rgba(255,170,0,0.15)' }}>{yrs}yr</span>
+                  </div>
+                )
+              })
+          }
+          {agingAssets.length > 6 && <div style={{ fontSize:11, color:'var(--text3)', marginTop:6 }}>+{agingAssets.length-6} more assets</div>}
+        </div>
+      )}
+
+      {has('licenseexpiry') && (
+        <div style={card}>
+          <div style={cardTitle}>📋 License expiry (90 days)</div>
+          {expiringLicenses.length === 0
+            ? <div style={{ fontSize:13, color:'var(--text3)' }}>No licenses expiring soon.</div>
+            : expiringLicenses.map(l => {
+                const days = Math.ceil((new Date(l.expiry_date)-Date.now())/(1000*60*60*24))
+                const expired = days < 0
+                return (
+                  <div key={l.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:500 }}>{l.name}</div>
+                      <div style={{ fontSize:11, color:'var(--text2)' }}>{l.vendor||'—'}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontFamily:'var(--mono)', fontWeight:600, color:expired?'var(--red)':days<=30?'var(--amber)':'var(--text2)', backgroundColor:expired?'rgba(255,80,80,0.15)':days<=30?'rgba(255,170,0,0.15)':'var(--bg3)', padding:'2px 6px', borderRadius:3 }}>
+                      {expired ? `${Math.abs(days)}d overdue` : `${days}d left`}
+                    </span>
                   </div>
                 )
               })

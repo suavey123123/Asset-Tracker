@@ -82,6 +82,34 @@ export default function Dashboard() {
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
   const [lastRefreshed, setLastRefreshed] = useState(null)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light')
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (darkMode) {
+      root.style.removeProperty('--bg')
+      root.style.removeProperty('--bg2')
+      root.style.removeProperty('--bg3')
+      root.style.removeProperty('--bg4')
+      root.style.removeProperty('--text')
+      root.style.removeProperty('--text2')
+      root.style.removeProperty('--text3')
+      root.style.removeProperty('--border')
+      root.style.removeProperty('--border2')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      root.style.setProperty('--bg', '#f5f5f5')
+      root.style.setProperty('--bg2', '#ffffff')
+      root.style.setProperty('--bg3', '#eeeeee')
+      root.style.setProperty('--bg4', '#e0e0e0')
+      root.style.setProperty('--text', '#0f0f0f')
+      root.style.setProperty('--text2', '#333333')
+      root.style.setProperty('--text3', '#666666')
+      root.style.setProperty('--border', '#cccccc')
+      root.style.setProperty('--border2', '#bbbbbb')
+      localStorage.setItem('theme', 'light')
+    }
+  }, [darkMode])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isAdmin, tenant } = useAuth()
 
@@ -151,6 +179,10 @@ export default function Dashboard() {
             )}
           </div>
           <GlobalSearch onViewAsset={handleViewAsset} />
+          <button onClick={()=>setDarkMode(d=>!d)} title={darkMode?'Switch to light mode':'Switch to dark mode'}
+            style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'6px 10px', cursor:'pointer', fontSize:14, color:'var(--text2)' }}>
+            {darkMode ? '☀' : '🌙'}
+          </button>
           {lastRefreshed && (
             <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>
               ↻ {Math.floor((new Date()-lastRefreshed)/60000) < 1 ? 'just now' : `${Math.floor((new Date()-lastRefreshed)/60000)}m ago`}

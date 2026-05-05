@@ -11,6 +11,17 @@ import AssetTags from './AssetTags'
 
 const TABS = ['Overview','Labels','Licenses','Photos','Custom Fields','Comments','Maintenance','Activity']
 
+function calcDepreciation(cost, purchase_date, useful_life_years = 3) {
+  if (!cost || !purchase_date) return null
+  const c = parseFloat(cost)
+  if (isNaN(c) || c <= 0) return null
+  const ageYears = (Date.now() - new Date(purchase_date)) / (1000*60*60*24*365)
+  const depreciatedPct = Math.min(ageYears / useful_life_years, 1)
+  const currentValue = Math.max(c * (1 - depreciatedPct), 0)
+  const annualDep = c / useful_life_years
+  return { original: c, current: currentValue, annual: annualDep, ageYears, pct: depreciatedPct * 100 }
+}
+
 export default function AssetDetail({ assetId, onBack, onEdit }) {
   const { isAdmin } = useAuth()
   const [asset, setAsset] = useState(null)

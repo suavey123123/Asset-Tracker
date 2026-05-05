@@ -7,6 +7,15 @@ import { SPEC_FIELDS, TECH_SPEC_CATEGORIES } from '../lib/constants'
 import EmployeeSelect from './EmployeeSelect'
 import ImportCSV from './ImportCSV'
 import CheckoutAgreement from './CheckoutAgreement'
+import PrintSheet from './PrintSheet'
+
+function getAssetAge(purchase_date) {
+  if (!purchase_date) return null
+  const years = (Date.now() - new Date(purchase_date)) / (1000 * 60 * 60 * 24 * 365)
+  if (years >= 4) return { label: `${Math.floor(years)}yr`, color: 'var(--red)', title: 'Due for replacement' }
+  if (years >= 3) return { label: `${Math.floor(years)}yr`, color: 'var(--amber)', title: 'Aging asset' }
+  return null
+}
 
 const EMPTY_FORM = {
   asset_tag:'', name:'', category:'LAPTOP', status:'Available',
@@ -120,6 +129,22 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     { id:'warranty',    label:'Warranty Expiry',fixed: false },
     { id:'actions',     label:'Actions',        fixed: true },
   ]
+
+  function exportFilteredCSV() {
+    const cols = ['asset_tag','model','category','status','assigned_to','assigned_to_team','location','serial_number','purchase_date','purchase_cost','warranty_expiry','provision_date']
+    const headers = ['Asset Tag','Model','Category','Status','Assigned To','Assigned Team','Site','Serial Number','Purchase Date','Purchase Cost','Warranty Expiry','Provision Date']
+    const rows = filtered.map(a => cols.map(c => {
+      const v = a[c] ?? ''
+      return String(v).includes(',') ? `"${v}"` : v
+    }))
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('
+')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const el = document.createElement('a')
+    el.href = url; el.download = `assets-export-${new Date().toISOString().slice(0,10)}.csv`; el.click()
+    URL.revokeObjectURL(url)
+  }
 
   function toggleCol(id) {
     if (ALL_COLS.find(c=>c.id===id)?.fixed) return
@@ -638,7 +663,14 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
                       </div>
                     </td>}
                     {has('model') && <td style={{ padding:'10px 14px' }}>
-                      <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>
+                        {getAssetAge(a.purchase_date) && (
+                          <span title={getAssetAge(a.purchase_date).title} style={{ fontSize:9, fontFamily:'var(--mono)', fontWeight:600, color:getAssetAge(a.purchase_date).color, background:getAssetAge(a.purchase_date).color+'18', padding:'1px 5px', borderRadius:3 }}>
+                            {getAssetAge(a.purchase_date).label}
+                          </span>
+                        )}
+                      </div>
                     </td>}
                     {has('category') && <td style={{ padding:'10px 14px', fontSize:11 }}><span style={{ padding:'2px 8px', borderRadius:4, background:'var(--bg4)', color:'var(--text2)', fontFamily:'var(--mono)' }}>{a.category}</span></td>}
                     {has('status') && <td style={{ padding:'10px 14px' }}>
