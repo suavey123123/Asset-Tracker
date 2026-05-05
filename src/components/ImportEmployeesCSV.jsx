@@ -344,25 +344,33 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
             {/* Preview */}
             {preview.length > 0 && !errors.length && (
-              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', maxHeight: 300, overflowY: 'auto' }}>
-                <div style={{ padding: '6px 12px', background: 'var(--bg3)', fontSize: 11, color: 'var(--text2)', fontWeight: 500, display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)', overflow:'hidden' }}>
+                <div style={{ padding:'6px 12px', background:'var(--bg3)', fontSize:11, color:'var(--text2)', fontWeight:500, display:'flex', justifyContent:'space-between' }}>
                   <span>PREVIEW ({preview.length} rows)</span>
                   <span>{Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-                    {['Name','Email','Asset tag','Category','Model'].map(h => <th key={h} style={{ padding:'6px 10px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11 }}>{h}</th>)}
-                  </tr></thead>
-                  <tbody>{preview.map((r, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding:'6px 10px', fontWeight:500 }}>{r.name}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontSize:11 }}>{r.email||'—'}</td>
-                      <td style={{ padding:'6px 10px', fontFamily:'var(--mono)', color: r.asset_tag ? 'var(--accent)' : 'var(--text3)' }}>{r.asset_tag||'no asset'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)', fontSize:11 }}>{r.asset_category||'—'}</td>
-                      <td style={{ padding:'6px 10px', color:'var(--text2)' }}>{r.asset_model||'—'}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
+                <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight:240 }}>
+                  <table style={{ borderCollapse:'collapse', fontSize:12, width:'max-content', minWidth:'100%' }}>
+                    <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
+                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost'].map(h=>(
+                        <th key={h} style={{ padding:'6px 12px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11, whiteSpace:'nowrap' }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>{preview.map((r,i)=>(
+                      <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+                        <td style={{ padding:'6px 12px', fontWeight:500, whiteSpace:'nowrap' }}>{r.name}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.email||'—'}</td>
+                        <td style={{ padding:'6px 12px', fontFamily:'var(--mono)', color:r.asset_tag?'var(--accent)':'var(--text3)', whiteSpace:'nowrap' }}>{r.asset_tag||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_category||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_model||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>{r.asset_serial||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
+                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
               </div>
             )}
 
