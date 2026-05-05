@@ -3,6 +3,10 @@ import { supabase } from '../lib/supabase'
 import { Btn, Spinner } from './UI'
 
 export default function Reports() {
+  const [depSort, setDepSort] = useState({ col: 'purchase_cost', dir: 'desc' })
+  function toggleDepSort(col) {
+    setDepSort(s => ({ col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }))
+  }
   const [saveError, setSaveError] = useState('')
   const [assets, setAssets] = useState([])
   const [licenses, setLicenses] = useState([])
@@ -479,8 +483,23 @@ export default function Reports() {
           <div style={{ fontSize:12, color:'var(--text2)', marginBottom:8 }}>{assets.filter(a=>a.purchase_cost).length} assets with purchase cost · {assets.filter(a=>a.purchase_cost&&!a.purchase_date).length} missing purchase date</div>
           <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
-            <thead><tr>{['Tag','Model','Category','Purchase Cost','Current Value','Depreciation %','Age'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-            <tbody>{assets.filter(a=>a.purchase_cost).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>{
+            <thead><tr>
+              {[
+                { label:'Tag', col:'asset_tag' },
+                { label:'Model', col:'model' },
+                { label:'Category', col:'category' },
+                { label:'Purchase Cost', col:'purchase_cost' },
+                { label:'Current Value', col:'current_value' },
+                { label:'Depreciation %', col:'dep_pct' },
+                { label:'Age', col:'age' },
+              ].map(({ label, col }) => (
+                <th key={col} onClick={() => toggleDepSort(col)}
+                  style={{ ...thStyle, cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
+                  {label} {depSort.col === col ? (depSort.dir === 'asc' ? '▲' : '▼') : ''}
+                </th>
+              ))}
+            </tr></thead>
+            <tbody>{assets.filter(a=>a.purchase_cost).map(a=>{
               const itCats = ['LAPTOP','DESKTOP','SERVER','MONITOR','TABLET','PHONE']
               const years = itCats.includes(a.category) ? 3 : 5
               const cost = parseFloat(a.purchase_cost)
@@ -488,6 +507,15 @@ export default function Reports() {
               const age = hasDate ? (today-new Date(a.purchase_date))/(1000*60*60*24*365) : null
               const current = hasDate ? Math.max(0, cost-(cost/years)*age) : null
               const depPct = hasDate ? Math.min(100, Math.round((cost-(current??cost))/cost*100)) : null
+              return { ...a, _cost: cost, _age: age, _current: current, _depPct: depPct }
+            }).sort((a,b) => {
+              const col = depSort.col
+              const dir = depSort.dir === 'asc' ? 1 : -1
+              const av = col==='purchase_cost'?a._cost : col==='current_value'?a._current??-1 : col==='dep_pct'?a._depPct??-1 : col==='age'?a._age??-1 : (a[col]||'').toString().toLowerCase()
+              const bv = col==='purchase_cost'?b._cost : col==='current_value'?b._current??-1 : col==='dep_pct'?b._depPct??-1 : col==='age'?b._age??-1 : (b[col]||'').toString().toLowerCase()
+              return typeof av === 'number' ? (av-bv)*dir : av < bv ? -dir : av > bv ? dir : 0
+            }).map(a => {
+              const cost = a._cost; const age = a._age; const current = a._current; const depPct = a._depPct; const hasDate = !!a.purchase_date
               return <tr key={a.id}>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
