@@ -4,7 +4,6 @@ import { Btn, Spinner } from './UI'
 
 export default function Reports({ onViewAsset }) {
   const [hoveredRow, setHoveredRow] = useState(null)
-  useEffect(() => { sessionStorage.setItem('reports_tab', activeReport) }, [activeReport])
   const [depSort, setDepSort] = useState(() => { try { return JSON.parse(sessionStorage.getItem('dep_sort') || 'null') || { col: 'purchase_cost', dir: 'desc' } } catch { return { col: 'purchase_cost', dir: 'desc' } } })
   function toggleDepSort(col) {
     setDepSort(s => { const next = { col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }; sessionStorage.setItem('dep_sort', JSON.stringify(next)); return next })
@@ -17,6 +16,7 @@ export default function Reports({ onViewAsset }) {
   const [log, setLog] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeReport, setActiveReport] = useState(() => sessionStorage.getItem('reports_tab') || 'utilization')
+  useEffect(() => { sessionStorage.setItem('reports_tab', activeReport) }, [activeReport])
   const [budgetYear, setBudgetYear] = useState(String(new Date().getFullYear()))
   const [budgets, setBudgets] = useState({ hardware: 0, software: 0, maintenance: 0, total: 0 })
   const [budgetInputs, setBudgetInputs] = useState({ hardware: '', software: '', maintenance: '', total: '' })
