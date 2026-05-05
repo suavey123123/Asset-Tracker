@@ -476,32 +476,33 @@ export default function Reports() {
         <div style={card}>
           <div style={{ fontSize:14, fontWeight:500, marginBottom:'0.5rem' }}>Asset depreciation</div>
           <p style={{ fontSize:12, color:'var(--text2)', marginBottom:'1rem' }}>Straight-line depreciation: IT equipment over 3 years, other assets over 5 years.</p>
-          <div style={{ fontSize:12, color:'var(--text2)', marginBottom:8 }}>{assets.filter(a=>a.purchase_cost&&a.purchase_date).length} assets with purchase data</div>
+          <div style={{ fontSize:12, color:'var(--text2)', marginBottom:8 }}>{assets.filter(a=>a.purchase_cost).length} assets with purchase cost · {assets.filter(a=>a.purchase_cost&&!a.purchase_date).length} missing purchase date</div>
           <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
             <thead><tr>{['Tag','Model','Category','Purchase Cost','Current Value','Depreciation %','Age'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
-            <tbody>{assets.filter(a=>a.purchase_cost&&a.purchase_date).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>{
+            <tbody>{assets.filter(a=>a.purchase_cost).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>{
               const itCats = ['LAPTOP','DESKTOP','SERVER','MONITOR','TABLET','PHONE']
               const years = itCats.includes(a.category) ? 3 : 5
               const cost = parseFloat(a.purchase_cost)
-              const age = (today-new Date(a.purchase_date))/(1000*60*60*24*365)
-              const current = Math.max(0, cost-(cost/years)*age)
-              const depPct = Math.min(100, Math.round((cost-current)/cost*100))
+              const hasDate = !!a.purchase_date
+              const age = hasDate ? (today-new Date(a.purchase_date))/(1000*60*60*24*365) : null
+              const current = hasDate ? Math.max(0, cost-(cost/years)*age) : null
+              const depPct = hasDate ? Math.min(100, Math.round((cost-(current??cost))/cost*100)) : null
               return <tr key={a.id}>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
                 <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)' }}>${cost.toFixed(0)}</td>
-                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--green)' }}>${current.toFixed(0)}</td>
+                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--green)' }}>{current!==null?`$${current.toFixed(0)}`:'—'}</td>
                 <td style={tdStyle}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  {depPct!==null ? <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <div style={{ height:6, width:60, background:'var(--bg4)', borderRadius:3, overflow:'hidden' }}>
                       <div style={{ width:`${depPct}%`, height:'100%', background:depPct>75?'var(--red)':depPct>50?'var(--amber)':'var(--green)', borderRadius:3 }} />
                     </div>
                     <span style={{ fontFamily:'var(--mono)', fontSize:12 }}>{depPct}%</span>
-                  </div>
+                  </div> : <span style={{ color:'var(--text3)', fontSize:12 }}>No date</span>}
                 </td>
-                <td style={{ ...tdStyle, color:'var(--text2)', fontSize:12 }}>{age.toFixed(1)}y</td>
+                <td style={{ ...tdStyle, color:'var(--text2)', fontSize:12 }}>{age!==null?`${age.toFixed(1)}y`:'—'}</td>
               </tr>
             })}</tbody>
           </table>
