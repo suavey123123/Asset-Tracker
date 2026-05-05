@@ -247,11 +247,15 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       }
     }
 
-    setImporting(false)
-    setProgress({ step: '', current: 0, total: 0 })
-    setResult({ empCreated, empSkipped, assetCreated, assetAssigned, errors })
-    if (!errors.length) {
-      setTimeout(() => { onDone?.(); onClose(); reset() }, 3000)
+    } catch(e) {
+      setErrors(prev => [...prev, 'Unexpected error: ' + e.message])
+    } finally {
+      setImporting(false)
+      setProgress({ step: '', current: 0, total: 0 })
+      setResult({ empCreated, empSkipped, assetCreated, assetAssigned, errors })
+      if (!errors.length) {
+        setTimeout(() => { onDone?.(); onClose(); reset() }, 3000)
+      }
     }
   }
 
