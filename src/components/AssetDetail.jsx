@@ -133,6 +133,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         <Btn onClick={onBack} size="sm">← Back</Btn>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:18, fontWeight:500 }}>{asset.model || asset.asset_tag}</div>
+          <div style={{ fontSize:12, color:'var(--text2)' }}>{asset.model ? asset.asset_tag : ''}</div>
           <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
             <span style={{ fontFamily:'var(--mono)', fontSize:12, color:'var(--text2)' }}>{asset.asset_tag}</span>
             <Badge status={asset.category} /><Badge status={asset.status} />
@@ -167,7 +168,6 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
               {[
                 ['Assigned to', asset.assigned_to || (asset.assigned_to_team ? asset.assigned_to_team + ' (team)' : null)],
                 ['Location / Site', asset.location],
-                ['Model', asset.model],
                 ['Serial number', asset.serial_number],
                 ['Purchase date', asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : null],
                 ['Provision date', asset.provision_date ? new Date(asset.provision_date).toLocaleDateString() : null],
@@ -191,6 +191,25 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
                       <div style={{ fontSize:13 }}>{v}</div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {isPhone && (asset.locked_status || asset.carrier || asset.imei) && (
+              <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:8, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em' }}>Phone details</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 24px' }}>
+                  {asset.locked_status && <div>
+                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:2 }}>Lock status</div>
+                    <div style={{ fontSize:13 }}>{asset.locked_status}</div>
+                  </div>}
+                  {asset.carrier && <div>
+                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:2 }}>Carrier / Provider</div>
+                    <div style={{ fontSize:13 }}>{asset.carrier}</div>
+                  </div>}
+                  {asset.imei && <div style={{ gridColumn:'1/-1' }}>
+                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:2 }}>IMEI</div>
+                    <div style={{ fontSize:13, fontFamily:'var(--mono)' }}>{asset.imei}</div>
+                  </div>}
                 </div>
               </div>
             )}
