@@ -17,7 +17,7 @@ export default function Reports() {
   const [budgetInputs, setBudgetInputs] = useState(() => {
     try { return JSON.parse(localStorage.getItem('it_budgets_v2') || 'null') || { hardware: '', software: '', maintenance: '', total: '' } } catch { return { hardware: '', software: '', maintenance: '', total: '' } }
   })
-  const [drilldown, setDrilldown] = useState(null) // 'hardware' | 'software' | 'maintenance'
+  const [drilldown, setDrilldown] = useState('hardware')
   const [budgetSite, setBudgetSite] = useState('')
   const [budgetView, setBudgetView] = useState('annual') // 'annual' | 'monthly'
 
@@ -369,7 +369,7 @@ export default function Reports() {
               {drilldown && <span style={{ marginLeft:'auto', fontSize:12, color:'var(--text2)' }}>Showing {drilldown} purchases</span>}
             </div>
 
-            {!drilldown && <div style={{ fontSize:13, color:'var(--text3)', textAlign:'center', padding:'1rem' }}>Select a category above to drill down into individual purchases</div>}
+
 
             {drilldown==='hardware' && (
               <table style={{ width:'100%', borderCollapse:'collapse' }}>
