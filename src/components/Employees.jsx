@@ -8,7 +8,7 @@ const EMPTY_FORM = {
   name: '', email: '', department: '', title: '', phone: '', location: '', notes: '', site_id: null, hire_date: null,
 }
 
-export default function Employees({ onViewEmployee }) {
+export default function Employees({ onViewAsset }) {
   const { isAdmin } = useAuth()
   const [employees, setEmployees] = useState([])
   const [assets, setAssets] = useState([])
