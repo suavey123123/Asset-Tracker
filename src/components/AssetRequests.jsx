@@ -17,6 +17,8 @@ export default function AssetRequests() {
   const [modalOpen, setModalOpen] = useState(false)
   const [reviewModal, setReviewModal] = useState(null)
   const [form, setForm] = useState({ requester_name: '', category: '', notes: '', urgency: 'Normal' })
+  const [employees, setEmployees] = useState([])
+  const [empSuggestions, setEmpSuggestions] = useState([])
   const [reviewNote, setReviewNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [assignAssetId, setAssignAssetId] = useState('')
@@ -33,6 +35,17 @@ export default function AssetRequests() {
     setRequests(r || [])
     setAssets(a || [])
     setLoading(false)
+  }
+
+  async function fetchEmployees() {
+    const { data } = await supabase.from('employees').select('id, name').order('name')
+    setEmployees(data || [])
+  }
+
+  async function deleteRequest(id) {
+    if (!confirm('Delete this request?')) return
+    await supabase.from('asset_requests').delete().eq('id', id)
+    fetchRequests()
   }
 
   async function submitRequest() {
@@ -143,7 +156,28 @@ export default function AssetRequests() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Submit asset request" width={440}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <FormField label="Requested for (employee name)" required>
-            <input value={form.requester_name} onChange={e => setForm(f => ({ ...f, requester_name: e.target.value }))} placeholder="Who needs this asset?" />
+            <div style={{ position:'relative' }}>
+              <input value={form.requester_name}
+                onChange={e => {
+                  const v = e.target.value
+                  setForm(f => ({ ...f, requester_name: v }))
+                  setEmpSuggestions(v.trim() ? employees.filter(emp => emp.name.toLowerCase().includes(v.toLowerCase())).slice(0,6) : [])
+                }}
+                onBlur={() => setTimeout(() => setEmpSuggestions([]), 150)}
+                placeholder="Type employee name…" autoComplete="off" />
+              {empSuggestions.length > 0 && (
+                <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'var(--bg2)', border:'1px solid var(--border2)', borderRadius:'var(--radius)', zIndex:100, boxShadow:'0 4px 16px rgba(0,0,0,0.3)', maxHeight:200, overflowY:'auto' }}>
+                  {empSuggestions.map(emp => (
+                    <div key={emp.id} onMouseDown={()=>{ setForm(f=>({...f,requester_name:emp.name})); setEmpSuggestions([]) }}
+                      style={{ padding:'8px 12px', fontSize:13, cursor:'pointer', borderBottom:'1px solid var(--border)' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='var(--bg3)'}
+                      onMouseLeave={e=>e.currentTarget.style.background=''}>
+                      {emp.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </FormField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <FormField label="Asset category needed">

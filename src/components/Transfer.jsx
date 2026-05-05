@@ -7,6 +7,8 @@ import EmployeeSelect from './EmployeeSelect'
 export default function Transfer({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
   const [assets, setAssets] = useState([])
+  const [assetSearch, setAssetSearch] = useState('')
+  const [assetSuggestions, setAssetSuggestions] = useState([])
   const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedAsset, setSelectedAsset] = useState('')
