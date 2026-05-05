@@ -159,7 +159,11 @@ export default function Users() {
                     {u.full_name && <div style={{ fontSize: 11, color: 'var(--text2)' }}>{u.email}</div>}
                     {u.id === profile?.id && <span style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--mono)' }}>you</span>}
                   </td>
-                  <td style={{ padding: '10px 14px' }}><Badge status={u.role} /></td>
+                  <td style={{ padding: '10px 14px' }}>
+                    <span style={{ fontSize:11, fontWeight:500, padding:'2px 8px', borderRadius:100, background: (ROLE_COLORS[u.role]||ROLE_COLORS.viewer).bg, color: (ROLE_COLORS[u.role]||ROLE_COLORS.viewer).color }}>
+                      {(ROLE_COLORS[u.role]||ROLE_COLORS.viewer).label}
+                    </span>
+                  </td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ fontSize: 11, fontFamily: 'var(--mono)', fontWeight: 600, padding: '2px 8px', borderRadius: 100, color: u.blocked ? 'var(--red)' : 'var(--green)', background: u.blocked ? 'var(--red-bg)' : 'var(--green-bg)' }}>
                       {u.blocked ? 'DISABLED' : 'ACTIVE'}
@@ -169,8 +173,15 @@ export default function Users() {
                   <td style={{ padding: '10px 14px' }}>
                     {u.id !== profile?.id ? (
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {u.role !== 'admin' && <Btn size="sm" variant="primary" disabled={!!saving} onClick={() => setRole(u.id, 'admin')}>Make admin</Btn>}
-                        {u.role !== 'viewer' && <Btn size="sm" disabled={!!saving} onClick={() => setRole(u.id, 'viewer')}>Make viewer</Btn>}
+                        <select value={u.role || 'viewer'} disabled={!!saving || u.id === profile?.id}
+                          onChange={e => setRole(u.id, e.target.value)}
+                          style={{ fontSize:12, padding:'4px 8px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color:'var(--text)', fontFamily:'var(--font)', cursor:'pointer' }}>
+                          <option value="viewer">Viewer</option>
+                          <option value="technician">Field Technician</option>
+                          <option value="auditor">Finance Auditor</option>
+                          <option value="manager">Ops Manager</option>
+                          <option value="admin">Super Admin</option>
+                        </select>
                         <Btn size="sm" variant="primary" onClick={() => { setPwdModal(u); setNewPwd(''); setPwdMsg('') }}>Set password</Btn>
                         <Btn size="sm" onClick={() => generateResetLink(u)} disabled={saving === u.id}>{saving === u.id ? '…' : '🔗 Reset link'}</Btn>
                         {u.blocked
