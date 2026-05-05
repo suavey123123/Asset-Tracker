@@ -20,20 +20,15 @@ export default function Tenants() {
 
   async function fetchTenants() {
     setLoading(true)
-    // Use service role via RLS — admins can see all tenants
     const { data, error } = await supabase.from('tenants').select('*').order('name')
     if (error) { console.error(error); setLoading(false); return }
     setTenants(data || [])
 
-    // Stats — count per tenant using admin queries
+    // Use SQL to get counts across all tenants bypassing RLS
     const statsObj = {}
     for (const t of (data || [])) {
-      const [{ count: assets }, { count: emps }, { count: users }] = await Promise.all([
-        supabase.from('assets').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
-        supabase.from('employees').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
-      ])
-      statsObj[t.id] = { assets: assets ?? 0, emps: emps ?? 0, users: users ?? 0 }
+      const { data: counts } = await supabase.rpc('get_tenant_stats', { p_tenant_id: t.id })
+      statsObj[t.id] = counts?.[0] || { assets: 0, emps: 0 }
     }
     setStats(statsObj)
     setLoading(false)
@@ -138,7 +133,7 @@ export default function Tenants() {
 
                 {/* Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
-                  {[['Assets', stats[t.id]?.assets], ['Employees', stats[t.id]?.emps], ['Users', stats[t.id]?.users]].map(([label, val]) => (
+                  {[['Assets', stats[t.id]?.assets], ['Employees', stats[t.id]?.emps]].map(([label, val]) => (
                     <div key={label} style={{ background: 'var(--bg3)', borderRadius: 'var(--radius)', padding: '8px 6px', textAlign: 'center' }}>
                       <div style={{ fontSize: 20, fontWeight: 600, fontFamily: 'var(--mono)', color: isCurrent ? 'var(--accent)' : 'var(--text)' }}>{val ?? 0}</div>
                       <div style={{ fontSize: 10, color: 'var(--text2)' }}>{label}</div>
