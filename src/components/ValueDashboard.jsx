@@ -14,7 +14,7 @@ export default function ValueDashboard() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: m }, { data: s }] = await Promise.all([
-      supabase.from('assets').select('*'),
+      supabase.from('assets').select('*').limit(500),
       supabase.from('maintenance_records').select('cost, asset_id'),
       supabase.from('sites').select('id, name'),
     ])

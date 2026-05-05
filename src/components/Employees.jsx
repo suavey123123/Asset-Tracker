@@ -162,7 +162,7 @@ export default function Employees({ onViewAsset }) {
   }
 
   async function exportEmployeesAssets() {
-    const { data: allAssets } = await supabase.from('assets').select('*')
+    const { data: allAssets } = await supabase.from('assets').select('*').limit(500)
     const rows = []
     employees.forEach(emp => {
       const empAssets = (allAssets||[]).filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())

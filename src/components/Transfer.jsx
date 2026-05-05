@@ -5,6 +5,7 @@ import { Badge, Btn, EmptyState, Spinner, ViewOnlyBanner } from './UI'
 import EmployeeSelect from './EmployeeSelect'
 
 function AssetAutocomplete({ assets, onSelect }) {
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -76,7 +77,7 @@ export default function Transfer({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: t }] = await Promise.all([
-      supabase.from('assets').select('*').eq('status', 'Checked Out').order('name'),
+      supabase.from('assets').select('*').limit(500).eq('status', 'Checked Out').order('name'),
       supabase.from('asset_transfers').select('*').order('created_at', { ascending: false }).limit(50),
     ])
     setAssets(a || [])

@@ -59,7 +59,7 @@ export default function CheckoutAgreement({ open, onClose, asset, employee, onSi
     const canvas = canvasRef.current
     const sigDataUrl = canvas.toDataURL('image/png')
     const today = new Date().toLocaleString()
-    const win = window.open('', '_blank')
+    const win = window.open('', '_blank', 'noopener,noreferrer')
     win.document.write(`
       <html><head><title>Asset Checkout Agreement</title>
       <style>

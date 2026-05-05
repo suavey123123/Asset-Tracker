@@ -7,6 +7,7 @@ const FREQUENCIES = ['One-time', 'Monthly', 'Quarterly', 'Every 6 months', 'Year
 
 export default function ScheduledMaintenance({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [schedules, setSchedules] = useState([])
   const [assets, setAssets] = useState([])

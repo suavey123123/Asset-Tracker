@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Btn, Spinner } from './UI'
 
 export default function Reports() {
+  const [saveError, setSaveError] = useState('')
   const [assets, setAssets] = useState([])
   const [licenses, setLicenses] = useState([])
   const [maintenance, setMaintenance] = useState([])
@@ -36,7 +37,7 @@ export default function Reports() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }, { data: r }, { data: lg }] = await Promise.all([
-      supabase.from('assets').select('*').order('created_at', { ascending: false }),
+      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
       supabase.from('licenses').select('*').order('name'),
       supabase.from('maintenance_records').select('*').order('performed_date', { ascending: false }),
       supabase.from('asset_requests').select('*').order('created_at', { ascending: false }),
@@ -115,7 +116,7 @@ export default function Reports() {
   }
 
   function printMonthlySummary() {
-    const win = window.open('', '_blank')
+    const win = window.open('', '_blank', 'noopener,noreferrer')
     win.document.write(`
       <html><head><title>Monthly IT Summary Report</title>
       <style>

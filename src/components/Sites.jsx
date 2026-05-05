@@ -8,6 +8,7 @@ const EMPTY_SITE = { name: '', address: '', city: '', state: '', country: '', ph
 
 export default function Sites() {
   const { isAdmin } = useAuth()
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [sites, setSites] = useState([])
   const [assets, setAssets] = useState([])

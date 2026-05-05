@@ -37,7 +37,7 @@ export default function QRLabels() {
 
     // Avery 5160: 3 columns × 10 rows = 30 per page
     // Label size: 2.625" × 1"
-    const win = window.open('', '_blank')
+    const win = window.open('', '_blank', 'noopener,noreferrer')
     win.document.write(`
       <html><head><title>Asset QR Labels</title>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

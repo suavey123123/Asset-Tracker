@@ -14,6 +14,7 @@ const STAGE_ORDER = ['Available','Checked Out','Maintenance','Retired']
 
 export default function Lifecycle({ onViewAsset }) {
   const { isAdmin, profile } = useAuth()
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [assets, setAssets] = useState([])
   const [lifecycles, setLifecycles] = useState({})
@@ -27,7 +28,7 @@ export default function Lifecycle({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }] = await Promise.all([
-      supabase.from('assets').select('*').order('created_at', { ascending: false }),
+      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
       supabase.from('asset_lifecycle').select('*').order('changed_at', { ascending: true }),
     ])
     setAssets(a || [])

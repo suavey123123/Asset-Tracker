@@ -5,6 +5,7 @@ import { Btn, Spinner } from './UI'
 
 export default function AssetComments({ assetId }) {
   const { profile } = useAuth()
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)

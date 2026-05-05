@@ -27,7 +27,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }] = await Promise.all([
-      supabase.from('assets').select('*').eq('id', assetId).single(),
+      supabase.from('assets').select('*').limit(500).eq('id', assetId).single(),
       supabase.from('activity_log').select('*').eq('asset_id', assetId).order('created_at', { ascending: false }),
       supabase.from('maintenance_records').select('*').eq('asset_id', assetId).order('performed_date', { ascending: false }),
     ])
@@ -63,7 +63,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   }
 
   function printQR() {
-    const win = window.open('', '_blank')
+    const win = window.open('', '_blank', 'noopener,noreferrer')
     win.document.write(`<html><head><title>Asset Label - ${asset.asset_tag}</title>
     <style>body{font-family:monospace;text-align:center;padding:20px}@media print{button{display:none}}</style>
     </head><body>

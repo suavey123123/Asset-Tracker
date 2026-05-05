@@ -11,6 +11,7 @@ const STATUS = {
 }
 
 function EmployeeAutocomplete({ value, onChange, employees }) {
+  const [saveError, setSaveError] = useState('')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(value || '')
   const ref = useRef(null)

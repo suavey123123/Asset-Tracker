@@ -51,7 +51,7 @@ export default function Home({ onNav, onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }] = await Promise.all([
-      supabase.from('assets').select('*').order('created_at', { ascending: false }),
+      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
       supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),

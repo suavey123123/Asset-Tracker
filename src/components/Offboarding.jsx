@@ -5,6 +5,7 @@ import { Btn, Spinner, Badge } from './UI'
 
 export default function Offboarding() {
   const { profile } = useAuth()
+  const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [employees, setEmployees] = useState([])
   const [selected, setSelected] = useState(null)
@@ -25,7 +26,7 @@ export default function Offboarding() {
   async function selectEmployee(emp) {
     setSelected(emp); setDone(false); setLoading(true)
     const [{ data: a }, { data: l }] = await Promise.all([
-      supabase.from('assets').select('*').eq('assigned_to', emp.name).eq('status', 'Checked Out'),
+      supabase.from('assets').select('*').limit(500).eq('assigned_to', emp.name).eq('status', 'Checked Out'),
       supabase.from('asset_license_assignments').select('*, license:license_id(id, name, seats_used), asset:asset_id(name, asset_tag)').eq('assigned_to', emp.name),
     ])
     setAssets(a || [])

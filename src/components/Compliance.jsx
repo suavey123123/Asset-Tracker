@@ -17,7 +17,7 @@ export default function Compliance() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }, { data: e }] = await Promise.all([
-      supabase.from('assets').select('*').order('name'),
+      supabase.from('assets').select('*').limit(500).order('name').limit(500),
       supabase.from('licenses').select('*').order('name'),
       supabase.from('maintenance_records').select('*'),
       supabase.from('employees').select('*').order('name'),
@@ -31,7 +31,7 @@ export default function Compliance() {
 
   function printReport() {
     const today = new Date()
-    const win = window.open('', '_blank')
+    const win = window.open('', '_blank', 'noopener,noreferrer')
     const rows = assets.map(a => `
       <tr>
         <td><input type="checkbox" ${auditChecked[a.id] ? 'checked' : ''}> </td>
