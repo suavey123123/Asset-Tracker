@@ -131,6 +131,8 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     if (errs.length) { setErrors(errs); return }
     setImporting(true)
 
+    try {
+
     // Group rows by employee name to avoid duplicate inserts
     const empMap = {}
     rows.forEach(r => {
@@ -145,7 +147,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     setProgress({ step: 'Creating employees', current: 0, total: employees.length })
     for (let i = 0; i < employees.length; i++) {
       const { details: r } = employees[i]
-      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: r.details.name })
+      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: r.name })
 
       // Check if employee already exists — update if so, create if not
       const { data: existing } = await supabase.from('employees').select('id').ilike('name', r.name).maybeSingle()
