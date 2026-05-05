@@ -167,12 +167,35 @@ export default function Tenants() {
               placeholder="e.g. NHN America" />
           </FormField>
           <FormField label="Accent color (optional)">
-            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-              <input type="color" value={form.accent_color || '#d4ff4e'}
-                onChange={e => setForm(f => ({ ...f, accent_color: e.target.value }))}
-                style={{ width:48, height:36, padding:2, borderRadius:'var(--radius)', cursor:'pointer', border:'1px solid var(--border2)', background:'var(--bg3)' }} />
-              <input value={form.accent_color} onChange={e => setForm(f => ({ ...f, accent_color: e.target.value }))} placeholder="#d4ff4e" style={{ flex:1, fontFamily:'var(--mono)' }} />
-              <button onClick={() => setForm(f => ({ ...f, accent_color: '' }))} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Reset</button>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {/* Preset palette */}
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                {[
+                  { color:'#d4ff4e', label:'Default green' },
+                  { color:'#60a5fa', label:'Blue' },
+                  { color:'#f472b6', label:'Pink' },
+                  { color:'#34d399', label:'Emerald' },
+                  { color:'#fb923c', label:'Orange' },
+                  { color:'#a78bfa', label:'Purple' },
+                  { color:'#f87171', label:'Red' },
+                  { color:'#facc15', label:'Yellow' },
+                  { color:'#2dd4bf', label:'Teal' },
+                  { color:'#e2e8f0', label:'Silver' },
+                ].map(({ color, label }) => (
+                  <button key={color} title={label} onClick={() => setForm(f => ({ ...f, accent_color: color }))}
+                    style={{ width:32, height:32, borderRadius:'50%', background:color, border: form.accent_color === color ? '3px solid white' : '2px solid transparent', cursor:'pointer', outline: form.accent_color === color ? `2px solid ${color}` : 'none', outlineOffset:2, transition:'all 0.15s', boxShadow:'0 2px 6px rgba(0,0,0,0.3)' }} />
+                ))}
+                <button title="No color (default)" onClick={() => setForm(f => ({ ...f, accent_color: '' }))}
+                  style={{ width:32, height:32, borderRadius:'50%', background:'var(--bg4)', border:'2px dashed var(--border2)', cursor:'pointer', fontSize:14, color:'var(--text3)', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+              </div>
+              {/* Current selection preview */}
+              {form.accent_color && (
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:'var(--bg3)', borderRadius:'var(--radius)', border:'1px solid var(--border)' }}>
+                  <div style={{ width:20, height:20, borderRadius:'50%', background:form.accent_color, flexShrink:0 }} />
+                  <span style={{ fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{form.accent_color}</span>
+                  <span style={{ fontSize:12, color:'var(--text3)', marginLeft:'auto' }}>This color will be applied when this tenant is active</span>
+                </div>
+              )}
             </div>
           </FormField>
           <FormField label="Slug" required>

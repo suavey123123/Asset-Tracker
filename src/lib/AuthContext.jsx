@@ -3,6 +3,20 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
+function applyTenantColor(color) {
+  const root = document.documentElement
+  if (color) {
+    root.style.setProperty('--accent', color)
+    // Generate a subtle bg version
+    root.style.setProperty('--accent-bg', color + '1a')
+    root.style.setProperty('--accent-border', color + '40')
+  } else {
+    root.style.removeProperty('--accent')
+    root.style.removeProperty('--accent-bg')
+    root.style.removeProperty('--accent-border')
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -37,15 +51,8 @@ export function AuthProvider({ children }) {
     if (data?.tenant_id) {
       const { data: t } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
       setTenant(t)
-    // Apply tenant accent color to CSS
-    if (t?.accent_color) {
-      document.documentElement.style.setProperty('--accent', t.accent_color)
-      // Derive bg from accent
-      document.documentElement.style.setProperty('--accent-bg', t.accent_color + '18')
-    } else {
-      document.documentElement.style.removeProperty('--accent')
-      document.documentElement.style.removeProperty('--accent-bg')
-    }
+    // Apply tenant accent color to CSS vars (only on actual tenant load)
+    applyTenantColor(t?.accent_color)
     }
     setLoading(false)
   }
