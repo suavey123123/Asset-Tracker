@@ -41,11 +41,16 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: 'Organization',
+    items: [
+      { id: 'tenants', label: 'Tenants', icon: '🏢' },
+    ]
+  },
+  {
     label: 'Admin',
     adminOnly: true,
     items: [
       { id: 'users',       label: 'Users',        icon: '◉', adminOnly: true },
-      { id: 'tenants',     label: 'Tenants',      icon: '🏢' },
       { id: 'settings',    label: 'Settings',     icon: '⚙', adminOnly: true },
     ]
   },
