@@ -149,9 +149,7 @@ export default function Tenants() {
                     </Btn>
                   )}
                   {isAdmin && <Btn size="sm" onClick={() => openEdit(t)}>Edit</Btn>}
-                  {!isCurrent && (
-                    {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteTenant(t)}>Delete</Btn>}
-                  )}
+                  {!isCurrent && isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteTenant(t)}>Delete</Btn>}
                 </div>
               </div>
             )
