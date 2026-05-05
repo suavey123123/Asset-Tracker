@@ -12,7 +12,10 @@ const ALL_WIDGETS = [
   { id:'licenses',    label:'License status',        default:true },
   { id:'byCategory',  label:'Assets by category',    default:false },
   { id:'bySite',      label:'Assets & employees by site', default:false },
-  { id:'byStatus',    label:'Assets by status',      default:false },
+  { id:'byStatus',      label:'Assets by status',          default:false },
+  { id:'consumables',   label:'Low stock consumables',     default:true },
+  { id:'maintenance',   label:'Upcoming maintenance',      default:true },
+  { id:'requests',      label:'Pending asset requests',    default:true },
 ]
 
 const STORAGE_KEY = 'dashboard_widgets_v1'
@@ -23,6 +26,9 @@ export default function Home({ onNav, onViewAsset }) {
   const [licenses, setLicenses] = useState([])
   const [sites, setSites] = useState([])
   const [employees, setEmployees] = useState([])
+  const [consumables, setConsumables] = useState([])
+  const [schedules, setSchedules] = useState([])
+  const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState(() => {
@@ -44,18 +50,24 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }] = await Promise.all([
+    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }] = await Promise.all([
       supabase.from('assets').select('*').order('created_at', { ascending: false }),
       supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),
       supabase.from('employees').select('id, name, site_id'),
+      supabase.from('consumables').select('*').order('name'),
+      supabase.from('maintenance_schedules').select('*').order('next_due'),
+      supabase.from('asset_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     ])
     setAssets(a || [])
     setLicenses(l || [])
     setLog(lg || [])
     setSites(s || [])
     setEmployees(e || [])
+    setConsumables(c || [])
+    setSchedules(ms || [])
+    setRequests(rq || [])
     setLoading(false)
   }
 
@@ -306,7 +318,65 @@ export default function Home({ onNav, onViewAsset }) {
         )}
 
         {/* By status */}
-        {has('byStatus') && (
+        {has('consumables') && (
+        <div style={card}>
+          <div style={cardTitle}>⚠ Low stock consumables</div>
+          {consumables.filter(c => c.quantity <= (c.low_stock_threshold || 5)).length === 0
+            ? <div style={{ fontSize:13, color:'var(--text3)' }}>All consumables well stocked.</div>
+            : consumables.filter(c => c.quantity <= (c.low_stock_threshold || 5)).map(c => (
+                <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{c.name}</div>
+                    <div style={{ fontSize:11, color:'var(--text2)' }}>{c.category||'—'}</div>
+                  </div>
+                  <span style={{ fontFamily:'var(--mono)', fontSize:13, fontWeight:600, color: c.quantity === 0 ? 'var(--red)' : 'var(--amber)' }}>{c.quantity} left</span>
+                </div>
+              ))
+          }
+        </div>
+      )}
+
+      {has('maintenance') && (
+        <div style={card}>
+          <div style={cardTitle}>🔧 Upcoming maintenance</div>
+          {schedules.filter(s => s.next_due && new Date(s.next_due) <= new Date(Date.now() + 14*86400000)).length === 0
+            ? <div style={{ fontSize:13, color:'var(--text3)' }}>No maintenance due in the next 14 days.</div>
+            : schedules.filter(s => s.next_due && new Date(s.next_due) <= new Date(Date.now() + 14*86400000)).slice(0,5).map(s => {
+                const due = new Date(s.next_due)
+                const overdue = due < new Date()
+                return (
+                  <div key={s.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:500 }}>{s.asset_tag||'—'}</div>
+                      <div style={{ fontSize:11, color:'var(--text2)' }}>{s.maintenance_type||'—'}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontFamily:'var(--mono)', color: overdue ? 'var(--red)' : 'var(--amber)', fontWeight:500 }}>{overdue ? 'OVERDUE' : due.toLocaleDateString()}</span>
+                  </div>
+                )
+              })
+          }
+        </div>
+      )}
+
+      {has('requests') && (
+        <div style={card}>
+          <div style={cardTitle}>📋 Pending requests</div>
+          {requests.length === 0
+            ? <div style={{ fontSize:13, color:'var(--text3)' }}>No pending requests.</div>
+            : requests.slice(0,5).map(r => (
+                <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{r.requester_name}</div>
+                    <div style={{ fontSize:11, color:'var(--text2)' }}>{r.category||'General'} · {r.urgency}</div>
+                  </div>
+                  <span style={{ fontSize:11, color:'var(--amber)', fontFamily:'var(--mono)', fontWeight:600 }}>PENDING</span>
+                </div>
+              ))
+          }
+        </div>
+      )}
+
+      {has('byStatus') && (
           <div style={card}>
             <div style={cardTitle}>Assets by status</div>
             {Object.entries(byStatus).map(([status, count]) => (

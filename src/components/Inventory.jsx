@@ -38,6 +38,13 @@ function LazyAssetPhoto({ assetId, onClick }) {
   return (
     <div ref={ref} onClick={onClick} style={{ width:32, height:32, borderRadius:4, background:'var(--bg4)', border:'1px solid var(--border)', flexShrink:0, overflow:'hidden', cursor:'pointer' }}>
       {url ? <img src={url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'var(--text3)' }}>▦</div>}
+      <CheckoutAgreement
+        open={!!agreementModal}
+        onClose={() => setAgreementModal(null)}
+        asset={agreementModal?.asset}
+        employee={agreementModal?.employee}
+        onSign={() => { setAgreementModal(null); doCheckout() }}
+      />
     </div>
   )
 }
@@ -150,6 +157,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     return () => document.removeEventListener('mousedown', close)
   }, [showColPicker])
   const [checkoutModal, setCheckoutModal] = useState(null)
+  const [agreementModal, setAgreementModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
   const [bulkCheckinCondition, setBulkCheckinCondition] = useState('Good')
@@ -825,6 +833,13 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       </Modal>
 
       <ImportCSV open={importOpen} onClose={()=>setImportOpen(false)} onDone={fetchAssets} />
+      <CheckoutAgreement
+        open={!!agreementModal}
+        onClose={() => setAgreementModal(null)}
+        asset={agreementModal?.asset}
+        employee={agreementModal?.employee}
+        onSign={() => { setAgreementModal(null); doCheckout() }}
+      />
     </div>
   )
 }

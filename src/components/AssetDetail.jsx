@@ -214,19 +214,34 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
 
       {activeTab==='Activity' && (
         <div style={card} className="fade-in">
-          {log.length===0 ? <div style={{ fontSize:13, color:'var(--text3)' }}>No activity yet.</div> :
-           log.map((e,i) => {
-             const ts = TYPE_STYLES[e.type]||TYPE_STYLES.note
-             return (
-               <div key={e.id} style={{ display:'flex', gap:10, padding:'8px 0', borderBottom:i<log.length-1?'1px solid var(--border)':'none' }}>
-                 <span style={{ fontFamily:'var(--mono)', fontSize:10, fontWeight:500, color:ts.color, background:ts.color+'18', padding:'2px 5px', borderRadius:3, flexShrink:0, marginTop:1 }}>{ts.label}</span>
-                 <div>
-                   <div style={{ fontSize:13 }}>{e.message}</div>
-                   <div style={{ fontSize:11, color:'var(--text3)' }}>{e.performed_by?`by ${e.performed_by} · `:''}{new Date(e.created_at).toLocaleString()}</div>
-                 </div>
-               </div>
-             )
-           })}
+          <div style={{ fontSize:13, fontWeight:500, marginBottom:'1rem', color:'var(--text2)' }}>Asset history timeline</div>
+          {log.length===0 ? <div style={{ fontSize:13, color:'var(--text3)' }}>No activity yet.</div> : (
+            <div style={{ position:'relative', paddingLeft:28 }}>
+              {/* Vertical line */}
+              <div style={{ position:'absolute', left:10, top:8, bottom:8, width:2, background:'var(--border)' }} />
+              {[...log].reverse().map((e,i) => {
+                const ts = TYPE_STYLES[e.type]||TYPE_STYLES.note
+                const icons = { checkout:'📤', checkin:'📥', maintenance:'🔧', created:'✨', updated:'✏️', note:'📝', transfer:'⇄' }
+                return (
+                  <div key={e.id} style={{ position:'relative', marginBottom: i < log.length-1 ? 20 : 0 }}>
+                    {/* Dot */}
+                    <div style={{ position:'absolute', left:-23, top:2, width:16, height:16, borderRadius:'50%', background:ts.color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, border:'2px solid var(--bg2)' }}>
+                      <span style={{ fontSize:8 }}>{icons[e.type]||'•'}</span>
+                    </div>
+                    {/* Content */}
+                    <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'10px 12px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                        <span style={{ fontSize:10, fontWeight:600, color:ts.color, background:ts.color+'18', padding:'1px 6px', borderRadius:3, textTransform:'uppercase', letterSpacing:'0.05em' }}>{ts.label}</span>
+                        <span style={{ fontSize:11, color:'var(--text3)', marginLeft:'auto' }}>{new Date(e.created_at).toLocaleString()}</span>
+                      </div>
+                      <div style={{ fontSize:13, color:'var(--text)' }}>{e.message}</div>
+                      {e.performed_by && <div style={{ fontSize:11, color:'var(--text3)', marginTop:3 }}>by {e.performed_by}</div>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

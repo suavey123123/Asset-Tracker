@@ -20,6 +20,7 @@ import Offboarding from '../components/Offboarding'
 import AssetRequests from '../components/AssetRequests'
 import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
+import QRLabels from '../components/QRLabels'
 import { ToastProvider } from '../components/Toast'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Consumables from '../components/Consumables'
@@ -112,6 +113,7 @@ export default function Dashboard() {
     sites: <Sites />,
     licenses: <Licenses />,
     compliance: <Compliance />,
+    qrlabels: <QRLabels />,
     consumables: <Consumables />,
     valuedashboard: <ValueDashboard />,
 
