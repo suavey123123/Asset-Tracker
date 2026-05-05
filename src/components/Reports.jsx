@@ -37,7 +37,7 @@ export default function Reports() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }, { data: r }, { data: lg }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
+      supabase.from('assets').select('*').order('created_at', { ascending: false }).limit(2000),
       supabase.from('licenses').select('*').order('name'),
       supabase.from('maintenance_records').select('*').order('performed_date', { ascending: false }),
       supabase.from('asset_requests').select('*').order('created_at', { ascending: false }),
@@ -476,7 +476,9 @@ export default function Reports() {
         <div style={card}>
           <div style={{ fontSize:14, fontWeight:500, marginBottom:'0.5rem' }}>Asset depreciation</div>
           <p style={{ fontSize:12, color:'var(--text2)', marginBottom:'1rem' }}>Straight-line depreciation: IT equipment over 3 years, other assets over 5 years.</p>
-          <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <div style={{ fontSize:12, color:'var(--text2)', marginBottom:8 }}>{assets.filter(a=>a.purchase_cost&&a.purchase_date).length} assets with purchase data</div>
+          <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
             <thead><tr>{['Tag','Model','Category','Purchase Cost','Current Value','Depreciation %','Age'].map(h=><th key={h} style={thStyle}>{h}</th>)}</tr></thead>
             <tbody>{assets.filter(a=>a.purchase_cost&&a.purchase_date).sort((a,b)=>parseFloat(b.purchase_cost)-parseFloat(a.purchase_cost)).map(a=>{
               const itCats = ['LAPTOP','DESKTOP','SERVER','MONITOR','TABLET','PHONE']
