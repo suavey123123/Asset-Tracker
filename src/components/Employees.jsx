@@ -166,10 +166,10 @@ export default function Employees({ onViewAsset }) {
     employees.forEach(emp => {
       const empAssets = (allAssets||[]).filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())
       if (empAssets.length === 0) {
-        rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: '', asset_category: '', asset_model: '', asset_serial: '', purchase_date: '', provision_date: '', purchase_cost: '', cpu: '', gpu: '', ram: '', ssd: '', hdd: '', mac_wifi: '', mac_lan: '', os_version: '', resolution: '' })
+        rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: '', asset_category: '', asset_model: '', asset_serial: '', purchase_date: '', provision_date: '', purchase_cost: '', cpu: '', gpu: '', ram: '', ssd: '', hdd: '', mac_wifi: '', mac_lan: '', os_version: '', resolution: '', size: '' })
       } else {
         empAssets.forEach(a => {
-          rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: a.asset_tag||'', asset_category: a.category||'', asset_model: a.model||'', asset_serial: a.serial_number||'', purchase_date: a.purchase_date||'', provision_date: a.provision_date||'', purchase_cost: a.purchase_cost||'', cpu: a.specs?.CPU||'', gpu: a.specs?.GPU||'', ram: a.specs?.RAM||'', ssd: a.specs?.SSD||'', hdd: a.specs?.HDD||'', mac_wifi: a.specs?.['MAC ADDRESS (WIFI)']||'', mac_lan: a.specs?.['MAC ADDRESS (LAN)']||'', os_version: a.specs?.['OS VERSION']||'', resolution: a.specs?.RESOLUTION||'' })
+          rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: a.asset_tag||'', asset_category: a.category||'', asset_model: a.model||'', asset_serial: a.serial_number||'', purchase_date: a.purchase_date||'', provision_date: a.provision_date||'', purchase_cost: a.purchase_cost||'', cpu: a.specs?.CPU||'', gpu: a.specs?.GPU||'', ram: a.specs?.RAM||'', ssd: a.specs?.SSD||'', hdd: a.specs?.HDD||'', mac_wifi: a.specs?.['MAC ADDRESS (WIFI)']||'', mac_lan: a.specs?.['MAC ADDRESS (LAN)']||'', os_version: a.specs?.['OS VERSION']||'', resolution: a.specs?.RESOLUTION||'', size: a.specs?.SIZE||'' })
         })
       }
     })

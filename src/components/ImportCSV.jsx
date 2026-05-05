@@ -31,6 +31,10 @@ function cleanCost(val) {
   return isNaN(n) ? null : n
 }
 
+const TEMPLATE = `asset_tag,asset_category,asset_model,asset_serial,status,location,assigned_to,assigned_to_team,purchase_date,provision_date,purchase_cost,warranty_expiry,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,notes
+IT-001,LAPTOP,Dell XPS 15,SN-12345,Available,Head Office,,, 5/29/2025,6/1/2025,$1899.00,2027-01-15,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,,00:1A:2B:3C:4D:5E,Windows 11 Pro,,,
+IT-002,MONITOR,Dell S2722DC,SN-67890,Available,Head Office,,,5/29/2025,6/1/2025,$294.99,2027-05-29,,,,,,,,,2560x1440 QHD,27",Shared monitor`
+
 
 export default function ImportCSV({ open, onClose, onDone }) {
   const { profile } = useAuth()
@@ -119,6 +123,8 @@ export default function ImportCSV({ open, onClose, onDone }) {
         'MAC ADDRESS (WIFI)': r.mac_wifi || '',
         'MAC ADDRESS (LAN)': r.mac_lan || '',
         'OS VERSION': r.os_version || '',
+        'RESOLUTION': r.resolution || '',
+        'SIZE': r.size || '',
       }
     }))
     const { data, error } = await supabase.from('assets').insert(payload).select()

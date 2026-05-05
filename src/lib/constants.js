@@ -61,6 +61,7 @@ export const SPEC_FIELDS = {
     { key: 'MAC ADDRESS (LAN)',  placeholder: 'e.g. 00:1A:2B:3C:4D:5F' },
     { key: 'OS VERSION', placeholder: 'e.g. Windows 11 Pro 23H2' },
     { key: 'RESOLUTION', placeholder: 'e.g. 2560x1440 QHD, 3840x2160 4K' },
+    { key: 'SIZE', placeholder: 'e.g. 27", 32", 55"' },
   ],
 }
 
