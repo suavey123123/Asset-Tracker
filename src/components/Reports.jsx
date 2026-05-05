@@ -4,6 +4,7 @@ import { Btn, Spinner } from './UI'
 
 export default function Reports({ onViewAsset }) {
   const [hoveredRow, setHoveredRow] = useState(null)
+  useEffect(() => { sessionStorage.setItem('reports_tab', activeReport) }, [activeReport])
   const [depSort, setDepSort] = useState(() => { try { return JSON.parse(sessionStorage.getItem('dep_sort') || 'null') || { col: 'purchase_cost', dir: 'desc' } } catch { return { col: 'purchase_cost', dir: 'desc' } } })
   function toggleDepSort(col) {
     setDepSort(s => { const next = { col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }; sessionStorage.setItem('dep_sort', JSON.stringify(next)); return next })
