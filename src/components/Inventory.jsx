@@ -126,6 +126,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
     { id:'site',        label:'Site',           fixed: false },
     { id:'serial',      label:'Serial Number',  fixed: false },
     { id:'purchase',    label:'Purchase Cost',  fixed: false },
+    { id:'purchase_date', label:'Purchase Date',  fixed: false },
     { id:'warranty',    label:'Warranty Expiry',fixed: false },
     { id:'actions',     label:'Actions',        fixed: true },
   ]
