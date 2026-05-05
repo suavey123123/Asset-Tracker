@@ -108,7 +108,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       if (!saved) return ['tag','model','category','status','assigned_to','site','actions']
       const parsed = JSON.parse(saved)
       // Validate - must be array with known col ids
-      const valid = ['tag','model','category','status','assigned_to','site','serial','purchase','warranty','actions']
+      const valid = ['tag','model','category','status','assigned_to','site','serial','purchase','purchase_date','warranty','actions']
       if (!Array.isArray(parsed) || !parsed.every(c => valid.includes(c))) {
         localStorage.removeItem('inventory_cols')
         return ['tag','model','category','status','assigned_to','site','actions']
