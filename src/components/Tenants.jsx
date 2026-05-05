@@ -119,7 +119,7 @@ export default function Tenants() {
             return (
               <div key={t.id} style={{ ...card, borderLeft: `3px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, opacity: switching && switching !== t.id ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 8, background: t.accent_color || (isCurrent ? 'var(--accent)' : 'var(--bg4)'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏢</div>
+                  <div style={{ width: 38, height: 38, borderRadius: 8, background: t.accent_color || 'var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏢</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {t.name}
