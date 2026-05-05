@@ -146,11 +146,10 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       const { details: r } = employees[i]
       setProgress({ step: 'Creating employees', current: i + 1, total: employees.length })
 
-      // Check if employee already exists
+      // Check if employee already exists — update if so, create if not
       const { data: existing } = await supabase.from('employees').select('id').ilike('name', r.name).maybeSingle()
-      if (existing) { empSkipped++; continue }
 
-      const { error } = await supabase.from('employees').insert({
+      const empPayload = {
         name: r.name,
         email: r.email || null,
         title: r.title || null,
@@ -158,9 +157,18 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
         phone: r.phone || null,
         hire_date: normalizeDate(r.hire_date),
         site_id: siteId || null,
-      })
-      if (error) { errors.push(`Employee ${r.name}: ${error.message}`); empSkipped++ }
-      else empCreated++
+      }
+
+      if (existing) {
+        // Update existing employee with new data
+        const { error } = await supabase.from('employees').update(empPayload).eq('id', existing.id)
+        if (error) errors.push(`Employee ${r.name}: ${error.message}`)
+        else empSkipped++ // count as skipped-but-updated
+      } else {
+        const { error } = await supabase.from('employees').insert(empPayload)
+        if (error) { errors.push(`Employee ${r.name}: ${error.message}`); empSkipped++ }
+        else empCreated++
+      }
     }
 
     // Step 2: Create/assign assets
