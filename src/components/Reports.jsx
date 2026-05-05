@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Btn, Spinner } from './UI'
 
-export default function Reports() {
+export default function Reports({ onViewAsset }) {
   const [depSort, setDepSort] = useState({ col: 'purchase_cost', dir: 'desc' })
   function toggleDepSort(col) {
     setDepSort(s => ({ col, dir: s.col === col && s.dir === 'desc' ? 'asc' : 'desc' }))
@@ -464,7 +464,7 @@ export default function Reports() {
               const expired = exp<today
               const soon = !expired && exp<=in30
               return <tr key={a.id}>
-                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
+                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12, cursor: onViewAsset ? 'pointer' : 'default' }} onClick={() => onViewAsset?.(a)}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
                 <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
                 <td style={{ ...tdStyle, color:expired?'var(--red)':soon?'var(--amber)':'var(--text2)' }}>{exp.toLocaleDateString()}</td>
@@ -517,7 +517,7 @@ export default function Reports() {
             }).map(a => {
               const cost = a._cost; const age = a._age; const current = a._current; const depPct = a._depPct; const hasDate = !!a.purchase_date
               return <tr key={a.id}>
-                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12 }}>{a.asset_tag}</td>
+                <td style={{ ...tdStyle, fontFamily:'var(--mono)', color:'var(--accent)', fontSize:12, cursor: onViewAsset ? 'pointer' : 'default' }} onClick={() => onViewAsset?.(a)}>{a.asset_tag}</td>
                 <td style={tdStyle}>{a.model||'—'}</td>
                 <td style={{ ...tdStyle, fontSize:11 }}>{a.category}</td>
                 <td style={{ ...tdStyle, fontFamily:'var(--mono)' }}>${cost.toFixed(0)}</td>
