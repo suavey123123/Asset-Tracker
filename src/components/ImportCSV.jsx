@@ -165,8 +165,8 @@ export default function ImportCSV({ open, onClose, onDone }) {
         {preview.length > 0 && !result && (
           <div>
             <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Preview (first {preview.length} rows)</div>
-            <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)', overflow:'auto', maxHeight:280 }}>
-                <table style={{ borderCollapse:'collapse', fontSize:12, width:'max-content', minWidth:'100%' }}>
+            <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
+                <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
                   <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)', position:'sticky', top:0 }}>
                     {['Tag','Category','Model','Serial','Status','Assigned To','Location','Purchase Date','Provision Date','Cost','Warranty','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS','Resolution','Size','Notes'].map(h => (
                       <th key={h} style={{ padding:'6px 10px', textAlign:'left', color:'var(--text2)', fontWeight:500, whiteSpace:'nowrap', fontSize:11 }}>{h}</th>
