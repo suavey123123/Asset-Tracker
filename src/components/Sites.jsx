@@ -67,7 +67,11 @@ export default function Sites() {
   }
 
   async function deleteSite(site) {
-    if (!confirm(`Delete "${site.name}"? Employees and assets linked to this site won't be deleted.`)) return
+    if (!confirm(`Delete "${site.name}"?\n\nAll assets assigned to this site will have their site cleared.`)) return
+    // Clear location from all assets at this site
+    await supabase.from('assets').update({ location: null, site_id: null }).eq('location', site.name)
+    // Clear site from employees
+    await supabase.from('employees').update({ site_id: null }).eq('site_id', site.id)
     await supabase.from('sites').delete().eq('id', site.id)
     if (activeSite?.id === site.id) setActiveSite(null)
     fetchAll()
