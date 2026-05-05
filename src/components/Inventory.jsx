@@ -388,13 +388,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
   }
 
   function initiateCheckout() {
-    const agreementCats = ['LAPTOP','DESKTOP','PHONE','TABLET','SERVER']
-    if (agreementCats.includes(checkoutModal?.category?.toUpperCase()) && qcPerson.trim()) {
-      setAgreementModal({ asset: checkoutModal, employee: qcPerson.trim() })
-      setCheckoutModal(null)
-    } else {
-      doQuickCheckout()
-    }
+    doQuickCheckout()
   }
 
   async function doQuickCheckout() {
