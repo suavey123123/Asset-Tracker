@@ -141,6 +141,25 @@ export default function Users() {
       <div style={{ marginBottom:'1rem' }}>
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search users by name or email…" style={{ width:'100%', maxWidth:360 }} />
       </div>
+
+      {/* Role guide */}
+      <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'1rem 1.25rem', marginBottom:'1.25rem' }}>
+        <div style={{ fontSize:12, fontWeight:500, color:'var(--text2)', marginBottom:10, textTransform:'uppercase', letterSpacing:'0.05em' }}>Role guide</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:10 }}>
+          {[
+            { role:'admin', label:'Super Admin', desc:'Full access. Manages users, roles, tenants, and all data.' },
+            { role:'manager', label:'Ops Manager', desc:'Manages assets, employees, maintenance. No user management.' },
+            { role:'technician', label:'Field Technician', desc:'Scans and checks assets in/out. Logs maintenance. No financial data.' },
+            { role:'auditor', label:'Finance Auditor', desc:'Read-only access to all financial and asset data. Cannot edit anything.' },
+            { role:'viewer', label:'Viewer', desc:'Read-only access to assets and employees. No financial data.' },
+          ].map(r => (
+            <div key={r.role} style={{ background:'var(--bg3)', borderRadius:'var(--radius)', padding:'10px 12px', borderLeft:`3px solid ${(ROLE_COLORS[r.role]||ROLE_COLORS.viewer).color}` }}>
+              <div style={{ fontSize:12, fontWeight:500, color:(ROLE_COLORS[r.role]||ROLE_COLORS.viewer).color, marginBottom:4 }}>{r.label}</div>
+              <div style={{ fontSize:11, color:'var(--text2)', lineHeight:1.5 }}>{r.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
       {/* Users table */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
         {loading ? <div style={{ padding: '2rem' }}><Spinner /></div> :
