@@ -349,7 +349,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                   <span>PREVIEW ({preview.length} rows)</span>
                   <span>{Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
                 </div>
-                <div style={{ overflowX:'auto', overflowY:'auto', maxHeight:300, border:'none' }}>
+                <div style={{ overflow:'auto', maxHeight:250 }}>
                   <table style={{ borderCollapse:'collapse', fontSize:12, width:'max-content', minWidth:'100%' }}>
                     <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
                       {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost'].map(h=>(
