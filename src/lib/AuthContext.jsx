@@ -72,6 +72,7 @@ export function AuthProvider({ children }) {
   const canWriteAssets = isAdmin || isManager || isTechnician        // Can update asset status
   const canReadFinancials = isAdmin || isManager || isAuditor        // Can see cost/depreciation
   const canManageUsers = isAdmin                                     // Only super admin
+  const isViewer = role === 'viewer'                                 // Read-only, no financials
 
   return (
     <AuthContext.Provider value={{ user, profile, tenant, role, loading, signIn, signOut, isAdmin, isManager, isTechnician, isAuditor, isAdminOrManager, canWriteAssets, canReadFinancials, canManageUsers, fetchProfile }}>

@@ -151,7 +151,7 @@ export default function Users() {
             { role:'manager', label:'Ops Manager', desc:'Manages assets, employees, maintenance. No user management.' },
             { role:'technician', label:'Field Technician', desc:'Scans and checks assets in/out. Logs maintenance. No financial data.' },
             { role:'auditor', label:'Finance Auditor', desc:'Read-only access to all financial and asset data. Cannot edit anything.' },
-            { role:'viewer', label:'Viewer', desc:'Read-only access to assets and employees. No financial data.' },
+            { role:'viewer', label:'Viewer', desc:'Read-only access to all assets, employees and maintenance. No financial data, cannot edit anything.' },
           ].map(r => (
             <div key={r.role} style={{ background:'var(--bg3)', borderRadius:'var(--radius)', padding:'10px 12px', borderLeft:`3px solid ${(ROLE_COLORS[r.role]||ROLE_COLORS.viewer).color}` }}>
               <div style={{ fontSize:12, fontWeight:500, color:(ROLE_COLORS[r.role]||ROLE_COLORS.viewer).color, marginBottom:4 }}>{r.label}</div>
