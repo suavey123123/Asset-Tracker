@@ -225,6 +225,9 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           assigned_to: r.name,
           assigned_to_team: null,
           location: sites?.find(s => s.id === siteId)?.name || null,
+          locked_status: r.locked_status || null,
+          carrier: r.carrier || null,
+          imei: r.imei || null,
           specs: {
             CPU: r.cpu || '',
             GPU: r.gpu || '',
