@@ -20,6 +20,7 @@ import Offboarding from '../components/Offboarding'
 import AssetRequests from '../components/AssetRequests'
 import ScheduledMaintenance from '../components/ScheduledMaintenance'
 import NotificationCenter from '../components/NotificationCenter'
+import { ToastProvider } from '../components/Toast'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Consumables from '../components/Consumables'
 import ValueDashboard from '../components/ValueDashboard'
@@ -117,6 +118,7 @@ export default function Dashboard() {
   }
 
   return (
+    <ToastProvider>
     <div style={{ display:'flex', height:'100vh', overflow:'hidden', position:'relative' }}>
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -168,5 +170,6 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+    </ToastProvider>
   )
 }
