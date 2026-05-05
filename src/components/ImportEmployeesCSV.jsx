@@ -32,9 +32,10 @@ function cleanCost(val) {
 
 
 const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,assigned_to,assigned_to_team,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,locked_status,carrier,imei
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,,,,,,,iOS 17
-Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14`
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,John Smith,,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro,2560x1600,15",,, 
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,John Smith,,A15 6-core,4-core graphics,4GB,64GB,,d0:88:0c:c4:b5:c6,,iOS 17,,6.1",Unlocked,T-Mobile,351876499606414
+Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Jane Doe,,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14,3024x1964,14",,, 
+,,,,,,IT-099,MONITOR,Dell S2722DC,SN-99999,1/1/2024,1/5/2024,$350.00,,Tradeshow Equipment,,,,,,,,,,27",,, `
 
 const NOTES = [
   'One row per asset. If an employee has 2 assets, add 2 rows with the same employee details.',
