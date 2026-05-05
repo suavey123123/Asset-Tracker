@@ -140,17 +140,22 @@ export default function Users() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem', marginBottom: '1.25rem' }}>
         <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>Invite team member</div>
         <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>They'll receive a magic link to sign in and set their password.</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendInvite()} placeholder="colleague@company.com" type="email" style={{ flex: 1 }} />
-          <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
-            style={{ fontSize:12, padding:'6px 10px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color: ROLE_COLORS[inviteRole]?.color || 'var(--text)', fontFamily:'var(--font)', fontWeight:500 }}>
-            <option value="viewer">Viewer</option>
-            <option value="technician">Field Technician</option>
-            <option value="auditor">Finance Auditor</option>
-            <option value="manager">Ops Manager</option>
-            <option value="admin">Super Admin</option>
-          </select>
-          <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendInvite()}
+            placeholder="colleague@company.com" type="email"
+            style={{ width:'100%' }} />
+          <div style={{ display:'flex', gap:8 }}>
+            <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}
+              style={{ width:160, fontSize:12, padding:'6px 10px', borderRadius:'var(--radius)', background:'var(--bg3)', border:'1px solid var(--border2)', color: ROLE_COLORS[inviteRole]?.color || 'var(--text)', fontFamily:'var(--font)', fontWeight:500, flexShrink:0 }}>
+              <option value="viewer">Viewer</option>
+              <option value="technician">Field Technician</option>
+              <option value="auditor">Finance Auditor</option>
+              <option value="manager">Ops Manager</option>
+              <option value="admin">Super Admin</option>
+            </select>
+            <Btn variant="primary" onClick={sendInvite} disabled={inviting || !inviteEmail.trim()} style={{ flex:1, justifyContent:'center' }}>{inviting ? 'Sending…' : 'Send invite'}</Btn>
+          </div>
         </div>
         {inviteMsg && (
           <div style={{ marginTop: 8, fontSize: 12, padding: '6px 10px', borderRadius: 'var(--radius)', background: isError ? 'var(--red-bg)' : 'var(--green-bg)', border: `1px solid ${isError ? 'var(--red)' : 'var(--green)'}`, color: isError ? 'var(--red)' : 'var(--green)' }}>
