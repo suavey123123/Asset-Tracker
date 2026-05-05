@@ -7,7 +7,7 @@ const EMPTY_FORM = { name: '', category: 'Batteries', quantity: '', min_quantity
 const CATEGORIES = ['Batteries', 'Cables', 'Printer Paper', 'Toner / Ink', 'Cleaning Supplies', 'Accessories', 'Storage Media', 'Other']
 
 export default function Consumables() {
-  const { isAdmin, profile } = useAuth()
+  const { isAdmin, isAdminOrManager, profile } = useAuth()
   const [saveError, setSaveError] = useState('')
   const [saveMsg, setSaveMsg] = useState('')
   const [fetchError, setFetchError] = useState('')

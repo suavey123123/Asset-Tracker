@@ -64,7 +64,7 @@ function LazyAssetPhoto({ assetId, onClick }) {
 }
 
 export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
-  const { isAdmin, profile } = useAuth()
+  const { isAdmin, isAdminOrManager, canWriteAssets, isTechnician, canReadFinancials, profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(() => sessionStorage.getItem('inv_search') || '')

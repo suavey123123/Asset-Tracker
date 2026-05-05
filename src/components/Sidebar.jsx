@@ -57,7 +57,7 @@ const BOTTOM_ITEMS = [
 ]
 
 export default function Sidebar({ active, onNav, alerts = 0 }) {
-  const { profile, signOut, isAdmin } = useAuth()
+  const { profile, signOut, isAdmin, isAdminOrManager, isTechnician } = useAuth()
 
   return (
     <aside style={s.sidebar}>

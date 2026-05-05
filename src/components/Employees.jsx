@@ -9,7 +9,7 @@ const EMPTY_FORM = {
 }
 
 export default function Employees({ onViewAsset }) {
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAdminOrManager } = useAuth()
   const [employees, setEmployees] = useState([])
   const [assets, setAssets] = useState([])
   const [loading, setLoading] = useState(true)

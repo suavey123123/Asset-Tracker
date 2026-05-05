@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner } from './UI'
 
 export default function Maintenance() {
-  const { isAdmin, profile } = useAuth()
+  const { isAdmin, isAdminOrManager, canWriteAssets, profile } = useAuth()
   const [saveError, setSaveError] = useState('')
   const [fetchError, setFetchError] = useState('')
   const [records, setRecords] = useState([])

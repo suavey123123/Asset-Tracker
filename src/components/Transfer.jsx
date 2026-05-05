@@ -57,7 +57,7 @@ function AssetAutocomplete({ assets, onSelect }) {
 
 
 export default function Transfer({ onViewAsset }) {
-  const { isAdmin, profile } = useAuth()
+  const { isAdmin, isAdminOrManager, profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [assetSearch, setAssetSearch] = useState('')
   const [assetSuggestions, setAssetSuggestions] = useState([])

@@ -111,7 +111,7 @@ export default function Dashboard() {
     }
   }, [darkMode])
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { isAdmin, tenant } = useAuth()
+  const { isAdmin, tenant, role } = useAuth()
 
   useEffect(() => { fetchAlerts() }, [])
 
