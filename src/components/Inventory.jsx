@@ -137,8 +137,7 @@ export default function Inventory({ onViewAsset, editAssetProp, onEditDone }) {
       const v = a[c] ?? ''
       return String(v).includes(',') ? `"${v}"` : v
     }))
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('
-')
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const el = document.createElement('a')
