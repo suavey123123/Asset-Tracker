@@ -35,59 +35,51 @@ export default function QRLabels() {
     const selectedAssets = assets.filter(a => selected.includes(a.id))
     const appUrl = window.location.origin
 
-    // Avery 5160: 3 columns × 10 rows = 30 per page
-    // Label size: 2.625" × 1"
-    const win = window.open('', '_blank', 'noopener,noreferrer')
-    win.document.write(`
-      <html><head><title>Asset QR Labels</title>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-      <style>
-        * { margin:0; padding:0; box-sizing:border-box }
-        body { font-family: Arial, sans-serif; background: white }
-        .page { width:8.5in; padding:0.5in 0.1875in }
-        .grid { display:grid; grid-template-columns:repeat(3,2.625in); gap:0 0.125in }
-        .label { width:2.625in; height:1in; border:0.5px solid #ccc; padding:4px 6px; display:flex; align-items:center; gap:6px; page-break-inside:avoid; overflow:hidden }
-        .qr { flex-shrink:0 }
-        .info { flex:1; min-width:0 }
-        .tag { font-size:9pt; font-weight:bold; font-family:monospace; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-        .model { font-size:7pt; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px }
-        .assigned { font-size:6.5pt; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px }
-        .cat { font-size:6pt; color:#999; text-transform:uppercase; letter-spacing:0.03em; margin-top:2px }
-        @media print { body{margin:0} button{display:none} .page{padding:0.5in 0.1875in} }
-      </style></head>
-      <body>
-      <button onclick="window.print()" style="margin:12px;padding:8px 20px;font-size:14px;cursor:pointer;background:#d4ff4e;border:none;border-radius:4px;font-weight:600">🖨 Print Labels</button>
-      <div class="page"><div class="grid" id="grid"></div></div>
-      <script>
-        const assets = ${JSON.stringify(selectedAssets)};
-        const appUrl = "${appUrl}";
-        const grid = document.getElementById('grid');
-        assets.forEach(a => {
-          const label = document.createElement('div');
-          label.className = 'label';
-          const qrDiv = document.createElement('div');
-          qrDiv.className = 'qr';
-          label.appendChild(qrDiv);
-          const info = document.createElement('div');
-          info.className = 'info';
-          info.innerHTML = \`
-            <div class="tag">\${a.asset_tag}</div>
-            <div class="model">\${a.model||a.category||''}</div>
-            \${a.assigned_to ? \`<div class="assigned">\${a.assigned_to}</div>\` : ''}
-            <div class="cat">\${a.category||''}</div>
-          \`;
-          label.appendChild(info);
-          grid.appendChild(label);
-          new QRCode(qrDiv, {
-            text: appUrl + '/#asset=' + a.asset_tag,
-            width: 68, height: 68,
-            correctLevel: QRCode.CorrectLevel.M
-          });
-        });
-      </script>
-      </body></html>
-    `)
-    win.document.close()
+    // Build label HTML for each asset
+    const labels = selectedAssets.map(a => {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodeURIComponent(appUrl + '/#asset=' + a.asset_tag)}`
+      return `
+        <div class="label">
+          <img src="${qrUrl}" width="70" height="70" />
+          <div class="tag">${a.asset_tag}</div>
+          <div class="model">${(a.model || a.category || '').substring(0, 28)}</div>
+          ${a.assigned_to ? `<div class="person">${a.assigned_to.substring(0, 24)}</div>` : ''}
+        </div>`
+    }).join('')
+
+    const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>QR Labels</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: Arial, sans-serif; background: white }
+  .page { width: 8.5in; padding: 0.5in 0.1875in }
+  .grid { display: grid; grid-template-columns: repeat(3, 2.625in); gap: 0 0.125in }
+  .label { width: 2.625in; height: 1in; padding: 4px 6px; display: flex; align-items: center; gap: 6px; page-break-inside: avoid; overflow: hidden; border: 0.5px solid #ddd }
+  img { flex-shrink: 0 }
+  .tag { font-family: monospace; font-size: 8.5pt; font-weight: 700; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .model { font-size: 7pt; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px }
+  .person { font-size: 6.5pt; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px }
+  .info { flex: 1; min-width: 0 }
+  .print-btn { margin: 12px; padding: 8px 20px; font-size: 14px; cursor: pointer; background: #d4ff4e; border: none; border-radius: 4px; font-weight: 600 }
+  @media print { .print-btn { display: none } .page { padding: 0.5in 0.1875in } }
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">Print ${selectedAssets.length} labels</button>
+<div class="page">
+  <div class="grid">
+    ${labels.map(l => l.replace(/<div class="tag">/, '<div class="info"><div class="tag">').replace(/<\/div>\s*$/, '</div></div>')).join('')}
+  </div>
+</div>
+</body></html>`
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const win = window.open(url, '_blank', 'noopener,noreferrer')
+    if (!win) alert('Please allow popups to print labels.')
+    setTimeout(() => URL.revokeObjectURL(url), 15000)
   }
 
   return (
