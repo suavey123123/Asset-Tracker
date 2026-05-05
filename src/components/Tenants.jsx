@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Btn, Spinner, Modal, FormField, EmptyState } from './UI'
 
 export default function Tenants() {
-  const { profile, tenant, fetchProfile } = useAuth()
+  const { profile, tenant, fetchProfile, isAdmin } = useAuth()
   const [tenants, setTenants] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -110,7 +110,7 @@ export default function Tenants() {
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <Btn variant="primary" onClick={openAdd}>+ Add tenant</Btn>
+        {isAdmin && <Btn variant="primary" onClick={openAdd}>+ Add tenant</Btn>}
       </div>
 
       {loading ? <Spinner /> : tenants.length === 0 ? <EmptyState message="No tenants found." /> : (
@@ -148,9 +148,9 @@ export default function Tenants() {
                       {switching === t.id ? '⟳ Switching…' : '⇄ Switch to this tenant'}
                     </Btn>
                   )}
-                  <Btn size="sm" onClick={() => openEdit(t)}>Edit</Btn>
+                  {isAdmin && <Btn size="sm" onClick={() => openEdit(t)}>Edit</Btn>}
                   {!isCurrent && (
-                    <Btn size="sm" variant="danger" onClick={() => deleteTenant(t)}>Delete</Btn>
+                    {isAdmin && <Btn size="sm" variant="danger" onClick={() => deleteTenant(t)}>Delete</Btn>}
                   )}
                 </div>
               </div>
