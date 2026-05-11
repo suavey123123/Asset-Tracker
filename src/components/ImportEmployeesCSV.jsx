@@ -208,7 +208,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           assigned_to_team: r.assigned_to_team || null,
           locked_status: r.locked_status || existing.locked_status || null,
           carrier: r.carrier || existing.carrier || null,
-          imei: r.imei || existing.imei || null,
+          imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : existing.imei || null,
           specs: {
             CPU: r.cpu || '',
             GPU: r.gpu || '',
@@ -241,7 +241,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           location: sites?.find(s => s.id === siteId)?.name || null,
           locked_status: r.locked_status || null,
           carrier: r.carrier || null,
-          imei: r.imei || null,
+          imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : null,
           specs: {
             CPU: r.cpu || '',
             GPU: r.gpu || '',
