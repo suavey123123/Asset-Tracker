@@ -6,6 +6,16 @@ import { Btn, Modal } from './UI'
 function normalizeDate(val) {
   if (!val || !String(val).trim()) return null
   const v = String(val).trim()
+  // Excel serial date (e.g. 45692, 44683) - number between 30000 and 60000
+  if (/^\d{4,5}$/.test(v)) {
+    const serial = parseInt(v)
+    if (serial > 30000 && serial < 60000) {
+      // Excel date serial: days since Jan 1 1900 (with Excel's leap year bug)
+      const excelEpoch = new Date(1899, 11, 30)
+      const date = new Date(excelEpoch.getTime() + serial * 86400000)
+      return date.toISOString().slice(0, 10)
+    }
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
     const [m,d,y]=v.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
