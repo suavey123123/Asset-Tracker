@@ -70,6 +70,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [search, setSearch] = useState(() => sessionStorage.getItem('inv_search') || '')
   const [filterStatus, setFilterStatus] = useState(() => sessionStorage.getItem('inv_status') || '')
   const [filterCat, setFilterCat] = useState(() => sessionStorage.getItem('inv_cat') || '')
+  const [filterSite, setFilterSite] = useState(() => sessionStorage.getItem('inv_site') || '')
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -89,7 +90,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [allTags, setAllTags] = useState([])
 
   // Reset page on filter changes
-  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, search])
+  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
@@ -472,6 +473,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const filtered = assets.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
+    if (filterSite && a.location!==filterSite) return false
     // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
@@ -531,6 +533,10 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
         <select value={filterCat} onChange={e=>{setFilterCat(e.target.value);sessionStorage.setItem('inv_cat',e.target.value)}} style={{ width:160 }}>
           <option value="">All categories</option>
           <option>LAPTOP</option><option>DESKTOP</option><option>PHONE</option><option>TABLET</option><option>CAMERA</option><option>TV</option><option>PRINTER</option><option>ROUTER</option><option>MOUSE</option><option>KEYBOARD</option><option>MONITOR</option><option>Tools & Equipment</option>
+        </select>
+        <select value={filterSite} onChange={e=>{setFilterSite(e.target.value);sessionStorage.setItem('inv_site',e.target.value)}} style={{ width:150 }}>
+          <option value="">All sites</option>
+          {allSites.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
         </select>
         <div style={{ flex:1 }} />
         {allTags.length>0 && (
