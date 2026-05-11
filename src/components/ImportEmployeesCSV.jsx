@@ -66,12 +66,18 @@ function parseCSVLine(line) {
 
 function parseCSV(text) {
   // Handle Windows (CRLF) and Mac (CR) line endings
-  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.replace(/,/g,'').trim())
+  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.replace(/,/g,'').replace(/;/g,'').trim())
   if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
-  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
+  // Auto-detect delimiter: semicolon (Excel European) or comma
+  const delimiter = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ','
+  const parseRow = (line) => {
+    if (delimiter === ';') return line.split(';').map(v => v.trim().replace(/^"|"$/g, ''))
+    return parseCSVLine(line)
+  }
+  const headers = parseRow(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''))
   const errs = []
   const rows = lines.slice(1).map((line, i) => {
-    const vals = parseCSVLine(line)
+    const vals = parseRow(line)
     const row = {}
     headers.forEach((h, j) => { row[h] = (vals[j] || '').trim() })
     return row
