@@ -192,18 +192,17 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
       if (existing) {
         // Update existing asset with all fields + assign to employee
         await supabase.from('assets').update({
-          assigned_to: r.name,
           status: 'Checked Out',
           model: r.asset_model || existing.model || null,
           serial_number: r.asset_serial || existing.serial_number || null,
           purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
           provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
           purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
-          assigned_to: r.assigned_to || null,
+          assigned_to: r.assigned_to || r.name || null,
           assigned_to_team: r.assigned_to_team || null,
-          locked_status: r.locked_status || null,
-          carrier: r.carrier || null,
-          imei: r.imei || null,
+          locked_status: r.locked_status || existing.locked_status || null,
+          carrier: r.carrier || existing.carrier || null,
+          imei: r.imei || existing.imei || null,
           specs: {
             CPU: r.cpu || '',
             GPU: r.gpu || '',
