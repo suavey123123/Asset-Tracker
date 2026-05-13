@@ -282,7 +282,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   function openEditModal(asset) {
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
+    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', seat_number:asset.seat_number||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
@@ -309,6 +309,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
       locked_status: form.locked_status || null,
       carrier: form.carrier || null,
       imei: form.imei || null,
+      seat_number: form.seat_number || null,
       specs: form.specs || {},
       site_id: form.site_id || null,
       location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || null) : form.location || null,
@@ -812,6 +813,11 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                 ))}
               </div>
             </div>
+          )}
+          {form.category?.toUpperCase() === 'MONITOR' && (
+            <FormField label="Seat number">
+              <input value={form.seat_number||''} onChange={e=>setForm(f=>({...f,seat_number:e.target.value}))} placeholder="e.g. A-101, Desk 4" />
+            </FormField>
           )}
           {form.category?.toUpperCase() === 'PHONE' && (
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>

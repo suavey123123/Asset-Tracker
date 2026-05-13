@@ -193,7 +193,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
                 </div>
               </div>
             )}
-            {isPhone && (asset.locked_status || asset.carrier || asset.imei) && (
+            {(asset.locked_status || asset.carrier || asset.imei) && (
               <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
                 <div style={{ fontSize:11, color:'var(--text2)', marginBottom:8, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em' }}>Phone details</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 24px' }}>
