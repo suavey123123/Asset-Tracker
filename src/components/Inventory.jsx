@@ -74,6 +74,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [filterAssigned, setFilterAssigned] = useState(() => sessionStorage.getItem('inv_assigned') || '')
   const [filterModels, setFilterModels] = useState(() => { try { return JSON.parse(sessionStorage.getItem('inv_models') || '[]') } catch { return [] } })
   const [modelDropOpen, setModelDropOpen] = useState(false)
+  const [modelSearch, setModelSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -567,8 +568,13 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                 <span style={{ fontSize:11, color:'var(--text2)', fontWeight:500 }}>{filterModels.length > 0 ? `${filterModels.length} selected` : 'All models'}</span>
                 {filterModels.length > 0 && <button onClick={()=>{setFilterModels([]);sessionStorage.setItem('inv_models','[]')}} style={{ fontSize:11, color:'var(--accent)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Clear</button>}
               </div>
-              <div style={{ overflowY:'auto', maxHeight:220 }}>
-                {[...new Set(assets.map(a=>a.model).filter(Boolean))].sort().map(m => {
+              <div style={{ padding:'6px 8px', borderBottom:'1px solid var(--border)' }}>
+                <input value={modelSearch} onChange={e=>setModelSearch(e.target.value)}
+                  placeholder="Search models…" autoFocus
+                  style={{ width:'100%', fontSize:12, padding:'4px 8px' }} />
+              </div>
+              <div style={{ overflowY:'auto', maxHeight:180 }}>
+                {[...new Set(assets.map(a=>a.model).filter(Boolean))].sort().filter(m=>!modelSearch||m.toLowerCase().includes(modelSearch.toLowerCase())).map(m => {
                   const checked = filterModels.includes(m)
                   return (
                     <label key={m} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', cursor:'pointer', background:checked?'var(--accent-bg)':'transparent', borderBottom:'1px solid var(--border)' }}>
