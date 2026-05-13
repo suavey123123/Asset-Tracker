@@ -41,7 +41,7 @@ export default function Offboarding() {
 
     // Check in all assets
     for (const asset of assets) {
-      await supabase.from('assets').update({ status: 'Available', assigned_to: null, assigned_to_team: null, expected_return: null }).eq('id', asset.id)
+      await supabase.from('assets').update({ status: 'Available', assigned_to: null, assigned_to_team: null, expected_return: null, location: asset.location, site_id: asset.site_id }).eq('id', asset.id)
       await supabase.from('activity_log').insert({
         asset_id: asset.id, asset_tag: asset.asset_tag, asset_name: asset.name,
         type: 'checkin', message: `Checked in during offboarding of ${selected.name}`,
