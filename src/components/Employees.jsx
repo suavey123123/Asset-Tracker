@@ -31,6 +31,8 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   const [exportSite, setExportSite] = useState('')
   const [exportCategory, setExportCategory] = useState('')
   const [exportName, setExportName] = useState('')
+  const [exportSelectedEmps, setExportSelectedEmps] = useState([])
+  const [exportEmpSearch, setExportEmpSearch] = useState('')
   const [offboardEmp, setOffboardEmp] = useState(null)
   const [offboarding, setOffboarding] = useState(false)
   const [sortCol, setSortCol] = useState('name')
@@ -174,11 +176,13 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
       return true
     })
     // Use filtered employees if site filter is set (via site_id on employee)
-    const exportEmployees = employees.filter(e => {
-      if (exportSite && sites.find(s => s.id === e.site_id)?.name !== exportSite) return false
-      if (exportName && !e.name?.toLowerCase().includes(exportName.toLowerCase())) return false
-      return true
-    })
+    const exportEmployees = exportSelectedEmps.length > 0
+      ? employees.filter(e => exportSelectedEmps.includes(e.id))
+      : employees.filter(e => {
+          if (exportSite && sites.find(s => s.id === e.site_id)?.name !== exportSite) return false
+          if (exportName && !e.name?.toLowerCase().includes(exportName.toLowerCase())) return false
+          return true
+        })
     const rows = []
     exportEmployees.forEach(emp => {
       const empAssets = filteredAssets.filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())
@@ -402,8 +406,25 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
             <div style={{ fontSize:15, fontWeight:500, marginBottom:'1rem' }}>Export CSV</div>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:'1.25rem' }}>
               <div>
-                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by employee name</div>
-                <input value={exportName} onChange={e=>setExportName(e.target.value)} placeholder="e.g. John Smith" style={{ width:'100%' }} />
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                  Select employees {exportSelectedEmps.length > 0 && <span style={{ color:'var(--accent)' }}>({exportSelectedEmps.length} selected)</span>}
+                </div>
+                <input value={exportEmpSearch} onChange={e=>setExportEmpSearch(e.target.value)} placeholder="Search employees…" style={{ width:'100%', marginBottom:6 }} />
+                <div style={{ maxHeight:160, overflowY:'auto', border:'1px solid var(--border)', borderRadius:'var(--radius)', background:'var(--bg3)' }}>
+                  {employees.filter(e => !exportEmpSearch || e.name?.toLowerCase().includes(exportEmpSearch.toLowerCase())).map(e => {
+                    const checked = exportSelectedEmps.includes(e.id)
+                    return (
+                      <label key={e.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', cursor:'pointer', background: checked ? 'var(--accent-bg)' : 'transparent', borderBottom:'1px solid var(--border)' }}>
+                        <input type="checkbox" checked={checked} onChange={() => setExportSelectedEmps(s => checked ? s.filter(x=>x!==e.id) : [...s, e.id])} style={{ width:'auto', accentColor:'var(--accent)' }} />
+                        <span style={{ fontSize:13 }}>{e.name}</span>
+                        <span style={{ fontSize:11, color:'var(--text3)', marginLeft:'auto' }}>{e.email}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                {exportSelectedEmps.length > 0 && (
+                  <button onClick={()=>setExportSelectedEmps([])} style={{ fontSize:11, color:'var(--text3)', background:'none', border:'none', cursor:'pointer', marginTop:4, fontFamily:'var(--font)' }}>Clear selection</button>
+                )}
               </div>
               <div>
                 <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by site</div>
@@ -420,14 +441,16 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
                 </select>
               </div>
               <div style={{ fontSize:12, color:'var(--text3)', background:'var(--bg3)', borderRadius:'var(--radius)', padding:'8px 10px' }}>
-                {exportSite || exportCategory || exportName
-                  ? `Exporting employees${exportName ? ` matching "${exportName}"` : ''}${exportSite ? ` at ${exportSite}` : ''}${exportCategory ? ` with ${exportCategory} assets` : ''}`
-                  : 'Exporting all employees and assets'}
+                {exportSelectedEmps.length > 0
+                  ? `Exporting ${exportSelectedEmps.length} selected employee${exportSelectedEmps.length !== 1 ? 's' : ''}${exportCategory ? ` · ${exportCategory} assets only` : ''}`
+                  : exportSite || exportCategory
+                    ? `Exporting all employees${exportSite ? ` at ${exportSite}` : ''}${exportCategory ? ` with ${exportCategory} assets` : ''}`
+                    : 'Exporting all employees and assets'}
               </div>
             </div>
             <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-              <button onClick={()=>{ setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)' }}>Cancel</button>
-              <button onClick={()=>{ exportEmployeesAssets(); setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'none', background:'var(--accent)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, fontWeight:600, color:'#000' }}>⬇ Export</button>
+              <button onClick={()=>{ setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName(''); setExportSelectedEmps([]); setExportEmpSearch('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)' }}>Cancel</button>
+              <button onClick={()=>{ exportEmployeesAssets(); setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName(''); setExportSelectedEmps([]); setExportEmpSearch('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'none', background:'var(--accent)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, fontWeight:600, color:'#000' }}>⬇ Export</button>
             </div>
           </div>
         </div>
