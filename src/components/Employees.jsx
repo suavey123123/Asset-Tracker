@@ -30,6 +30,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [exportSite, setExportSite] = useState('')
   const [exportCategory, setExportCategory] = useState('')
+  const [exportName, setExportName] = useState('')
   const [offboardEmp, setOffboardEmp] = useState(null)
   const [offboarding, setOffboarding] = useState(false)
   const [sortCol, setSortCol] = useState('name')
@@ -173,9 +174,11 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
       return true
     })
     // Use filtered employees if site filter is set (via site_id on employee)
-    const exportEmployees = exportSite
-      ? employees.filter(e => sites.find(s => s.id === e.site_id)?.name === exportSite)
-      : employees
+    const exportEmployees = employees.filter(e => {
+      if (exportSite && sites.find(s => s.id === e.site_id)?.name !== exportSite) return false
+      if (exportName && !e.name?.toLowerCase().includes(exportName.toLowerCase())) return false
+      return true
+    })
     const rows = []
     exportEmployees.forEach(emp => {
       const empAssets = filteredAssets.filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())
@@ -399,6 +402,10 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
             <div style={{ fontSize:15, fontWeight:500, marginBottom:'1rem' }}>Export CSV</div>
             <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:'1.25rem' }}>
               <div>
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by employee name</div>
+                <input value={exportName} onChange={e=>setExportName(e.target.value)} placeholder="e.g. John Smith" style={{ width:'100%' }} />
+              </div>
+              <div>
                 <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by site</div>
                 <select value={exportSite} onChange={e=>setExportSite(e.target.value)} style={{ width:'100%' }}>
                   <option value="">All sites</option>
@@ -413,14 +420,14 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
                 </select>
               </div>
               <div style={{ fontSize:12, color:'var(--text3)', background:'var(--bg3)', borderRadius:'var(--radius)', padding:'8px 10px' }}>
-                {exportSite || exportCategory
-                  ? `Exporting employees${exportSite ? ` at ${exportSite}` : ''}${exportCategory ? ` with ${exportCategory} assets` : ''}`
+                {exportSite || exportCategory || exportName
+                  ? `Exporting employees${exportName ? ` matching "${exportName}"` : ''}${exportSite ? ` at ${exportSite}` : ''}${exportCategory ? ` with ${exportCategory} assets` : ''}`
                   : 'Exporting all employees and assets'}
               </div>
             </div>
             <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
-              <button onClick={()=>{ setExportModalOpen(false); setExportSite(''); setExportCategory('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)' }}>Cancel</button>
-              <button onClick={()=>{ exportEmployeesAssets(); setExportModalOpen(false) }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'none', background:'var(--accent)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, fontWeight:600, color:'#000' }}>⬇ Export</button>
+              <button onClick={()=>{ setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)' }}>Cancel</button>
+              <button onClick={()=>{ exportEmployeesAssets(); setExportModalOpen(false); setExportSite(''); setExportCategory(''); setExportName('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'none', background:'var(--accent)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, fontWeight:600, color:'#000' }}>⬇ Export</button>
             </div>
           </div>
         </div>
