@@ -100,8 +100,10 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   })
   const [saveFilterName, setSaveFilterName] = useState('')
   const [showSaveFilter, setShowSaveFilter] = useState(false)
-  const [sortCol, setSortCol] = useState(() => sessionStorage.getItem('inv_sort_col') || '')
-  const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('inv_sort_dir') || 'asc')
+  const [sortCols, setSortCols] = useState(() => { try { return JSON.parse(sessionStorage.getItem('inv_sort_cols') || '[]') } catch { return [] } })
+  // Legacy compat
+  const sortCol = sortCols[0]?.col || ''
+  const sortDir = sortCols[0]?.dir || 'asc'
   const [viewMode, setViewMode] = useState(() => window.innerWidth < 768 ? 'card' : 'table')
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
@@ -203,6 +205,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [bulkLicenses, setBulkLicenses] = useState([])
   const [bulkLicenseMode, setBulkLicenseMode] = useState('add')
   const [bulkSuccessMsg, setBulkSuccessMsg] = useState('')
+  const [bulkProcessing, setBulkProcessing] = useState(false)
   const [bulkModel, setBulkModel] = useState('')
   const [bulkPurchaseCost, setBulkPurchaseCost] = useState('') // 'add' | 'remove'
   const [bulkCheckinOpen, setBulkCheckinOpen] = useState(false)
@@ -405,6 +408,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
         }
       }
     }
+    setBulkProcessing(false)
     setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add'); setBulkModel(''); setBulkPurchaseCost('')
     fetchAssets()
     // Show success via toast if available
@@ -646,7 +650,9 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                 {ALL_COLS.filter(c => has(c.id)).map(c => {
                   const fieldMap = { tag:'asset_tag', model:'model', category:'category', status:'status', assigned_to:'assigned_to', site:'location', serial:'serial_number', purchase:'purchase_cost', warranty:'warranty_expiry' }
                   const field = fieldMap[c.id]
-                  const isActive = sortCol === field
+                  const sortIdx = sortCols.findIndex(s => s.col === field)
+                  const isActive = sortIdx >= 0
+                  const colDir = isActive ? sortCols[sortIdx].dir : 'asc'
                   const canSort = c.id !== 'actions'
                   return (
                     <th key={c.id} onClick={() => canSort && handleSort(c.id)}
@@ -1008,8 +1014,10 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
             ⚠ This will update all {selected.length} selected assets immediately.
           </div>
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
-            <Btn onClick={()=>setBulkEditOpen(false)}>Cancel</Btn>
-            <Btn variant="primary" onClick={doBulkEdit} disabled={!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam && !bulkModel && !bulkPurchaseCost && bulkLicenses.length === 0}>Apply to {selected.length} assets</Btn>
+            <Btn onClick={()=>setBulkEditOpen(false)} disabled={bulkProcessing}>Cancel</Btn>
+            <Btn variant="primary" onClick={doBulkEdit} disabled={bulkProcessing || (!bulkStatus && !bulkSite && !bulkCategory && !bulkAssignedTo && !bulkAssignedTeam && !bulkModel && !bulkPurchaseCost && bulkLicenses.length === 0)}>
+              {bulkProcessing ? `⟳ Updating ${selected.length} assets…` : `Apply to ${selected.length} assets`}
+            </Btn>
           </div>
         </div>
       </Modal>
