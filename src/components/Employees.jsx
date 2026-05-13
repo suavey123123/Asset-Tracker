@@ -262,7 +262,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
         {isAdmin && selected.length > 0 && (
           <Btn variant="danger" onClick={bulkDelete}>Delete {selected.length} selected</Btn>
         )}
-        <Btn size="sm" onClick={exportEmployeesAssets}>⬇ Export CSV</Btn>
+        <Btn size="sm" onClick={() => setExportModalOpen(true)}>⬇ Export CSV</Btn>
         {isAdminOrManager && <Btn size="sm" onClick={() => setImportOpen(true)}>⬆ Import CSV</Btn>}
         {isAdminOrManager && <Btn variant="primary" onClick={openAdd}>+ Add employee</Btn>}
       </div>
