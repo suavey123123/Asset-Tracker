@@ -72,6 +72,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [filterCat, setFilterCat] = useState(() => sessionStorage.getItem('inv_cat') || '')
   const [filterSite, setFilterSite] = useState(() => sessionStorage.getItem('inv_site') || '')
   const [filterAssigned, setFilterAssigned] = useState(() => sessionStorage.getItem('inv_assigned') || '')
+  const [filterModel, setFilterModel] = useState(() => sessionStorage.getItem('inv_model') || '')
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -91,7 +92,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [allTags, setAllTags] = useState([])
 
   // Reset page on filter changes
-  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, search])
+  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, filterModel, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
@@ -479,6 +480,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (filterCat && a.category!==filterCat) return false
     if (filterSite && a.location!==filterSite) return false
     if (filterAssigned && a.assigned_to !== filterAssigned && a.assigned_to_team !== filterAssigned) return false
+    if (filterModel && a.model !== filterModel) return false
     // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
@@ -551,6 +553,10 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
           <optgroup label="Team use">
             {[...new Set(assets.map(a=>a.assigned_to_team).filter(Boolean))].sort().map(n=><option key={n} value={n}>{n}</option>)}
           </optgroup>
+        </select>
+        <select value={filterModel} onChange={e=>{setFilterModel(e.target.value);sessionStorage.setItem('inv_model',e.target.value)}} style={{ width:180 }}>
+          <option value="">All models</option>
+          {[...new Set(assets.map(a=>a.model).filter(Boolean))].sort().map(m=><option key={m} value={m}>{m}</option>)}
         </select>
         <div style={{ flex:1 }} />
         {allTags.length>0 && (
