@@ -72,7 +72,8 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [filterCat, setFilterCat] = useState(() => sessionStorage.getItem('inv_cat') || '')
   const [filterSite, setFilterSite] = useState(() => sessionStorage.getItem('inv_site') || '')
   const [filterAssigned, setFilterAssigned] = useState(() => sessionStorage.getItem('inv_assigned') || '')
-  const [filterModel, setFilterModel] = useState(() => sessionStorage.getItem('inv_model') || '')
+  const [filterModels, setFilterModels] = useState(() => { try { return JSON.parse(sessionStorage.getItem('inv_models') || '[]') } catch { return [] } })
+  const [modelDropOpen, setModelDropOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -92,7 +93,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [allTags, setAllTags] = useState([])
 
   // Reset page on filter changes
-  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, filterModel, search])
+  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, filterModels, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
@@ -480,7 +481,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (filterCat && a.category!==filterCat) return false
     if (filterSite && a.location!==filterSite) return false
     if (filterAssigned && a.assigned_to !== filterAssigned && a.assigned_to_team !== filterAssigned) return false
-    if (filterModel && a.model !== filterModel) return false
+    if (filterModels.length > 0 && !filterModels.includes(a.model)) return false
     // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
@@ -554,10 +555,35 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
             {[...new Set(assets.map(a=>a.assigned_to_team).filter(Boolean))].sort().map(n=><option key={n} value={n}>{n}</option>)}
           </optgroup>
         </select>
-        <select value={filterModel} onChange={e=>{setFilterModel(e.target.value);sessionStorage.setItem('inv_model',e.target.value)}} style={{ width:180 }}>
-          <option value="">All models</option>
-          {[...new Set(assets.map(a=>a.model).filter(Boolean))].sort().map(m=><option key={m} value={m}>{m}</option>)}
-        </select>
+        <div style={{ position:'relative' }} data-modeldrop>
+          <button onClick={()=>setModelDropOpen(o=>!o)}
+            style={{ height:32, padding:'0 10px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', minWidth:160 }}>
+            {filterModels.length === 0 ? 'All models' : filterModels.length === 1 ? filterModels[0].length > 20 ? filterModels[0].slice(0,20)+'…' : filterModels[0] : `${filterModels.length} models`}
+            <span style={{ marginLeft:'auto', fontSize:10, color:'var(--text3)' }}>▾</span>
+          </button>
+          {modelDropOpen && (
+            <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, zIndex:200, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 24px rgba(0,0,0,0.3)', width:240, maxHeight:280, display:'flex', flexDirection:'column' }}>
+              <div style={{ padding:'8px 10px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:11, color:'var(--text2)', fontWeight:500 }}>{filterModels.length > 0 ? `${filterModels.length} selected` : 'All models'}</span>
+                {filterModels.length > 0 && <button onClick={()=>{setFilterModels([]);sessionStorage.setItem('inv_models','[]')}} style={{ fontSize:11, color:'var(--accent)', background:'none', border:'none', cursor:'pointer', fontFamily:'var(--font)' }}>Clear</button>}
+              </div>
+              <div style={{ overflowY:'auto', maxHeight:220 }}>
+                {[...new Set(assets.map(a=>a.model).filter(Boolean))].sort().map(m => {
+                  const checked = filterModels.includes(m)
+                  return (
+                    <label key={m} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', cursor:'pointer', background:checked?'var(--accent-bg)':'transparent', borderBottom:'1px solid var(--border)' }}>
+                      <input type="checkbox" checked={checked} onChange={()=>{
+                        const next = checked ? filterModels.filter(x=>x!==m) : [...filterModels, m]
+                        setFilterModels(next); sessionStorage.setItem('inv_models', JSON.stringify(next))
+                      }} style={{ width:'auto', accentColor:'var(--accent)', flexShrink:0 }} />
+                      <span style={{ fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
         <div style={{ flex:1 }} />
         {allTags.length>0 && (
           <select value={filterTag} onChange={e=>setFilterTag(e.target.value)} style={{ width:140 }}>
