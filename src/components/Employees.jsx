@@ -27,6 +27,9 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   const [selected, setSelected] = useState([])
   const [filterSite, setFilterSite] = useState('')
   const [importOpen, setImportOpen] = useState(false)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [exportSite, setExportSite] = useState('')
+  const [exportCategory, setExportCategory] = useState('')
   const [offboardEmp, setOffboardEmp] = useState(null)
   const [offboarding, setOffboarding] = useState(false)
   const [sortCol, setSortCol] = useState('name')
@@ -163,10 +166,19 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   }
 
   async function exportEmployeesAssets() {
-    const { data: allAssets } = await supabase.from('assets').select('*').limit(500)
+    const { data: allAssets } = await supabase.from('assets').select('*').limit(2000)
+    const filteredAssets = (allAssets||[]).filter(a => {
+      if (exportSite && a.location !== exportSite) return false
+      if (exportCategory && a.category?.toUpperCase() !== exportCategory.toUpperCase()) return false
+      return true
+    })
+    // Use filtered employees if site filter is set (via site_id on employee)
+    const exportEmployees = exportSite
+      ? employees.filter(e => sites.find(s => s.id === e.site_id)?.name === exportSite)
+      : employees
     const rows = []
-    employees.forEach(emp => {
-      const empAssets = (allAssets||[]).filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())
+    exportEmployees.forEach(emp => {
+      const empAssets = filteredAssets.filter(a => a.assigned_to?.toLowerCase() === emp.name?.toLowerCase())
       if (empAssets.length === 0) {
         rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: '', asset_category: '', asset_model: '', asset_serial: '', purchase_date: '', provision_date: '', purchase_cost: '', cpu: '', gpu: '', ram: '', ssd: '', hdd: '', mac_wifi: '', mac_lan: '', os_version: '', resolution: '', size: '', locked_status: '', carrier: '', imei: '' })
       } else {
@@ -380,6 +392,39 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
       </Modal>
 
       <ImportEmployeesCSV open={importOpen} onClose={()=>setImportOpen(false)} onDone={fetchAll} sites={sites} />
+
+      {exportModalOpen && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'1.5rem', width:360 }}>
+            <div style={{ fontSize:15, fontWeight:500, marginBottom:'1rem' }}>Export CSV</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:'1.25rem' }}>
+              <div>
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by site</div>
+                <select value={exportSite} onChange={e=>setExportSite(e.target.value)} style={{ width:'100%' }}>
+                  <option value="">All sites</option>
+                  {sites.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize:11, color:'var(--text2)', marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by category</div>
+                <select value={exportCategory} onChange={e=>setExportCategory(e.target.value)} style={{ width:'100%' }}>
+                  <option value="">All categories</option>
+                  {[...new Set((assets||[]).map(a=>a.category).filter(Boolean))].sort().map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div style={{ fontSize:12, color:'var(--text3)', background:'var(--bg3)', borderRadius:'var(--radius)', padding:'8px 10px' }}>
+                {exportSite || exportCategory
+                  ? `Exporting employees${exportSite ? ` at ${exportSite}` : ''}${exportCategory ? ` with ${exportCategory} assets` : ''}`
+                  : 'Exporting all employees and assets'}
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+              <button onClick={()=>{ setExportModalOpen(false); setExportSite(''); setExportCategory('') }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'1px solid var(--border2)', background:'var(--bg3)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, color:'var(--text)' }}>Cancel</button>
+              <button onClick={()=>{ exportEmployeesAssets(); setExportModalOpen(false) }} style={{ padding:'7px 14px', borderRadius:'var(--radius)', border:'none', background:'var(--accent)', cursor:'pointer', fontFamily:'var(--font)', fontSize:13, fontWeight:600, color:'#000' }}>⬇ Export</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Add/Edit modal */}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editEmp ? 'Edit employee' : 'Add employee'}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
