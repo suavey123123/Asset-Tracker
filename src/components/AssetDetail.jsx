@@ -180,11 +180,17 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
                 </div>
               ) : null)}
             </div>
-            {asset.specs && Object.keys(asset.specs).filter(k=>asset.specs[k]).length > 0 && (
+            {(asset.specs && Object.keys(asset.specs).filter(k=>asset.specs[k]).length > 0 || asset.seat_number) && (
               <div style={{ marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid var(--border)' }}>
                 <div style={{ fontSize:11, color:'var(--text2)', marginBottom:8, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.05em' }}>Tech specs</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px 24px' }}>
-                  {Object.entries(asset.specs).filter(([k,v])=>v).map(([k,v])=>(
+                  {asset.seat_number && (
+                    <div>
+                      <div style={{ fontSize:11, color:'var(--text2)', marginBottom:2 }}>Seat number</div>
+                      <div style={{ fontSize:13, fontWeight:500 }}>{asset.seat_number}</div>
+                    </div>
+                  )}
+                  {asset.specs && Object.entries(asset.specs).filter(([k,v])=>v).map(([k,v])=>(
                     <div key={k}>
                       <div style={{ fontSize:11, color:'var(--text2)', marginBottom:2, fontFamily:'var(--mono)' }}>{k}</div>
                       <div style={{ fontSize:13 }}>{v}</div>
