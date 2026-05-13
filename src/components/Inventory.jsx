@@ -71,6 +71,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [filterStatus, setFilterStatus] = useState(() => sessionStorage.getItem('inv_status') || '')
   const [filterCat, setFilterCat] = useState(() => sessionStorage.getItem('inv_cat') || '')
   const [filterSite, setFilterSite] = useState(() => sessionStorage.getItem('inv_site') || '')
+  const [filterAssigned, setFilterAssigned] = useState(() => sessionStorage.getItem('inv_assigned') || '')
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
@@ -90,7 +91,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [allTags, setAllTags] = useState([])
 
   // Reset page on filter changes
-  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, search])
+  useEffect(() => { setPage(1); sessionStorage.setItem('inv_page','1') }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, search])
   const [assetPhotos, setAssetPhotos] = useState({})
   const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
@@ -100,10 +101,8 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   })
   const [saveFilterName, setSaveFilterName] = useState('')
   const [showSaveFilter, setShowSaveFilter] = useState(false)
-  const [sortCols, setSortCols] = useState(() => { try { return JSON.parse(sessionStorage.getItem('inv_sort_cols') || '[]') } catch { return [] } })
-  // Legacy compat
-  const sortCol = sortCols[0]?.col || ''
-  const sortDir = sortCols[0]?.dir || 'asc'
+  const [sortCol, setSortCol] = useState(() => sessionStorage.getItem('inv_sort_col') || '')
+  const [sortDir, setSortDir] = useState(() => sessionStorage.getItem('inv_sort_dir') || 'asc')
   const [viewMode, setViewMode] = useState(() => window.innerWidth < 768 ? 'card' : 'table')
   const [showColPicker, setShowColPicker] = useState(false)
   const [visibleCols, setVisibleCols] = useState(() => {
@@ -479,6 +478,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
     if (filterSite && a.location!==filterSite) return false
+    if (filterAssigned && a.assigned_to !== filterAssigned && a.assigned_to_team !== filterAssigned) return false
     // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
@@ -542,6 +542,15 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
         <select value={filterSite} onChange={e=>{setFilterSite(e.target.value);sessionStorage.setItem('inv_site',e.target.value)}} style={{ width:150 }}>
           <option value="">All sites</option>
           {allSites.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
+        </select>
+        <select value={filterAssigned} onChange={e=>{setFilterAssigned(e.target.value);sessionStorage.setItem('inv_assigned',e.target.value)}} style={{ width:180 }}>
+          <option value="">All assigned to</option>
+          <optgroup label="Employees">
+            {[...new Set(assets.map(a=>a.assigned_to).filter(Boolean))].sort().map(n=><option key={n} value={n}>{n}</option>)}
+          </optgroup>
+          <optgroup label="Team use">
+            {[...new Set(assets.map(a=>a.assigned_to_team).filter(Boolean))].sort().map(n=><option key={n} value={n}>{n}</option>)}
+          </optgroup>
         </select>
         <div style={{ flex:1 }} />
         {allTags.length>0 && (
@@ -650,9 +659,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                 {ALL_COLS.filter(c => has(c.id)).map(c => {
                   const fieldMap = { tag:'asset_tag', model:'model', category:'category', status:'status', assigned_to:'assigned_to', site:'location', serial:'serial_number', purchase:'purchase_cost', warranty:'warranty_expiry' }
                   const field = fieldMap[c.id]
-                  const sortIdx = sortCols.findIndex(s => s.col === field)
-                  const isActive = sortIdx >= 0
-                  const colDir = isActive ? sortCols[sortIdx].dir : 'asc'
+                  const isActive = sortCol === field
                   const canSort = c.id !== 'actions'
                   return (
                     <th key={c.id} onClick={() => canSort && handleSort(c.id)}
