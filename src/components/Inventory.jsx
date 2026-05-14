@@ -478,7 +478,9 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const today = new Date()
   const in30 = new Date(); in30.setDate(today.getDate()+30)
 
-  const filtered = assets.filter(a => {
+  // Enrich assets with department from employee records for sorting
+  const enriched = assets.map(a => ({ ...a, department: allEmployees.find(e => e.name === a.assigned_to)?.department || '' }))
+  const filtered = enriched.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
     if (filterSite && a.location!==filterSite) return false
@@ -771,7 +773,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                     {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
                     {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
                     {has('purchase_date') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{a.purchase_date?new Date(a.purchase_date).toLocaleDateString():'—'}</td>}
-                      {has('department') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{allEmployees.find(e=>e.name===a.assigned_to)?.department||'—'}</td>}
+                      {has('department') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{a.department||'—'}</td>}
                     {has('warranty') && <td style={{ padding:'10px 14px', fontSize:12, color: a.warranty_expiry&&new Date(a.warranty_expiry)<new Date()?'var(--red)':'var(--text2)' }}>{a.warranty_expiry?new Date(a.warranty_expiry).toLocaleDateString():'—'}</td>}
                     <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
