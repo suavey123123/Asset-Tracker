@@ -114,7 +114,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
       if (!saved) return ['tag','model','category','status','assigned_to','site','actions']
       const parsed = JSON.parse(saved)
       // Validate - must be array with known col ids
-      const valid = ['tag','model','category','status','assigned_to','site','serial','purchase','purchase_date','warranty','actions']
+      const valid = ['tag','model','category','status','assigned_to','site','serial','purchase','purchase_date','warranty','department','actions']
       if (!Array.isArray(parsed) || !parsed.every(c => valid.includes(c))) {
         localStorage.removeItem('inventory_cols')
         return ['tag','model','category','status','assigned_to','site','actions']
@@ -133,6 +133,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     { id:'serial',      label:'Serial Number',  fixed: false },
     { id:'purchase',    label:'Purchase Cost',  fixed: false },
     { id:'purchase_date', label:'Purchase Date',  fixed: false },
+    { id:'department',    label:'Department',     fixed: false },
     { id:'warranty',    label:'Warranty Expiry',fixed: false },
     { id:'actions',     label:'Actions',        fixed: true },
   ]
@@ -770,6 +771,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                     {has('serial') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)', color:'var(--text2)' }}>{a.serial_number||'—'}</td>}
                     {has('purchase') && <td style={{ padding:'10px 14px', fontSize:12, fontFamily:'var(--mono)' }}>{a.purchase_cost?'$'+parseFloat(a.purchase_cost).toFixed(0):'—'}</td>}
                     {has('purchase_date') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{a.purchase_date?new Date(a.purchase_date).toLocaleDateString():'—'}</td>}
+                      {has('department') && <td style={{ padding:'10px 14px', fontSize:12, color:'var(--text2)' }}>{allEmployees.find(e=>e.name===a.assigned_to)?.department||'—'}</td>}
                     {has('warranty') && <td style={{ padding:'10px 14px', fontSize:12, color: a.warranty_expiry&&new Date(a.warranty_expiry)<new Date()?'var(--red)':'var(--text2)' }}>{a.warranty_expiry?new Date(a.warranty_expiry).toLocaleDateString():'—'}</td>}
                     <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
