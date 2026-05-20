@@ -41,7 +41,7 @@ function cleanCost(val) {
 }
 
 
-const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,assigned_to,assigned_to_team,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,seat_number,locked_status,carrier,imei
+const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,assigned_to,assigned_to_team,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,seat_number,locked_status,carrier,imei,notes
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,John Smith,,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro,2560x1600,15",,,, 
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,John Smith,,A15 6-core,4-core graphics,4GB,64GB,,d0:88:0c:c4:b5:c6,,iOS 17,,6.1",Unlocked,T-Mobile,="351876499606414"
 Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Jane Doe,,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14,3024x1964,14",,, 
@@ -217,6 +217,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           assigned_to: r.assigned_to || r.name || null,
           assigned_to_team: r.assigned_to_team || null,
           seat_number: r.seat_number || existing.seat_number || null,
+          quick_note: r.notes || existing.quick_note || null,
           locked_status: r.locked_status || existing.locked_status || null,
           carrier: r.carrier || existing.carrier || null,
           imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : existing.imei || null,
@@ -251,6 +252,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           assigned_to_team: r.assigned_to_team || null,
           location: sites?.find(s => s.id === siteId)?.name || null,
           seat_number: r.seat_number || null,
+          quick_note: r.notes || null,
           locked_status: r.locked_status || null,
           carrier: r.carrier || null,
           imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : null,
@@ -455,3 +457,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     </Modal>
   )
 }
+
+
+
+
