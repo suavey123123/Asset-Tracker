@@ -63,6 +63,7 @@ export default function Offboarding() {
       type: 'note', message: `Employee offboarded: ${selected.name} — ${assets.length} asset(s) returned, ${licenses.length} license(s) freed`,
       performed_by: profile?.email,
     })
+    await supabase.from('employees').delete().eq('id', selected.id)
 
     setProcessing(false); setDone(true)
     setAssets([]); setLicenses([])
@@ -162,3 +163,4 @@ export default function Offboarding() {
     </div>
   )
 }
+
