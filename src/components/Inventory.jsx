@@ -248,7 +248,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   async function fetchSites() {
     const { data } = await supabase.from('sites').select('id, name').order('name')
     setAllSites(data || [])
-    const { data: emps } = await supabase.from('employees').select('id, name, email, title, department, phone').limit(500)
+    const { data: emps } = await supabase.from('employees').select('id, name, email, title, department, phone')
     setAllEmployees(emps || [])
   }
 
@@ -530,8 +530,16 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const today = new Date()
   const in30 = new Date(); in30.setDate(today.getDate()+30)
 
-  // Enrich assets with department from employee records for sorting
-  const enriched = assets.map(a => ({ ...a, department: allEmployees.find(e => e.name === a.assigned_to)?.department || '' }))
+  // Build a lookup of employee name → department for enrichment
+  const empNameToDept = {}
+  allEmployees?.forEach(e => { empNameToDept[e.name] = e.department || '' })
+  // Resolve assigned_to employee name from UUID lookup
+  const empIdToName = {}
+  allEmployees?.forEach(e => { empIdToName[e.id] = e.name })
+  const enriched = assets.map(a => {
+    const resolvedAssigned = empIdToName[a.assigned_to] || a.assigned_to || ''
+    return { ...a, department: empNameToDept[resolvedAssigned] || '', _assignedName: resolvedAssigned }
+  })
   const filtered = enriched.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
     if (filterCat && a.category!==filterCat) return false
@@ -541,7 +549,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     // tag filtering done client-side after fetch
     if (search) {
       const q = search.toLowerCase()
-      if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number} ${a.assigned_to}`.toLowerCase().includes(q)) return false
+      if (!`${a.name} ${a.asset_tag} ${a.model} ${a.location} ${a.serial_number} ${a._assignedName || a.assigned_to}`.toLowerCase().includes(q)) return false
     }
     return true
   })
