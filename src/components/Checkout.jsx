@@ -34,8 +34,15 @@ export default function Checkout() {
     if (!coAsset || !coPerson.trim()) { setMsg('Select an asset and enter a name.'); return }
     setSaving(true)
     const asset = assets.find(a => a.id === coAsset)
-    await supabase.from('assets').update({ status: 'Checked Out', assigned_to: coPerson, expected_return: coDate || null }).eq('id', coAsset)
-    await supabase.from('activity_log').insert({ asset_id: coAsset, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkout', message: `Checked out to ${coPerson}${coNotes ? ' — ' + coNotes : ''}`, performed_by: profile?.email })
+    if (!asset) { setMsg('Asset not found.'); setSaving(false); return }
+    try {
+      await supabase.from('assets').update({ status: 'Checked Out', assigned_to: coPerson, expected_return: coDate || null }).eq('id', coAsset)
+      await supabase.from('activity_log').insert({ asset_id: coAsset, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkout', message: `Checked out to ${coPerson}${coNotes ? ' — ' + coNotes : ''}`, performed_by: profile?.email })
+    } catch (e) {
+      setMsg(`Error: ${e.message}`)
+      setSaving(false)
+      return
+    }
     setCoPerson(''); setCoDate(''); setCoNotes(''); setCoAsset('')
     setSaving(false)
     setMsg(`✓ ${asset.name} checked out to ${coPerson}`)
@@ -47,9 +54,16 @@ export default function Checkout() {
     if (!ciAsset) { setMsg('Select an asset to check in.'); return }
     setSaving(true)
     const asset = assets.find(a => a.id === ciAsset)
-    const newStatus = ciCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
-    await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', ciAsset)
-    await supabase.from('activity_log').insert({ asset_id: ciAsset, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkin', message: `Checked in from ${asset.assigned_to || 'unknown'} — condition: ${ciCondition}${ciNotes ? ' — ' + ciNotes : ''}`, performed_by: profile?.email })
+    if (!asset) { setMsg('Asset not found.'); setSaving(false); return }
+    try {
+      const newStatus = ciCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
+      await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', ciAsset)
+      await supabase.from('activity_log').insert({ asset_id: ciAsset, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkin', message: `Checked in from ${asset.assigned_to || 'unknown'} — condition: ${ciCondition}${ciNotes ? ' — ' + ciNotes : ''}`, performed_by: profile?.email })
+    } catch (e) {
+      setMsg(`Error: ${e.message}`)
+      setSaving(false)
+      return
+    }
     setCiNotes(''); setCiAsset(''); setCiCondition('Good')
     setSaving(false)
     setMsg(`✓ ${asset.name} checked in (${newStatus})`)

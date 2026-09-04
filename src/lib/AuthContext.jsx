@@ -32,26 +32,32 @@ export function AuthProvider({ children }) {
       }
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
-      else { setProfile(null); setLoading(false) }
+      else { setProfile(null); setTenant(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (data?.blocked) {
-      await supabase.auth.signOut()
-      setUser(null); setProfile(null)
-      return
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      if (error) { console.error('fetchProfile error:', error.message); setLoading(false); return }
+      if (data?.blocked) {
+        await supabase.auth.signOut()
+        setUser(null); setProfile(null); setTenant(null)
+        return
+      }
+      setProfile(data)
+      // Load tenant info
+      if (data?.tenant_id) {
+        const { data: t, error: te } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
+        if (!te) setTenant(t)
+      }
+    } catch (e) {
+      console.error('fetchProfile error:', e.message)
+    } finally {
+      setLoading(false)
     }
-    setProfile(data)
-    // Load tenant info
-    if (data?.tenant_id) {
-      const { data: t } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
-      setTenant(t)
-    }
-    setLoading(false)
   }
 
   async function signIn(email, password) {

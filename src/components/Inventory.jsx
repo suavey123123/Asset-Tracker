@@ -279,7 +279,8 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   async function fetchAssets() {
     setLoading(true)
-    const { data } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
+    if (error) { setError(`Failed to load assets: ${error.message}`); setLoading(false); return }
     setAssets(data || [])
     setLoading(false)
   }
@@ -320,43 +321,60 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
       site_id: form.site_id || null,
       location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || null) : form.location || null,
     }
-    let err
-    if (editAsset) {
-      const { error: e } = await supabase.from('assets').update(payload).eq('id', editAsset.id)
-      err = e
-      if (!e) await logActivity(editAsset.id, editAsset.asset_tag, editAsset.name, 'updated', `Asset updated by ${profile?.email}`)
-    } else {
-      const { data, error: e } = await supabase.from('assets').insert(payload).select().single()
-      err = e
-      if (!e && data) {
-        await logActivity(data.id, data.asset_tag, data.name, 'created', `Asset added by ${profile?.email}`)
-        // Assign licenses using the returned asset ID directly
-        if (formLicenses.length > 0) {
-          for (const licId of formLicenses) {
-            try {
-              await supabase.from('asset_license_assignments').insert({ asset_id: data.id, license_id: licId, assigned_to: form.assigned_to || null })
-              await supabase.rpc('increment_license_seats', { license_id: licId })
-            } catch(e) {}
+    try {
+      if (editAsset) {
+        const { error: e } = await supabase.from('assets').update(payload).eq('id', editAsset.id)
+        if (e) { setError(e.message); setSaving(false); return }
+        await logActivity(editAsset.id, editAsset.asset_tag, editAsset.name, 'updated', `Asset updated by ${profile?.email}`)
+      } else {
+        const { data: created, error: e } = await supabase.from('assets').insert(payload).select().single()
+        if (e) { setError(e.message); setSaving(false); return }
+        if (created) {
+          await logActivity(created.id, created.asset_tag, created.name, 'created', `Asset added by ${profile?.email}`)
+          // Assign licenses using the returned asset ID directly
+          if (formLicenses.length > 0) {
+            for (const licId of formLicenses) {
+              try {
+                await supabase.from('asset_license_assignments').insert({ asset_id: created.id, license_id: licId, assigned_to: form.assigned_to || null })
+                await supabase.rpc('increment_license_seats', { license_id: licId })
+              } catch(e) { /* non-critical: don't block asset creation */ }
+            }
           }
         }
       }
+    } catch (e) {
+      setError(e.message || 'Failed to save asset')
+      setSaving(false)
+      return
     }
     setSaving(false)
-    if (err) { setError(err.message); return }
     setModalOpen(false); setFormLicenses([]); fetchAssets()
   }
 
   async function deleteAsset(asset) {
     if (!confirm(`Delete "${asset.name}"? This cannot be undone.`)) return
-    await releaseLicenses(asset.id)
-    await supabase.from('assets').delete().eq('id', asset.id)
+    try {
+      await releaseLicenses(asset.id)
+      const { error: e } = await supabase.from('assets').delete().eq('id', asset.id)
+      if (e) { setError(`Delete failed: ${e.message}`); return }
+    } catch (e) {
+      setError(e.message || 'Failed to delete asset')
+      return
+    }
     fetchAssets()
   }
 
   async function quickStatus(assetId, newStatus) {
     const asset = assets.find(a => a.id === assetId)
-    await supabase.from('assets').update({ status: newStatus }).eq('id', assetId)
-    await logActivity(assetId, asset.asset_tag, asset.name, 'updated', `Status changed to ${newStatus} by ${profile?.email}`)
+    if (!asset) { setQuickStatusId(null); return }
+    try {
+      const { error: e } = await supabase.from('assets').update({ status: newStatus }).eq('id', assetId)
+      if (e) { setError(`Status update failed: ${e.message}`); return }
+      await logActivity(assetId, asset.asset_tag, asset.name, 'updated', `Status changed to ${newStatus} by ${profile?.email}`)
+    } catch (e) {
+      setError(e.message || 'Failed to update status')
+      return
+    }
     setQuickStatusId(null)
     fetchAssets()
   }
@@ -364,9 +382,12 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   async function doBulkCheckout() {
     if (!bulkPerson.trim()) return
     const toCheckout = selected.filter(id => assets.find(a=>a.id===id)?.status==='Available')
+    if (toCheckout.length === 0) { setError('No selected assets are Available for checkout'); return }
     for (const id of toCheckout) {
       const asset = assets.find(a=>a.id===id)
-      await supabase.from('assets').update({ status:'Checked Out', assigned_to:bulkPerson, expected_return:bulkDate||null }).eq('id', id)
+      if (!asset) continue
+      const { error: e } = await supabase.from('assets').update({ status:'Checked Out', assigned_to:bulkPerson, expected_return:bulkDate||null }).eq('id', id)
+      if (e) { setError(`Failed to checkout ${asset.asset_tag}: ${e.message}`); break }
       await logActivity(id, asset.asset_tag, asset.name, 'checkout', `Bulk checked out to ${bulkPerson} by ${profile?.email}`)
     }
     setSelected([]); setBulkPerson(''); setBulkDate(''); setBulkCheckoutOpen(false)
@@ -375,10 +396,13 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   async function doBulkCheckin() {
     const toCheckin = selected.filter(id => assets.find(a=>a.id===id)?.status==='Checked Out')
+    if (toCheckin.length === 0) { setError('No selected assets are Checked Out'); return }
     for (const id of toCheckin) {
       const asset = assets.find(a=>a.id===id)
+      if (!asset) continue
       const newStatus = bulkCheckinCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
-      await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', id)
+      const { error: e } = await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', id)
+      if (e) { setError(`Failed to check in ${asset.asset_tag}: ${e.message}`); break }
       await logActivity(id, asset.asset_tag, asset.name, 'checkin', `Bulk checked in — condition: ${bulkCheckinCondition}`)
     }
     setSelected([]); setBulkCheckinOpen(false); fetchAssets()
@@ -394,48 +418,62 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (bulkAssignedTeam) { updates.assigned_to_team = bulkAssignedTeam; updates.assigned_to = null }
     if (bulkModel) updates.model = bulkModel
     if (bulkPurchaseCost) updates.purchase_cost = parseFloat(bulkPurchaseCost.replace(/[^0-9.]/g, ''))
+    let updated = 0, failed = 0
     for (const id of selected) {
-      await supabase.from('assets').update(updates).eq('id', id)
+      const { error: e } = await supabase.from('assets').update(updates).eq('id', id)
+      if (e) failed++; else updated++
     }
     // Handle license assignments
     if (bulkLicenses.length > 0) {
       for (const assetId of selected) {
         for (const licenseId of bulkLicenses) {
           if (bulkLicenseMode === 'add') {
-            await supabase.from('asset_license_assignments').upsert({ asset_id: assetId, license_id: licenseId })
-            await supabase.rpc('increment_license_seats', { license_id: licenseId })
+            try {
+              await supabase.from('asset_license_assignments').upsert({ asset_id: assetId, license_id: licenseId })
+              await supabase.rpc('increment_license_seats', { license_id: licenseId })
+            } catch(e) { /* non-critical */ }
           } else {
-            await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId).eq('license_id', licenseId)
-            await supabase.rpc('decrement_license_seats', { license_id: licenseId })
+            try {
+              await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId).eq('license_id', licenseId)
+              await supabase.rpc('decrement_license_seats', { license_id: licenseId })
+            } catch(e) { /* non-critical */ }
           }
         }
       }
     }
     setBulkProcessing(false)
+    const msg = failed > 0 ? `Updated ${selected.length - failed}/${selected.length} assets` : `✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`
     setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add'); setBulkModel(''); setBulkPurchaseCost('')
     fetchAssets()
-    // Show success via toast if available
-    setBulkSuccessMsg(`✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`)
+    setBulkSuccessMsg(msg)
     setTimeout(()=>setBulkSuccessMsg(''),3000)
   }
 
   async function releaseLicenses(assetId) {
-    const { data: assignments } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, seats_used)').eq('asset_id', assetId)
-    if (assignments?.length) {
-      for (const a of assignments) {
-        if (a.license) {
-          await supabase.rpc('decrement_license_seats', { license_id: a.license.id })
+    try {
+      const { data: assignments } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, seats_used)').eq('asset_id', assetId)
+      if (assignments?.length) {
+        for (const a of assignments) {
+          if (a.license) {
+            await supabase.rpc('decrement_license_seats', { license_id: a.license.id })
+          }
         }
+        await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId)
       }
-      await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId)
-    }
+    } catch (e) { /* non-critical */ }
   }
 
   async function bulkDelete() {
     if (!confirm(`Delete ${selected.length} asset${selected.length!==1?'s':''}? This cannot be undone.`)) return
     for (const id of selected) {
-      await releaseLicenses(id)
-      await supabase.from('assets').delete().eq('id', id)
+      try {
+        await releaseLicenses(id)
+        const { error: e } = await supabase.from('assets').delete().eq('id', id)
+        if (e) { setError(`Failed to delete asset ${id}: ${e.message}`); break }
+      } catch (e) {
+        setError(e.message || 'Failed to delete asset')
+        break
+      }
     }
     setSelected([])
     fetchAssets()
@@ -456,17 +494,31 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   async function doQuickCheckout() {
     if (!qcPerson.trim()) return
     const asset = checkoutModal
-    await supabase.from('assets').update({ status:'Checked Out', assigned_to:qcPerson, expected_return:qcDate||null }).eq('id', asset.id)
-    await logActivity(asset.id, asset.asset_tag, asset.name, 'checkout', `Checked out to ${qcPerson}${qcNotes?' — '+qcNotes:''}`)
+    if (!asset) { setError('Asset not found'); return }
+    try {
+      const { error: e } = await supabase.from('assets').update({ status:'Checked Out', assigned_to:qcPerson, expected_return:qcDate||null }).eq('id', asset.id)
+      if (e) { setError(`Checkout failed: ${e.message}`); return }
+      await logActivity(asset.id, asset.asset_tag, asset.name, 'checkout', `Checked out to ${qcPerson}${qcNotes?' — '+qcNotes:''}`)
+    } catch (e) {
+      setError(e.message || 'Failed to check out asset')
+      return
+    }
     setCheckoutModal(null); setQcPerson(''); setQcDate(''); setQcNotes('')
     fetchAssets()
   }
 
   async function doQuickCheckin() {
     const asset = checkinModal
+    if (!asset) { setError('Asset not found'); return }
     const newStatus = qcCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
-    await supabase.from('assets').update({ status:newStatus, assigned_to:null, expected_return:null }).eq('id', asset.id)
-    await logActivity(asset.id, asset.asset_tag, asset.name, 'checkin', `Checked in from ${asset.assigned_to||'unknown'} — condition: ${qcCondition}${qcNotes?' — '+qcNotes:''}`)
+    try {
+      const { error: e } = await supabase.from('assets').update({ status:newStatus, assigned_to:null, expected_return:null }).eq('id', asset.id)
+      if (e) { setError(`Check-in failed: ${e.message}`); return }
+      await logActivity(asset.id, asset.asset_tag, asset.name, 'checkin', `Checked in from ${asset.assigned_to||'unknown'} — condition: ${qcCondition}${qcNotes?' — '+qcNotes:''}`)
+    } catch (e) {
+      setError(e.message || 'Failed to check in asset')
+      return
+    }
     setCheckinModal(null); setQcCondition('Good'); setQcNotes('')
     fetchAssets()
   }

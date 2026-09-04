@@ -89,31 +89,38 @@ export default function Transfer({ onViewAsset }) {
     if (!selectedAsset || !toPerson.trim()) { setMsg('Please select an asset and enter the recipient.'); return }
     setSaving(true)
     const asset = assets.find(a => a.id === selectedAsset)
-    const from = fromPerson.trim() || asset?.assigned_to || 'Unknown'
+    if (!asset) { setMsg('Asset not found.'); setSaving(false); return }
+    const from = fromPerson.trim() || asset.assigned_to || 'Unknown'
 
-    // Update asset assignment
-    await supabase.from('assets').update({ assigned_to: toPerson.trim(), status: 'Checked Out' }).eq('id', selectedAsset)
+    try {
+      // Update asset assignment
+      await supabase.from('assets').update({ assigned_to: toPerson.trim(), status: 'Checked Out' }).eq('id', selectedAsset)
 
-    // Log transfer record
-    await supabase.from('asset_transfers').insert({
-      asset_id: selectedAsset,
-      asset_tag: asset.asset_tag,
-      asset_name: asset.name,
-      from_person: from,
-      to_person: toPerson.trim(),
-      reason: reason.trim() || null,
-      transferred_by: profile?.email,
-    })
+      // Log transfer record
+      await supabase.from('asset_transfers').insert({
+        asset_id: selectedAsset,
+        asset_tag: asset.asset_tag,
+        asset_name: asset.name,
+        from_person: from,
+        to_person: toPerson.trim(),
+        reason: reason.trim() || null,
+        transferred_by: profile?.email,
+      })
 
-    // Activity log
-    await supabase.from('activity_log').insert({
-      asset_id: selectedAsset,
-      asset_tag: asset.asset_tag,
-      asset_name: asset.name,
-      type: 'checkout',
-      message: `Transferred from ${from} to ${toPerson.trim()}${reason ? ' — ' + reason : ''}`,
-      performed_by: profile?.email,
-    })
+      // Activity log
+      await supabase.from('activity_log').insert({
+        asset_id: selectedAsset,
+        asset_tag: asset.asset_tag,
+        asset_name: asset.name,
+        type: 'checkout',
+        message: `Transferred from ${from} to ${toPerson.trim()}${reason ? ' — ' + reason : ''}`,
+        performed_by: profile?.email,
+      })
+    } catch (e) {
+      setMsg(`Error: ${e.message}`)
+      setSaving(false)
+      return
+    }
 
     setSaving(false)
     setMsg(`✓ ${asset.name} transferred from ${from} to ${toPerson}`)
