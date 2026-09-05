@@ -2,10 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
 
-// Direct Supabase REST URL for fetching all assets (bypasses SDK's default 500-row range limit)
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-
 const ALL_WIDGETS = [
   { id:'stats',       label:'Summary stats',        default:true },
   { id:'alerts',      label:'Alerts & warnings',    default:true },
@@ -70,19 +66,20 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
 
-    // Fetch ALL assets via direct REST call (bypasses Supabase JS SDK's default 500-row range limit)
+    // Fetch ALL assets via direct REST call
+    // Use Range: rows=0--1 (PostgREST format) to fetch every row without a limit
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+    const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
     const assetsUrl = `${SUPABASE_URL}/rest/v1/assets?select=*&order=created_at.desc`
     let allAssetData
     try {
       const resp = await fetch(assetsUrl, {
-        method: 'GET',
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
           'Prefer': 'count=exact',
-          'Range': '[0--1]',
+          'Range': 'rows=0--1',
           'Range-Unit': 'rows',
-          'Range-Regex': '\\[(\\d+)-(\\d+)\\]\\/(\\d+)',
           'Content-Type': 'application/json',
         },
       })
