@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
 
+// Direct Supabase REST URL for fetching all assets (bypasses SDK's default 500-row range limit)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
 const ALL_WIDGETS = [
   { id:'stats',       label:'Summary stats',        default:true },
   { id:'alerts',      label:'Alerts & warnings',    default:true },
@@ -54,8 +58,7 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }, { data: lic }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
+    const [{ data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }, { data: lic }] = await Promise.all([
       supabase.from('licenses').select('*'),
       supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),
@@ -66,7 +69,29 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('assets').select('asset_tag,model,category,purchase_date,status').not('purchase_date','is',null).eq('status','Checked Out').limit(500),
       supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
-    setAssets(a || [])
+
+    // Fetch ALL assets via direct REST call (bypasses Supabase JS SDK's default 500-row range limit)
+    const assetsUrl = `${SUPABASE_URL}/rest/v1/assets?select=*&order=created_at.desc`
+    let allAssetData
+    try {
+      const resp = await fetch(assetsUrl, {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'count=exact',
+          'Range': '[0--1]',
+          'Range-Unit': 'rows',
+          'Range-Regex': '\\[(\\d+)-(\\d+)\\]\\/(\\d+)',
+          'Content-Type': 'application/json',
+        },
+      })
+      allAssetData = await resp.json()
+    } catch (err) {
+      console.error('[Home] Fetch assets error:', err)
+      allAssetData = []
+    }
+    setAssets(allAssetData || [])
     setLicenses(l || [])
     setLog(lg || [])
     setSites(s || [])
