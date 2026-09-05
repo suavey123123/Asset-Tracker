@@ -236,8 +236,13 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     }
   }, [])
 
+  const editAssetPropRef = useRef(null)
   useEffect(() => {
-    if (editAssetProp) { openEditModal(editAssetProp); onEditDone?.() }
+    if (editAssetProp && editAssetPropRef.current?.id !== editAssetProp.id) {
+      openEditModal(editAssetProp)
+      onEditDone?.()
+    }
+    editAssetPropRef.current = editAssetProp
   }, [editAssetProp])
 
   async function fetchLicenses() {
@@ -288,9 +293,17 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
 
   function openEditModal(asset) {
+    const currentPage = page
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', seat_number:asset.seat_number||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
+    // Restore the page (setForm can trigger re-render that resets page to 1)
+    setTimeout(() => {
+      if (currentPage > 1) {
+        setPage(currentPage)
+        sessionStorage.setItem('inv_page', String(currentPage))
+      }
+    }, 0)
   }
 
   function duplicateAsset(asset) {
