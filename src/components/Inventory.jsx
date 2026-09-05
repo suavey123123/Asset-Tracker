@@ -95,6 +95,9 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   // Track page before filter effect — moved above filter effect so it's available
   const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
+  const currentPageRef = useRef(1)
+  // Keep ref in sync with page state
+  useEffect(() => { currentPageRef.current = page }, [page])
   const filterResetGuard = useRef(false)
   // Reset page on filter changes — skip reset while edit modal is opening
   useEffect(() => {
@@ -300,10 +303,17 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
 
   function openEditModal(asset) {
+    // Save current page in ref BEFORE triggering re-render
+    const savedPage = currentPageRef.current
     filterResetGuard.current = true
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', seat_number:asset.seat_number||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
+    // Restore page after modal opens (filter effect may have reset it)
+    setTimeout(() => {
+      setPage(savedPage)
+      sessionStorage.setItem('inv_page', String(savedPage))
+    }, 0)
   }
 
   // Clear the filter guard once the modal is open
