@@ -66,41 +66,22 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
 
-    // Fetch ALL assets via REST API with batch pagination (Supabase SDK defaults to Range: rows=0-999)
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-    const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-    const assetsUrl = `${SUPABASE_URL}/rest/v1/assets?select=*&order=created_at.desc`
+    // Fetch ALL assets in batches (Supabase SDK defaults to Range: rows=0-999)
+    // Use .range() to set the range, then loop to get all data
     let allAssetData = []
-    try {
-      let offset = 0
-      const PAGE = 1000
-      let data
-      do {
-        const headers = {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Prefer': 'count=exact',
-          'Content-Type': 'application/json',
-        }
-        // Try Range header first. If CORS blocks it (preflight), fall back to no-range batch.
-        let resp
-        try {
-          headers['Range'] = `rows=${offset}--1`
-          headers['Range-Unit'] = 'rows'
-          resp = await fetch(assetsUrl, { headers })
-        } catch {
-          // CORS preflight failed, fall back to no-range
-          delete headers['Range']
-          delete headers['Range-Unit']
-          resp = await fetch(assetsUrl, { headers })
-        }
-        data = await resp.json() || []
-        allAssetData = [...allAssetData, ...data]
-        offset += PAGE
-      } while (data.length >= PAGE && allAssetData.length < 100000)
-    } catch (err) {
-      console.error('[Home] Fetch assets error:', err)
-    }
+    let offset = 0
+    let batch
+    do {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('*')
+        .range(offset, offset + 9999)
+        .order('created_at', { ascending: false })
+      if (error) { console.error('[Home] Fetch error:', error); break }
+      batch = data || []
+      allAssetData = [...allAssetData, ...batch]
+      offset += 10000
+    } while (batch.length >= 10000 && allAssetData.length < 500000)
     setAssets(allAssetData || [])
     setLicenses(l || [])
     setLog(lg || [])
