@@ -66,27 +66,40 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
 
-    // Fetch ALL assets via direct REST call
-    // Use Range: rows=0--1 (PostgREST format) to fetch every row without a limit
+    // Fetch ALL assets via REST API with batch pagination (Supabase SDK defaults to Range: rows=0-999)
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
     const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
     const assetsUrl = `${SUPABASE_URL}/rest/v1/assets?select=*&order=created_at.desc`
-    let allAssetData
+    let allAssetData = []
     try {
-      const resp = await fetch(assetsUrl, {
-        headers: {
+      let offset = 0
+      const PAGE = 1000
+      let data
+      do {
+        const headers = {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
           'Prefer': 'count=exact',
-          'Range': 'rows=0--1',
-          'Range-Unit': 'rows',
           'Content-Type': 'application/json',
-        },
-      })
-      allAssetData = await resp.json()
+        }
+        // Try Range header first. If CORS blocks it (preflight), fall back to no-range batch.
+        let resp
+        try {
+          headers['Range'] = `rows=${offset}--1`
+          headers['Range-Unit'] = 'rows'
+          resp = await fetch(assetsUrl, { headers })
+        } catch {
+          // CORS preflight failed, fall back to no-range
+          delete headers['Range']
+          delete headers['Range-Unit']
+          resp = await fetch(assetsUrl, { headers })
+        }
+        data = await resp.json() || []
+        allAssetData = [...allAssetData, ...data]
+        offset += PAGE
+      } while (data.length >= PAGE && allAssetData.length < 100000)
     } catch (err) {
       console.error('[Home] Fetch assets error:', err)
-      allAssetData = []
     }
     setAssets(allAssetData || [])
     setLicenses(l || [])
