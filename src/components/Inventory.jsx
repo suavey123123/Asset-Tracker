@@ -93,21 +93,17 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [filterTag, setFilterTag] = useState('')
   const [allTags, setAllTags] = useState([])
 
-  const isModalOpenRef = useRef(false)
-  // Reset page on filter changes — skip reset while modal is opening
-  const [lastKnownPage, setLastKnownPage] = useState(page)
-  useEffect(() => { setLastKnownPage(page) }, [page])
+  // Track page before filter effect — moved above filter effect so it's available
+  const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
+  const filterResetGuard = useRef(false)
+  // Reset page on filter changes — skip reset while edit modal is opening
   useEffect(() => {
-    if (!isModalOpenRef.current) {
-      console.log('[Inventory] filter effect resetting page to 1, was on', lastKnownPage)
+    if (!filterResetGuard.current) {
       setPage(1)
       sessionStorage.setItem('inv_page','1')
-    } else {
-      console.log('[Inventory] filter effect SKIPPED (modal open), was on page', lastKnownPage)
     }
   }, [filterStatus, filterCat, filterTag, filterSite, filterAssigned, filterModels, search])
   const [assetPhotos, setAssetPhotos] = useState({})
-  const [page, setPage] = useState(() => parseInt(sessionStorage.getItem('inv_page') || '1'))
   const [showAll, setShowAll] = useState(false)
   const PAGE_SIZE = 25
   const [savedFilters, setSavedFilters] = useState(() => {
@@ -304,18 +300,16 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   function openAdd() { setEditAsset(null); setForm(EMPTY_FORM); setFormLicenses([]); setError(''); setModalOpen(true) }
 
   function openEditModal(asset) {
-    // Guard the filter useEffect from resetting page while modal opens
-    isModalOpenRef.current = true
-    console.log('[Inventory] openEditModal: page was', page, 'ref set to true')
+    filterResetGuard.current = true
     setEditAsset(asset)
     setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', seat_number:asset.seat_number||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
     setFormLicenses([]); setError(''); setModalOpen(true)
   }
 
-  // Restore page after modal opens (filter useEffect is guarded by ref, so page won't reset during render)
+  // Clear the filter guard once the modal is open
   useEffect(() => {
-    if (modalOpen && isModalOpenRef.current) {
-      isModalOpenRef.current = false
+    if (modalOpen && filterResetGuard.current) {
+      filterResetGuard.current = false
     }
   }, [modalOpen])
 
