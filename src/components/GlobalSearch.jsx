@@ -9,6 +9,7 @@ export default function GlobalSearch({ onViewAsset }) {
   const [licenses, setLicenses] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [empIdToName, setEmpIdToName] = useState({})
   const ref = useRef(null)
   const timer = useRef(null)
 
@@ -18,6 +19,15 @@ export default function GlobalSearch({ onViewAsset }) {
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Fetch employees to resolve assigned_to IDs to names
+  useEffect(() => {
+    supabase.from('employees').select('id, name').then(({ data }) => {
+      const map = {}
+      data?.forEach(e => { map[e.id] = e.name })
+      setEmpIdToName(map)
+    })
   }, [])
 
   useEffect(() => {
@@ -128,26 +138,20 @@ export default function GlobalSearch({ onViewAsset }) {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {(() => {
-                        const tag = (a.asset_tag || '').trim().toUpperCase()
-                        const name = (a.name || '').trim()
-                        if (!tag || !name) return name
-                        // Strip trailing tag from name to avoid duplication
-                        const nameUpper = name.toUpperCase()
-                        if (nameUpper.endsWith(tag)) {
-                          const stripped = name.slice(0, -tag.length).trim()
-                          return stripped || name
-                        }
-                        // Strip leading tag from name
-                        if (nameUpper.startsWith(tag + ' ')) {
-                          return name.slice(tag.length + 1).trim()
-                        }
-                        return name
-                      })()}
+                      {a.model && a.model !== a.asset_tag ? a.model : a.name}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
-                    </div>
+                    {a.name !== a.asset_tag && (
+                      <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
+                        {a.asset_tag}
+                        {a.location ? ` · ${a.location}` : ''}
+                        {a.assigned_to ? ` · ${a.assigned_to}` : ''}
+                      </div>
+                    )}
+                    {a.name === a.asset_tag && (
+                      <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
+                        {a.location ? `${a.location} · ` : ''}{a.assigned_to || ''}
+                      </div>
+                    )}
                   </div>
                   <Badge status={a.status} />
                 </div>
