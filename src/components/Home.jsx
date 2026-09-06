@@ -12,7 +12,7 @@ function getEmpLookup() {
   return {}
 }
 
-export default function Home({ onNav, onViewAsset }) {
+const ALL_WIDGETS = [
   { id:'stats',       label:'Summary stats',        default:true },
   { id:'alerts',      label:'Alerts & warnings',    default:true },
   { id:'recent',      label:'Recent assets',         default:true },
