@@ -140,16 +140,9 @@ export default function GlobalSearch({ onViewAsset }) {
                     <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {a.model && a.model !== a.asset_tag ? a.model : a.name}
                     </div>
-                    {a.name !== a.asset_tag && (
+                    {(a.name !== a.asset_tag || a.model !== a.asset_tag) && (
                       <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                        {a.asset_tag}
-                        {a.location ? ` · ${a.location}` : ''}
-                        {a.assigned_to ? ` · ${a.assigned_to}` : ''}
-                      </div>
-                    )}
-                    {a.name === a.asset_tag && (
-                      <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                        {a.location ? `${a.location} · ` : ''}{a.assigned_to || ''}
+                        {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to ? ` · ${a.assigned_to}` : ''}
                       </div>
                     )}
                   </div>
