@@ -2,7 +2,17 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
 
-const ALL_WIDGETS = [
+const EMP_CACHE_KEY = 'home_emp_lookup'
+
+function getEmpLookup() {
+  try {
+    const saved = localStorage.getItem(EMP_CACHE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return {}
+}
+
+export default function Home({ onNav, onViewAsset }) {
   { id:'stats',       label:'Summary stats',        default:true },
   { id:'alerts',      label:'Alerts & warnings',    default:true },
   { id:'recent',      label:'Recent assets',         default:true },
@@ -29,6 +39,7 @@ export default function Home({ onNav, onViewAsset }) {
   const [sites, setSites] = useState([])
   const [employees, setEmployees] = useState([])
   const [consumables, setConsumables] = useState([])
+  const [empLookup] = useState(getEmpLookup)
   const [schedules, setSchedules] = useState([])
   const [requests, setRequests] = useState([])
   const [agingAssets, setAgingAssets] = useState([])
@@ -87,6 +98,14 @@ export default function Home({ onNav, onViewAsset }) {
     setLog(lg || [])
     setSites(s || [])
     setEmployees(e || [])
+    // Cache employee lookup for resolving assigned_to UUIDs
+    if (e) {
+      try {
+        const map = {}
+        e.forEach(emp => { map[emp.id] = emp.name })
+        localStorage.setItem(EMP_CACHE_KEY, JSON.stringify(map))
+      } catch {}
+    }
     setConsumables(c || [])
     setSchedules(ms || [])
     setRequests(rq || [])

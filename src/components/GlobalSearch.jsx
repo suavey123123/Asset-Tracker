@@ -129,7 +129,7 @@ export default function GlobalSearch({ onViewAsset }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to && a.assigned_to !== a.asset_tag ? ` · ${a.assigned_to}` : ''}
+                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
                     </div>
                   </div>
                   <Badge status={a.status} />
