@@ -127,7 +127,14 @@ export default function GlobalSearch({ onViewAsset }) {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {a.name && a.name !== a.asset_tag ? (
+                    {a.model && a.model !== a.asset_tag ? (
+                      <>
+                        <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.model}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
+                          {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
+                        </div>
+                      </>
+                    ) : a.name && a.name !== a.asset_tag ? (
                       <>
                         <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
