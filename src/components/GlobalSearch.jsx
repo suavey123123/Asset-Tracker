@@ -127,7 +127,18 @@ export default function GlobalSearch({ onViewAsset }) {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(() => {
+                        const tag = (a.asset_tag || '').trim().toUpperCase()
+                        const name = (a.name || '').trim()
+                        // Strip the tag from the name if it appears at the end
+                        if (name.toUpperCase().endsWith(tag)) {
+                          const stripped = name.slice(0, -tag.length).trim()
+                          return stripped || name // fall back to full name if stripping leaves nothing
+                        }
+                        return name
+                      })()}
+                    </div>
                     <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
                       {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
                     </div>
