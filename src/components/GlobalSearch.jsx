@@ -127,23 +127,27 @@ export default function GlobalSearch({ onViewAsset }) {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {a.model && a.model !== a.asset_tag ? (
-                      <>
-                        <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.model}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                          {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
-                        </div>
-                      </>
-                    ) : a.name && a.name !== a.asset_tag ? (
-                      <>
-                        <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                          {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_tag}</div>
-                    )}
+                    <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(() => {
+                        const tag = (a.asset_tag || '').trim().toUpperCase()
+                        const name = (a.name || '').trim()
+                        if (!tag || !name) return name
+                        // Strip trailing tag from name to avoid duplication
+                        const nameUpper = name.toUpperCase()
+                        if (nameUpper.endsWith(tag)) {
+                          const stripped = name.slice(0, -tag.length).trim()
+                          return stripped || name
+                        }
+                        // Strip leading tag from name
+                        if (nameUpper.startsWith(tag + ' ')) {
+                          return name.slice(tag.length + 1).trim()
+                        }
+                        return name
+                      })()}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
+                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}
+                    </div>
                   </div>
                   <Badge status={a.status} />
                 </div>

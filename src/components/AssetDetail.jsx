@@ -133,7 +133,16 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         <Btn onClick={onBack} size="sm">← Back</Btn>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:18, fontWeight:500 }}>
-            {asset.model && asset.model !== asset.asset_tag ? asset.model : asset.name}
+            {(() => {
+              const tag = (asset.asset_tag || '').trim().toUpperCase()
+              const name = (asset.name || '').trim()
+              // Strip trailing tag from name to avoid duplication
+              if (tag && name && name.toUpperCase().endsWith(tag)) {
+                const stripped = name.slice(0, -tag.length).trim()
+                return stripped || name
+              }
+              return name
+            })()}
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:4 }}>
             <span style={{ fontFamily:'var(--mono)', fontSize:12, color:'var(--text2)' }}>{asset.asset_tag}</span>

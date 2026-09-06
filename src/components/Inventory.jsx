@@ -754,7 +754,14 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                    <div style={{ flex:1, minWidth:0 }}>
                      <button onClick={()=>onViewAsset?.(a)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left', fontFamily:'var(--font)' }}>
                        <div style={{ fontWeight:500, fontSize:13, color:'var(--accent)', fontFamily:'var(--mono)' }}>{a.asset_tag}</div>
-                       <div style={{ fontSize:13, color:'var(--text)', marginTop:2 }}>{a.model || <span style={{ color:'var(--text3)' }}>—</span>}</div>
+                       <div style={{ fontSize:13, color:'var(--text)', marginTop:2 }}>
+                         {(() => {
+                           const tag = (a.asset_tag || '').trim().toUpperCase()
+                           const m = (a.model || '').trim()
+                           if (tag && m && m.toUpperCase() === tag) return <span style={{ color:'var(--text3)' }}>—</span>
+                           return a.model || <span style={{ color:'var(--text3)' }}>—</span>
+                         })()}
+                       </div>
                      </button>
                    </div>
                    <Badge status={a.status} />
