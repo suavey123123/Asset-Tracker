@@ -38,8 +38,7 @@ export default function GlobalSearch({ onViewAsset }) {
       const [{ data: rawAssets }, { data: emps }, { data: lics }, { data: matchEmps }] = await Promise.all([
         // Search assets by name, tag, model, serial, location, AND assigned_to name
         supabase.from('assets').select('id, asset_tag, name, model, status, category, location, assigned_to')
-          .or(`name.ilike.%${query}%,asset_tag.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%,location.ilike.%${query}%,assigned_to.ilike.%${query}%`)
-          .limit(20),
+          .or(`name.ilike.%${query}%,asset_tag.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%,location.ilike.%${query}%,assigned_to.ilike.%${query}%`),
         // Search employees by name, email
         supabase.from('employees').select('id, name, email, department').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(5),
         // Search licenses by name, vendor
@@ -102,8 +101,9 @@ export default function GlobalSearch({ onViewAsset }) {
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
           background: 'var(--bg2)', border: '1px solid var(--border2)',
-          borderRadius: 'var(--radius-lg)', zIndex: 500, overflow: 'hidden',
+          borderRadius: 'var(--radius-lg)', zIndex: 500,
           boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          ...(totalResults > 10 ? { maxHeight: '500px', overflowY: 'auto' } : {}),
         }}>
           {/* Employee results */}
           {employees.length > 0 && (
@@ -163,6 +163,18 @@ export default function GlobalSearch({ onViewAsset }) {
               ))}
             </div>
           )}
+
+          {/* Result count */}
+          <div style={{
+            padding: '6px 14px',
+            borderTop: '1px solid var(--border)',
+            fontSize: 11,
+            color: 'var(--text3)',
+            fontFamily: 'var(--mono)',
+            textAlign: 'center',
+          }}>
+            {totalResults} result{totalResults !== 1 ? 's' : ''}
+          </div>
         </div>
       )}
 
