@@ -25,7 +25,7 @@ export default function CustomFields({ assetId, category, readOnly }) {
 
   async function fetchFields() {
     setLoading(true)
-    const { data } = await supabase.from('asset_custom_fields').select('*').eq('asset_id', assetId).order('field_key')
+    const { data } = await supabase.from('asset_custom_fields').select('id,asset_id,field_key,field_value,created_at').eq('asset_id', assetId).order('field_key')
     setFields(data || [])
     setLoading(false)
   }

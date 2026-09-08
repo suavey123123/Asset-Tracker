@@ -32,7 +32,7 @@ export default function Licenses() {
   async function fetchLicenses() {
     setLoading(true)
     const [{ data: l }, { data: a }] = await Promise.all([
-      supabase.from('licenses').select('*').order('name'),
+      supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
       supabase.from('asset_license_assignments').select('*, asset:asset_id(id, name, asset_tag, assigned_to)'),
     ])
     setLicenses(l || [])

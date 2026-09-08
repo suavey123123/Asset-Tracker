@@ -52,6 +52,7 @@ export default function Home({ onNav, onViewAsset }) {
       return saved ? JSON.parse(saved) : ALL_WIDGETS.filter(w=>w.default).map(w=>w.id)
     } catch { return ALL_WIDGETS.filter(w=>w.default).map(w=>w.id) }
   })
+  const [fetchedAllAssets, setFetchedAllAssets] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets)) } catch {}
@@ -65,36 +66,39 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: l }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }, { data: lic }] = await Promise.all([
-      supabase.from('licenses').select('*'),
-      supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(8),
+    const [{ data: allLicenses }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }] = await Promise.all([
+      supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
+      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),
       supabase.from('employees').select('id, name, site_id'),
-      supabase.from('consumables').select('*').order('name'),
-      supabase.from('maintenance_schedules').select('*'),
-      supabase.from('asset_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('consumables').select('id,name,quantity,low_stock_threshold,category,unit').order('name'),
+      supabase.from('maintenance_schedules').select('id,asset_tag,maintenance_type,next_due'),
+      supabase.from('asset_requests').select('id,name,requester_name,status,priority,category,urgency,notes,created_at,updated_at').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('assets').select('asset_tag,model,category,purchase_date,status').not('purchase_date','is',null).eq('status','Checked Out').limit(500),
-      supabase.from('licenses').select('*').not('expiry_date','is',null).order('expiry_date'),
     ])
 
-    // Fetch ALL assets in batches (Supabase SDK defaults to Range: rows=0-999)
-    // Use .range() to set the range, then loop to get all data
-    let allAssetData = []
-    let offset = 0
-    let batch
-    do {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('*')
-        .range(offset, offset + 9999)
-        .order('created_at', { ascending: false })
-      if (error) { console.error('[Home] Fetch error:', error); break }
-      batch = data || []
-      allAssetData = [...allAssetData, ...batch]
-      offset += 10000
-    } while (batch.length >= 10000 && allAssetData.length < 500000)
-    setAssets(allAssetData || [])
-    setLicenses(l || [])
+    // Fetch ALL assets in batches only on first load (not on every 30s poll).
+    // Subsequent polls update widgets (alerts, licenses, consumables, etc.)
+    // without re-fetching the entire assets table.
+    if (!fetchedAllAssets) {
+      let allAssetData = []
+      let offset = 0
+      let batch
+      do {
+        const { data, error } = await supabase
+          .from('assets')
+          .select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location')
+          .range(offset, offset + 9999)
+          .order('created_at', { ascending: false })
+        if (error) { console.error('[Home] Fetch error:', error); break }
+        batch = data || []
+        allAssetData = [...allAssetData, ...batch]
+        offset += 10000
+      } while (batch.length >= 10000 && allAssetData.length < 500000)
+      setAssets(allAssetData || [])
+      setFetchedAllAssets(true)
+    }
+    setLicenses(allLicenses || [])
     setLog(lg || [])
     setSites(s || [])
     setEmployees(e || [])
@@ -113,7 +117,7 @@ export default function Home({ onNav, onViewAsset }) {
       const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
       return yrs >= 3
     }).sort((a,b)=>new Date(a.purchase_date)-new Date(b.purchase_date)))
-    setExpiringLicensesList((lic||[]).filter(l => {
+    setExpiringLicensesList((allLicenses||[]).filter(l => {
       const days = (new Date(l.expiry_date)-Date.now())/(1000*60*60*24)
       return days <= 90
     }))

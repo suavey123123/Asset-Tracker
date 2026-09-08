@@ -90,7 +90,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   async function fetchAll() {
     setLoading(true)
     const [{ data: e }, { data: a }, { data: s }] = await Promise.all([
-      supabase.from('employees').select('*').order('name'),
+      supabase.from('employees').select('id,name,email,department,title,phone,site_id,tenant_id').order('name'),
       supabase.from('assets').select('id, name, asset_tag, category, status, assigned_to').eq('status', 'Checked Out'),
       supabase.from('sites').select('id, name').order('name'),
     ])
@@ -103,7 +103,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   function openAdd() { setEditEmp(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
   async function fetchEmpHistory(emp) {
     const [{ data: log }, { data: current }] = await Promise.all([
-      supabase.from('activity_log').select('*').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(50),
+      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(50),
       supabase.from('assets').select('id, asset_tag, model, category, status, purchase_date').eq('assigned_to', emp.name),
     ])
     setEmpHistory({ log: log || [], current: current || [] })
@@ -169,7 +169,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   }
 
   async function exportEmployeesAssets() {
-    const { data: allAssets } = await supabase.from('assets').select('*').limit(2000)
+    const { data: allAssets } = await supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location').limit(2000)
     const filteredAssets = (allAssets||[]).filter(a => {
       if (exportSite && a.location !== exportSite) return false
       if (exportCategory && a.category?.toUpperCase() !== exportCategory.toUpperCase()) return false

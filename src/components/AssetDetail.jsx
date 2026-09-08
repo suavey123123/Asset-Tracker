@@ -40,9 +40,9 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).eq('id', assetId).single(),
-      supabase.from('activity_log').select('*').eq('asset_id', assetId).order('created_at', { ascending: false }),
-      supabase.from('maintenance_records').select('*').eq('asset_id', assetId).order('performed_date', { ascending: false }),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at').eq('id', assetId).single(),
+      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
+      supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
     ])
     setAsset(a); setLog(l || []); setMaintenance(m || [])
     setQuickNote(a?.quick_note || '')

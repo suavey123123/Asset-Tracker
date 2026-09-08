@@ -29,7 +29,7 @@ export default function Consumables() {
 
   async function fetchItems() {
     setLoading(true)
-    const { data } = await supabase.from('consumables').select('*').order('name')
+    const { data } = await supabase.from('consumables').select('id,name,quantity,low_stock_threshold,category,unit,tenant_id').order('name')
     setItems(data || [])
     setLoading(false)
   }

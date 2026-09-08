@@ -77,8 +77,8 @@ export default function Transfer({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: t }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).eq('status', 'Checked Out').order('name'),
-      supabase.from('asset_transfers').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,assigned_to,expected_return,site_id,location,assigned_to_team').limit(500).eq('status', 'Checked Out').order('name'),
+      supabase.from('asset_transfers').select('id,asset_id,from_employee,to_employee,reason,status,notes,created_at,updated_at').order('created_at', { ascending: false }).limit(50),
     ])
     setAssets(a || [])
     setTransfers(t || [])

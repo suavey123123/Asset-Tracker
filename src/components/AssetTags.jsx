@@ -17,7 +17,7 @@ export default function AssetTags({ assetId }) {
 
   async function fetchTags() {
     setLoading(true)
-    const { data } = await supabase.from('asset_tags').select('*').eq('asset_id', assetId).order('tag')
+    const { data } = await supabase.from('asset_tags').select('id,asset_id,tag,assigned_to,created_at').eq('asset_id', assetId).order('tag')
     setTags(data || [])
     setLoading(false)
   }

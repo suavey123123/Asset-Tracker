@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import Sidebar from '../components/Sidebar'
@@ -82,7 +82,6 @@ export default function Dashboard() {
   const [viewingEmployee, setViewingEmployee] = useState(null)
   const [editAsset, setEditAsset] = useState(null)
   const [alerts, setAlerts] = useState(0)
-  const [lastRefreshed, setLastRefreshed] = useState(null)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light')
 
   useEffect(() => {
@@ -129,32 +128,33 @@ export default function Dashboard() {
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
-  const PAGE = {
-    home: <Home onNav={handleNav} onViewAsset={handleViewAsset} />,
-    inventory: <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />,
-    checkout: <Checkout onViewAsset={handleViewAsset} />,
-    transfer: <Transfer onViewAsset={handleViewAsset} />,
-    maintenance: <Maintenance />,
-    history: <History onViewAsset={handleViewAsset} />,
-    users: isAdmin ? <Users /> : null,
-    reports: <Reports onViewAsset={(asset) => { handleViewAsset(asset) }} />,
-    settings: <Settings />,
-    scanner: <Scanner onViewAsset={handleViewAsset} />,
-    lifecycle: <Lifecycle onViewAsset={handleViewAsset} />,
-    employees: <Employees onViewAsset={handleViewAsset} highlightEmployee={viewingEmployee} onClearHighlight={()=>setViewingEmployee(null)} />,
-    offboarding: <Offboarding />,
-    requests: <AssetRequests />,
-    scheduled: <ScheduledMaintenance onViewAsset={handleViewAsset} />,
-    sites: <Sites />,
-    licenses: <Licenses />,
-    compliance: <Compliance />,
-    tenants: <Tenants />,
-    qrlabels: <QRLabels />,
-    reportbuilder: <ReportBuilder />,
-    consumables: <Consumables />,
-    valuedashboard: <ValueDashboard />,
-
-  }
+  // Memoized tab content — only remounts when tab/viewingAsset changes, not on arbitrary state updates (lastRefreshed, alerts, etc.)
+  const activePage = useMemo(() => {
+    if (tab === 'home' && !viewingAsset) return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
+    if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />
+    if (tab === 'checkout') return <Checkout onViewAsset={handleViewAsset} />
+    if (tab === 'transfer') return <Transfer onViewAsset={handleViewAsset} />
+    if (tab === 'maintenance') return <Maintenance />
+    if (tab === 'history') return <History onViewAsset={handleViewAsset} />
+    if (tab === 'users' && isAdmin) return <Users />
+    if (tab === 'reports') return <Reports onViewAsset={handleViewAsset} />
+    if (tab === 'settings') return <Settings />
+    if (tab === 'scanner') return <Scanner onViewAsset={handleViewAsset} />
+    if (tab === 'lifecycle') return <Lifecycle onViewAsset={handleViewAsset} />
+    if (tab === 'employees') return <Employees onViewAsset={handleViewAsset} highlightEmployee={viewingEmployee} onClearHighlight={()=>setViewingEmployee(null)} />
+    if (tab === 'offboarding') return <Offboarding />
+    if (tab === 'requests') return <AssetRequests />
+    if (tab === 'scheduled') return <ScheduledMaintenance onViewAsset={handleViewAsset} />
+    if (tab === 'sites') return <Sites />
+    if (tab === 'licenses') return <Licenses />
+    if (tab === 'compliance') return <Compliance />
+    if (tab === 'tenants') return <Tenants />
+    if (tab === 'qrlabels') return <QRLabels />
+    if (tab === 'reportbuilder') return <ReportBuilder />
+    if (tab === 'consumables') return <Consumables />
+    if (tab === 'valuedashboard') return <ValueDashboard />
+    return null
+  }, [tab, viewingAsset])
 
   return (
     <ToastProvider>
@@ -186,11 +186,6 @@ export default function Dashboard() {
             )}
           </div>
           <GlobalSearch onViewAsset={handleViewAsset} />
-          {lastRefreshed && (
-            <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>
-              ↻ {Math.floor((new Date()-lastRefreshed)/60000) < 1 ? 'just now' : `${Math.floor((new Date()-lastRefreshed)/60000)}m ago`}
-            </span>
-          )}
           <NotificationCenter onNav={handleNav} onViewAsset={handleViewAsset} />
           <button onClick={()=>setShowShortcuts(s=>!s)} title="Keyboard shortcuts" style={{ fontSize:13, color:'var(--text3)', cursor:'pointer', padding:'4px 8px', border:'1px solid var(--border)', borderRadius:'var(--radius)', fontFamily:'var(--mono)', background:'none' }}>⌨</button>
 
@@ -220,10 +215,10 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        <div style={{ padding:'1rem 1rem' }}>
+        <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
           {viewingAsset ? (
             <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
-          ) : PAGE[tab]}
+          ) : activePage}
         </div>
       </main>
     </div>

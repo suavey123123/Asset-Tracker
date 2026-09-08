@@ -19,14 +19,14 @@ export default function Offboarding() {
   useEffect(() => { fetchEmployees() }, [])
 
   async function fetchEmployees() {
-    const { data } = await supabase.from('employees').select('*').order('name')
+    const { data } = await supabase.from('employees').select('id,name,email,department,title,phone').order('name')
     setEmployees(data || [])
   }
 
   async function selectEmployee(emp) {
     setSelected(emp); setDone(false); setLoading(true)
     const [{ data: a }, { data: l }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).eq('assigned_to', emp.name).eq('status', 'Checked Out'),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,serial_number').limit(500).eq('assigned_to', emp.name).eq('status', 'Checked Out'),
       supabase.from('asset_license_assignments').select('*, license:license_id(id, name, seats_used), asset:asset_id(name, asset_tag)').eq('assigned_to', emp.name),
     ])
     setAssets(a || [])

@@ -33,9 +33,9 @@ export default function Sites() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: s }, { data: a }, { data: e }] = await Promise.all([
-      supabase.from('sites').select('*').order('name'),
+      supabase.from('sites').select('id,name,accent_color,tenant_id').order('name'),
       supabase.from('assets').select('id, name, asset_tag, category, status, location, assigned_to'),
-      supabase.from('employees').select('*').order('name'),
+      supabase.from('employees').select('id,name,email,department,title,phone,site_id').order('name'),
     ])
     setSites(s || [])
     setAssets(a || [])

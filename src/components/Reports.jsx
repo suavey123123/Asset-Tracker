@@ -43,11 +43,11 @@ export default function Reports({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }, { data: r }, { data: lg }] = await Promise.all([
-      supabase.from('assets').select('*').order('created_at', { ascending: false }).limit(2000),
-      supabase.from('licenses').select('*').order('name'),
-      supabase.from('maintenance_records').select('*').order('performed_date', { ascending: false }),
-      supabase.from('asset_requests').select('*').order('created_at', { ascending: false }),
-      supabase.from('activity_log').select('*').order('created_at', { ascending: false }),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,location,purchase_cost').order('created_at', { ascending: false }).limit(2000),
+      supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
+      supabase.from('maintenance_records').select('id,asset_id,asset_tag,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').order('performed_date', { ascending: false }),
+      supabase.from('asset_requests').select('id,name,requester_name,status,priority,category,urgency,notes,created_at,updated_at').order('created_at', { ascending: false }),
+      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').order('created_at', { ascending: false }),
     ])
     setAssets(a || []); setLicenses(l || []); setMaintenance(m || [])
     setRequests(r || []); setLog(lg || [])

@@ -21,7 +21,7 @@ export default function AssetLicenses({ assetId }) {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: asset }] = await Promise.all([
       supabase.from('asset_license_assignments').select('*, license:license_id(*)').eq('asset_id', assetId),
-      supabase.from('licenses').select('*').order('name'),
+      supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
       supabase.from('assets').select('assigned_to').eq('id', assetId).single(),
     ])
     setAssigned(a || [])

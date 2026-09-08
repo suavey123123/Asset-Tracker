@@ -18,7 +18,7 @@ export default function AssetComments({ assetId }) {
     setLoading(true)
     const { data } = await supabase
       .from('asset_comments')
-      .select('*')
+      .select('id,asset_id,message,author,created_at')
       .eq('asset_id', assetId)
       .order('created_at', { ascending: false })
     setComments(data || [])

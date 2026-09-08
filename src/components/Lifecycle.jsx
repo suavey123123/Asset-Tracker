@@ -28,8 +28,8 @@ export default function Lifecycle({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).order('created_at', { ascending: false }).limit(500),
-      supabase.from('asset_lifecycle').select('*').order('changed_at', { ascending: true }),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date').order('created_at', { ascending: false }).limit(500),
+      supabase.from('asset_lifecycle').select('id,asset_id,asset_tag,asset_name,stage,notes,changed_by,changed_at').order('changed_at', { ascending: true }),
     ])
     setAssets(a || [])
     // Group lifecycle events by asset

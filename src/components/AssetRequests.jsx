@@ -81,7 +81,7 @@ export default function AssetRequests() {
 
   async function fetchRequests() {
     setLoading(true)
-    const { data } = await supabase.from('asset_requests').select('*').order('created_at', { ascending: false })
+    const { data } = await supabase.from('asset_requests').select('id,name,requester_name,status,priority,category,urgency,notes,created_at,updated_at').order('created_at', { ascending: false })
     setRequests(data || [])
     setLoading(false)
   }

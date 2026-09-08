@@ -256,7 +256,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   }, [editAssetProp])
 
   async function fetchLicenses() {
-    const { data } = await supabase.from('licenses').select('*').order('name')
+    const { data } = await supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name')
     setAllLicenses(data || [])
   }
 
@@ -294,7 +294,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   async function fetchAssets() {
     setLoading(true)
-    const { data, error } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('assets').select('id,asset_tag,name,category,status,model,serial_number,location,assigned_to,assigned_to_team,expected_return,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,tenant_id').order('created_at', { ascending: false })
     if (error) { setError(`Failed to load assets: ${error.message}`); setLoading(false); return }
     setAssets(data || [])
     setLoading(false)

@@ -38,7 +38,7 @@ export default function Users() {
 
   async function fetchUsers() {
     setLoading(true)
-    const { data } = await supabase.from('profiles').select('*').order('created_at')
+    const { data } = await supabase.from('profiles').select('id,email,role,full_name,notify_overdue,notify_warranty,created_at').order('created_at')
     setUsers(data || [])
     setLoading(false)
   }

@@ -35,7 +35,7 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      const { data, error } = await supabase.from('profiles').select('id,email,role,full_name,notify_overdue,notify_warranty,tenant_id').eq('id', userId).single()
       if (error) { console.error('fetchProfile error:', error.message); setLoading(false); return }
       if (data?.blocked) {
         await supabase.auth.signOut()
@@ -45,7 +45,7 @@ export function AuthProvider({ children }) {
       setProfile(data)
       // Load tenant info
       if (data?.tenant_id) {
-        const { data: t, error: te } = await supabase.from('tenants').select('*').eq('id', data.tenant_id).single()
+        const { data: t, error: te } = await supabase.from('tenants').select('id,name,slug,accent_color').eq('id', data.tenant_id).single()
         if (!te) setTenant(t)
       }
     } catch (e) {

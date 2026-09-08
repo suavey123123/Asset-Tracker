@@ -22,7 +22,7 @@ export default function Checkout() {
 
   async function fetchAssets() {
     setLoading(true)
-    const { data } = await supabase.from('assets').select('*').order('name')
+    const { data } = await supabase.from('assets').select('id,asset_tag,name,model,category,status,assigned_to,expected_return,site_id,location,assigned_to_team').order('name')
     setAssets(data || [])
     setLoading(false)
   }

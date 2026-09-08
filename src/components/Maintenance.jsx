@@ -20,7 +20,7 @@ export default function Maintenance() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: r }, { data: a }] = await Promise.all([
-      supabase.from('maintenance_records').select('*').order('performed_date', { ascending: false }),
+      supabase.from('maintenance_records').select('id,asset_id,asset_tag,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').order('performed_date', { ascending: false }),
       supabase.from('assets').select('id, asset_tag, name').order('name'),
     ])
     setRecords(r || [])

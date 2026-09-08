@@ -26,7 +26,7 @@ export default function History({ onViewAsset }) {
   async function fetchAll() {
     setLoading(true)
     const [{ data: l }, { data: a }] = await Promise.all([
-      supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(500),
+      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').order('created_at', { ascending: false }).limit(500),
       supabase.from('assets').select('id, asset_tag, name').order('name'),
     ])
     setLog(l || [])

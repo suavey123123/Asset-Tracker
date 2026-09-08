@@ -20,7 +20,7 @@ export default function Tenants() {
 
   async function fetchTenants() {
     setLoading(true)
-    const { data, error } = await supabase.from('tenants').select('*').order('name')
+    const { data, error } = await supabase.from('tenants').select('id,name,slug,accent_color,created_at').order('name')
     if (error) { console.error(error); setLoading(false); return }
     setTenants(data || [])
 

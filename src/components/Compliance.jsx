@@ -17,10 +17,10 @@ export default function Compliance() {
   async function fetchAll() {
     setLoading(true)
     const [{ data: a }, { data: l }, { data: m }, { data: e }] = await Promise.all([
-      supabase.from('assets').select('*').limit(500).order('name').limit(500),
-      supabase.from('licenses').select('*').order('name'),
-      supabase.from('maintenance_records').select('*'),
-      supabase.from('employees').select('*').order('name'),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,serial_number,purchase_cost').order('name').limit(500),
+      supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
+      supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system'),
+      supabase.from('employees').select('id,name,email,department,title,phone,site_id,tenant_id').order('name'),
     ])
     setAssets(a || [])
     setLicenses(l || [])
