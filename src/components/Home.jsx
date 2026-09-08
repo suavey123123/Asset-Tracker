@@ -52,17 +52,12 @@ export default function Home({ onNav, onViewAsset }) {
       return saved ? JSON.parse(saved) : ALL_WIDGETS.filter(w=>w.default).map(w=>w.id)
     } catch { return ALL_WIDGETS.filter(w=>w.default).map(w=>w.id) }
   })
-  const [fetchedAllAssets, setFetchedAllAssets] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets)) } catch {}
   }, [widgets])
 
-  useEffect(() => {
-    fetchAll()
-    const interval = setInterval(fetchAll, 30000) // refresh every 30s
-    return () => clearInterval(interval)
-  }, [])
+  useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
@@ -77,27 +72,23 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('assets').select('asset_tag,model,category,purchase_date,status').not('purchase_date','is',null).eq('status','Checked Out').limit(500),
     ])
 
-    // Fetch ALL assets in batches only on first load (not on every 30s poll).
-    // Subsequent polls update widgets (alerts, licenses, consumables, etc.)
-    // without re-fetching the entire assets table.
-    if (!fetchedAllAssets) {
-      let allAssetData = []
-      let offset = 0
-      let batch
-      do {
-        const { data, error } = await supabase
-          .from('assets')
-          .select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location')
-          .range(offset, offset + 9999)
-          .order('created_at', { ascending: false })
-        if (error) { console.error('[Home] Fetch error:', error); break }
-        batch = data || []
-        allAssetData = [...allAssetData, ...batch]
-        offset += 10000
-      } while (batch.length >= 10000 && allAssetData.length < 500000)
-      setAssets(allAssetData || [])
-      setFetchedAllAssets(true)
-    }
+    // Fetch ALL assets in one batch on mount (up to 10k rows).
+    // No polling — data is current as of page load.
+    let allAssetData = []
+    let offset = 0
+    let batch
+    do {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location')
+        .range(offset, offset + 9999)
+        .order('created_at', { ascending: false })
+      if (error) { console.error('[Home] Fetch error:', error); break }
+      batch = data || []
+      allAssetData = [...allAssetData, ...batch]
+      offset += 10000
+    } while (batch.length >= 10000 && allAssetData.length < 500000)
+    setAssets(allAssetData || [])
     setLicenses(allLicenses || [])
     setLog(lg || [])
     setSites(s || [])
