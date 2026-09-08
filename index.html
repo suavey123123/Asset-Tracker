@@ -9,17 +9,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <!-- Unregister old service workers BEFORE React loads (ES module imports are deferred) -->
+
+    <!-- Kill old service workers BEFORE React loads -->
     <script>
       if ('serviceWorker' in navigator) {
+        // Immediately kill any active controller
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SHUTDOWN' })
+          navigator.serviceWorker.controller.postMessage({ type: 'KILL' })
+          // Force navigation reload to purge the SW
+          if (location.hash.indexOf('#nosw') === -1) {
+            window.location.replace(location.pathname + '#nosw')
+          }
+        }
+        // Unregister all service workers
         navigator.serviceWorker.getRegistrations().then(function(regs) {
           for (var i = 0; i < regs.length; i++) { regs[i].unregister() }
+          // Also wipe all caches
+          caches.keys().then(function(names) {
+            for (var j = 0; j < names.length; j++) { caches.delete(names[j]) }
+          }).catch(function() {})
         }).catch(function() {})
       }
+      console.log('[SW-KILL] Service worker cleanup initiated')
     </script>
+    <script type="module" src="/src/main.jsx"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

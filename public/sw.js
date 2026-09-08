@@ -1,8 +1,13 @@
-// This file intentionally returns nothing.
-// Previously a service worker that caused page reload loops on Vercel.
-// The SW registration was removed in main.jsx. The browser may still have
-// cached SW registrations from older deployments — those will expire and
-// be garbage-collected by the browser automatically over time.
+// DEPRECATED — was causing page reload loops on Vercel.
+// This SW must NOT be registered. If the browser finds this file,
+// it should be killed by the kill script in index.html.
 //
-// DO NOT restore this file. If someone needs offline support, use a
-// proper approach: workbox, cache-busting, and no clients.claim().
+// Accept SHUTDOWN/KILL messages and terminate.
+self.addEventListener('message', function(e) {
+  if (e.data && (e.data.type === 'SHUTDOWN' || e.data.type === 'KILL')) {
+    // Force self-termination — this tells the browser to abandon this SW
+    try { self.skipWaiting() } catch(e) {}
+    // We cannot truly kill ourselves, but we can stop responding to fetch
+    self.addEventListener('fetch', function() {}, { once: true })
+  }
+})
