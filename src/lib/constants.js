@@ -1,3 +1,4 @@
+// ── Categories & Statuses ────────────────────────────────────────────
 export const IT_CATEGORIES = [
   'AIR CONDITIONER',
   'AIR PURIFIER',
@@ -34,10 +35,7 @@ export const IT_CATEGORIES = [
   'WEBCAM',
 ]
 
-export const TOOL_CATEGORIES = [
-  'Tools & Equipment',
-]
-
+export const TOOL_CATEGORIES = ['Tools & Equipment']
 export const ALL_CATEGORIES = [...IT_CATEGORIES, ...TOOL_CATEGORIES]
 
 export const STATUSES = [
@@ -49,7 +47,7 @@ export const STATUSES = [
   'Retired',
 ]
 
-// Spec fields that appear when adding/editing assets by category
+// ── Spec fields for tech categories ──────────────────────────────────
 export const SPEC_FIELDS = {
   default: [],
   tech: [
@@ -66,8 +64,33 @@ export const SPEC_FIELDS = {
   ],
 }
 
-// Which categories get tech spec fields
 export const TECH_SPEC_CATEGORIES = [
   'LAPTOP', 'DESKTOP', 'TABLET', 'PHONE', 'AR HEADSET',
   'HOTSPOT DEVICE', 'ROUTER', 'STREAMING DEVICE', 'VC', 'MONITOR', 'TV', 'PROJECTOR',
 ]
+
+// ── Storage key prefixes ─────────────────────────────────────────────
+// All app localStorage/sessionStorage keys live here to avoid duplication.
+export const STORAGE_KEYS = {
+  // Inventory
+  inv_search: 'inv_search',
+  inv_status: 'inv_status',
+  inv_cat: 'inv_cat',
+  inv_site: 'inv_site',
+  inv_assigned: 'inv_assigned',
+  inv_models: 'inv_models',
+  inv_page: 'inv_page',
+  inv_sort_col: 'inv_sort_col',
+  inv_sort_dir: 'inv_sort_dir',
+  inventory_filters: 'inventory_filters',
+  inventory_cols: 'inventory_cols',
+  // Employees
+  emp_cols: 'emp_cols',
+  // Home / Dashboard
+  dashboard_widgets: 'dashboard_widgets_v1',
+  emp_lookup: 'home_emp_lookup',
+  // Theme
+  theme: 'theme',
+  // Asset tags
+  asset_tags: 'asset_tags',
+}

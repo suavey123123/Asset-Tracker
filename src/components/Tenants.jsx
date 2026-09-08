@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Btn, Spinner, Modal, FormField, EmptyState } from './UI'
@@ -24,11 +24,16 @@ export default function Tenants() {
     if (error) { console.error(error); setLoading(false); return }
     setTenants(data || [])
 
-    // Use SQL to get counts across all tenants bypassing RLS
+    // Fetch stats for all tenants in parallel (not sequentially).
     const statsObj = {}
-    for (const t of (data || [])) {
-      const { data: counts } = await supabase.rpc('get_tenant_stats', { p_tenant_id: t.id })
-      statsObj[t.id] = counts?.[0] || { assets: 0, emps: 0 }
+    if (data?.length) {
+      const results = await Promise.all(
+        data.map(async t => {
+          const { data: counts } = await supabase.rpc('get_tenant_stats', { p_tenant_id: t.id })
+          return { id: t.id, counts: counts?.[0] || { assets: 0, emps: 0 } }
+        })
+      )
+      results.forEach(r => { statsObj[r.id] = r.counts })
     }
     setStats(statsObj)
     setLoading(false)
@@ -67,9 +72,8 @@ export default function Tenants() {
   }
 
   async function deleteTenant(t) {
-    // Check it's not the current tenant
     if (t.id === tenant?.id) { setError("Can't delete your current tenant."); return }
-    const { count } = await supabase.from('assets').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id)
+    const { count } = await supabase.from('assets').select('id', { count: 'exact', head: true }).eq('tenant_id', t.id)
     if (count > 0) { setConfirmDelete({ ...t, assetCount: count }); return }
     await supabase.from('tenants').delete().eq('id', t.id)
     fetchTenants()

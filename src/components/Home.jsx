@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
+import { STORAGE_KEYS } from '../lib/constants'
 
 const EMP_CACHE_KEY = 'home_emp_lookup'
 
@@ -30,7 +31,7 @@ const ALL_WIDGETS = [
   { id:'licenseexpiry', label:'License expiry alerts',       default:true },
 ]
 
-const STORAGE_KEY = 'dashboard_widgets_v1'
+const STORAGE_KEY = STORAGE_KEYS.dashboard_widgets
 
 export default function Home({ onNav, onViewAsset }) {
   const [assets, setAssets] = useState([])
@@ -73,7 +74,6 @@ export default function Home({ onNav, onViewAsset }) {
     ])
 
     // Fetch ALL assets in one batch on mount (up to 10k rows).
-    // No polling — data is current as of page load.
     let allAssetData = []
     let offset = 0
     let batch
@@ -93,6 +93,9 @@ export default function Home({ onNav, onViewAsset }) {
     setLog(lg || [])
     setSites(s || [])
     setEmployees(e || [])
+    setConsumables(c || [])
+    setSchedules(ms || [])
+    setRequests(rq || [])
     // Cache employee lookup for resolving assigned_to UUIDs
     if (e) {
       try {
@@ -101,9 +104,6 @@ export default function Home({ onNav, onViewAsset }) {
         localStorage.setItem(EMP_CACHE_KEY, JSON.stringify(map))
       } catch {}
     }
-    setConsumables(c || [])
-    setSchedules(ms || [])
-    setRequests(rq || [])
     setAgingAssets((ag||[]).filter(a => {
       const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
       return yrs >= 3
@@ -115,9 +115,7 @@ export default function Home({ onNav, onViewAsset }) {
     setLoading(false)
   }
 
-  function toggleWidget(id) {
-    setWidgets(w => w.includes(id) ? w.filter(x=>x!==id) : [...w, id])
-  }
+  const toggleWidget = (id) => setWidgets(w => w.includes(id) ? w.filter(x=>x!==id) : [...w, id])
 
   if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
 
@@ -133,9 +131,7 @@ export default function Home({ onNav, onViewAsset }) {
 
   const overdueCheckouts = assets.filter(a => a.status==='Checked Out' && a.expected_return && new Date(a.expected_return)<today)
   const expiringWarranties = assets.filter(a => a.warranty_expiry && new Date(a.warranty_expiry)<=in30 && new Date(a.warranty_expiry)>=today)
-  const expiredWarranties = assets.filter(a => a.warranty_expiry && new Date(a.warranty_expiry)<today && a.status!=='Retired')
   const expiringLicenses = licenses.filter(l => l.expiry_date && new Date(l.expiry_date)<=in30)
-  const totalAlerts = overdueCheckouts.length + expiringWarranties.length + expiringLicenses.length
 
   const byCategory = {}
   assets.forEach(a => { byCategory[a.category] = (byCategory[a.category]||0)+1 })
@@ -143,15 +139,6 @@ export default function Home({ onNav, onViewAsset }) {
 
   const byStatus = {}
   assets.forEach(a => { byStatus[a.status] = (byStatus[a.status]||0)+1 })
-
-  const bySite = {}
-  sites.forEach(s => { bySite[s.name] = assets.filter(a=>a.location?.toLowerCase().includes(s.name.toLowerCase())).length })
-
-  const TYPE_STYLES = {
-    checkout:{ color:'var(--blue)', label:'OUT' }, checkin:{ color:'var(--green)', label:'IN' },
-    maintenance:{ color:'var(--amber)', label:'MNT' }, created:{ color:'var(--accent)', label:'NEW' },
-    updated:{ color:'var(--text2)', label:'UPD' }, note:{ color:'var(--text3)', label:'NOTE' },
-  }
 
   const card = { background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'1rem 1.25rem' }
   const cardTitle = { fontSize:13, fontWeight:500, marginBottom:'0.75rem', color:'var(--text)' }
@@ -248,7 +235,7 @@ export default function Home({ onNav, onViewAsset }) {
             </div>
             {log.length===0 ? <div style={{ color:'var(--text3)', fontSize:13 }}>No activity yet.</div> :
              log.map((e,i) => {
-               const ts = TYPE_STYLES[e.type]||TYPE_STYLES.note
+               const ts = { checkout:{ color:'var(--blue)', label:'OUT' }, checkin:{ color:'var(--green)', label:'IN' }, maintenance:{ color:'var(--amber)', label:'MNT' }, created:{ color:'var(--accent)', label:'NEW' }, updated:{ color:'var(--text2)', label:'UPD' }, note:{ color:'var(--text3)', label:'NOTE' } }[e.type]||{ color:'var(--text3)', label:'NOTE' }
                return (
                  <div key={e.id} style={{ display:'flex', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)', alignItems:'flex-start' }}>
                    <span style={{ fontFamily:'var(--mono)', fontSize:10, fontWeight:500, color:ts.color, background:ts.color+'18', padding:'2px 5px', borderRadius:3, flexShrink:0, marginTop:1 }}>{ts.label}</span>
@@ -362,6 +349,19 @@ export default function Home({ onNav, onViewAsset }) {
         )}
 
         {/* By status */}
+        {has('byStatus') && (
+          <div style={card}>
+            <div style={cardTitle}>Assets by status</div>
+            {Object.entries(byStatus).map(([status, count]) => (
+              <div key={status} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                <Badge status={status} />
+                <span style={{ fontFamily:'var(--mono)', fontSize:13, fontWeight:500 }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Consumables */}
         {has('consumables') && (
         <div style={card}>
           <div style={cardTitle}>⚠ Low stock consumables</div>
@@ -465,18 +465,6 @@ export default function Home({ onNav, onViewAsset }) {
           }
         </div>
       )}
-
-      {has('byStatus') && (
-          <div style={card}>
-            <div style={cardTitle}>Assets by status</div>
-            {Object.entries(byStatus).map(([status, count]) => (
-              <div key={status} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
-                <Badge status={status} />
-                <span style={{ fontFamily:'var(--mono)', fontSize:13, fontWeight:500 }}>{count}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )

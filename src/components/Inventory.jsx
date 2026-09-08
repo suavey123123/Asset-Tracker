@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, StatusSelect } from './UI'
@@ -210,6 +210,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [checkoutModal, setCheckoutModal] = useState(null)
   const [tagExists, setTagExists] = useState(false)
   const [checkingTag, setCheckingTag] = useState(false)
+  const tagAbortRef = useRef(null) // Cancel stale tag check requests
   const [agreementModal, setAgreementModal] = useState(null)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkCategory, setBulkCategory] = useState('')
@@ -511,10 +512,19 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   async function checkTagExists(tag) {
     if (!tag.trim()) { setTagExists(false); return }
+    // Cancel previous pending request
+    if (tagAbortRef.current) tagAbortRef.current.abort()
+    const controller = new AbortController()
+    tagAbortRef.current = controller
     setCheckingTag(true)
-    const { data } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', tag.trim()).maybeSingle()
-    setTagExists(!!data)
-    setCheckingTag(false)
+    try {
+      const { data } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', tag.trim()).maybeSingle({ signal: controller.signal })
+      if (!controller.signal.aborted) setTagExists(!!data)
+    } catch (e) {
+      if (e.name !== 'AbortError') setTagExists(false)
+    } finally {
+      setCheckingTag(false)
+    }
   }
 
   function initiateCheckout() {
@@ -568,7 +578,9 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   allEmployees?.forEach(e => { empIdToName[e.id] = e.name })
   const enriched = assets.map(a => {
     const resolvedAssigned = empIdToName[a.assigned_to] || a.assigned_to || ''
-    return { ...a, department: empNameToDept[resolvedAssigned] || '', _assignedName: resolvedAssigned }
+    // Pre-compute age to avoid recalculating during render
+    const ageInfo = getAssetAge(a.purchase_date)
+    return { ...a, department: empNameToDept[resolvedAssigned] || '', _assignedName: resolvedAssigned, _age: ageInfo }
   })
   const filtered = enriched.filter(a => {
     if (filterStatus && a.status!==filterStatus) return false
@@ -839,9 +851,9 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
                     {has('model') && <td style={{ padding:'10px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                         <div style={{ fontSize:13, color: a.model ? 'var(--text)' : 'var(--text3)' }}>{a.model || '—'}</div>
-                        {getAssetAge(a.purchase_date) && (
-                          <span title={getAssetAge(a.purchase_date).title} style={{ fontSize:9, fontFamily:'var(--mono)', fontWeight:600, color:getAssetAge(a.purchase_date).color, background:getAssetAge(a.purchase_date).color+'18', padding:'1px 5px', borderRadius:3 }}>
-                            {getAssetAge(a.purchase_date).label}
+                        {a._age && (
+                          <span title={a._age.title} style={{ fontSize:9, fontFamily:'var(--mono)', fontWeight:600, color:a._age.color, background:a._age.color+'18', padding:'1px 5px', borderRadius:3 }}>
+                            {a._age.label}
                           </span>
                         )}
                       </div>

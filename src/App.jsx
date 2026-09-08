@@ -23,11 +23,9 @@ export default function App() {
   const { user, loading } = useAuth()
 
   // Intercept invite/recovery links before anything else renders
-  if (typeof window !== 'undefined') {
-    const hash = window.location.hash
-    if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
-      return <Navigate to={'/set-password' + hash} replace />
-    }
+  const hash = window.location.hash
+  if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
+    return <Navigate to={'/set-password' + hash} replace />
   }
 
   if (loading) return <Spinner />

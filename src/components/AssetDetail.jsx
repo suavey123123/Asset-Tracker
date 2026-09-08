@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Spinner } from './UI'
@@ -69,18 +69,20 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     document.head.appendChild(script)
   }, [asset, activeTab])
 
-  async function saveNote() {
+  const saveNote = useCallback(async () => {
     setNoteSaving(true)
     await supabase.from('assets').update({ quick_note: quickNoteRef.current }).eq('id', assetId)
     setNoteSaving(false); setNoteSaved(true)
     setTimeout(() => setNoteSaved(false), 2000)
-  }
+  }, [assetId])
 
-  function printQR() {
+  const printQR = useCallback(() => {
     const tag = asset.asset_tag || ''
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + '/#asset=' + tag)}`
+    const modelEsc = (asset.model || asset.category || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    const siteEsc = asset.location ? asset.location.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''
     const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Asset Label - ${tag}</title>
+<html><head><meta charset="UTF-8"><title>Asset Label</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0 }
   body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 30px; background: #fff; color: #000 }
@@ -97,8 +99,8 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
 <div class="label">
   <img src="${qrUrl}" width="180" height="180" />
   <div class="tag">${tag}</div>
-  <div class="model">${asset.model || asset.category || ''}</div>
-  ${asset.location ? `<div class="site">${asset.location}</div>` : ''}
+  <div class="model">${modelEsc}</div>
+  ${siteEsc ? `<div class="site">${siteEsc}</div>` : ''}
 </div>
 </body></html>`
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
@@ -106,7 +108,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     const win = window.open(url, '_blank', 'noopener,noreferrer')
     if (!win) alert('Please allow popups to print.')
     setTimeout(() => URL.revokeObjectURL(url), 10000)
-  }
+  }, [asset.asset_tag, asset.model, asset.category, asset.location])
 
   const isPhone = asset?.category?.toUpperCase() === 'PHONE'
 

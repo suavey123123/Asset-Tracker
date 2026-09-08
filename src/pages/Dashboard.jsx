@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import Sidebar from '../components/Sidebar'
@@ -113,7 +113,13 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isAdmin, tenant, role } = useAuth()
 
-  useEffect(() => { fetchAlerts() }, [])
+  useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
+
+  // Periodically refresh overdue alert count every 60 seconds.
+  function refreshAlerts() {
+    const id = setInterval(fetchAlerts, 60000)
+    return () => clearInterval(id)
+  }
 
   async function fetchAlerts() {
     const today = new Date().toISOString().slice(0,10)
@@ -121,10 +127,10 @@ export default function Dashboard() {
     setAlerts((data||[]).length)
   }
 
-  function handleViewAsset(asset) { setViewingAsset(asset); setViewingAssetFromTab(tab); setSidebarOpen(false) }
-  function handleViewEmployee(emp) { setViewingEmployee(emp); setViewingAsset(null); setTab('employees'); setSidebarOpen(false) }
-  function handleNav(newTab) { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }
-  function handleEdit(asset) { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }
+  const handleViewAsset = useCallback((asset) => { setViewingAsset(asset); setViewingAssetFromTab(tab); setSidebarOpen(false) }, [tab])
+  const handleViewEmployee = useCallback((emp) => { setViewingEmployee(emp); setViewingAsset(null); setTab('employees'); setSidebarOpen(false) }, [tab])
+  const handleNav = useCallback((newTab) => { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }, [])
+  const handleEdit = useCallback((asset) => { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }, [])
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
