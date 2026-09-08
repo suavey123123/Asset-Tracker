@@ -5,10 +5,11 @@ import { AuthProvider } from './lib/AuthContext'
 import App from './App'
 import './index.css'
 
-// Register service worker for PWA
+// Unregister any previously cached service workers from older versions
+// (The SW was removed because it caused page reload loops on Vercel)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(reg => reg.unregister())
   })
 }
 
