@@ -113,6 +113,12 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isAdmin, tenant, role } = useAuth()
 
+  // Sync viewingAsset to null when tab changes — prevents stale asset detail persisting across tab switches
+  useEffect(() => {
+    if (viewingAsset && tab !== viewingAssetFromTab) {
+      setViewingAsset(null)
+    }
+  }, [tab])
   useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
 
   // Periodically refresh overdue alert count every 60 seconds.
@@ -129,7 +135,7 @@ export default function Dashboard() {
 
   function handleViewAsset(asset) {
     setViewingAsset(asset)
-    setViewingAssetFromTab(tab)
+    setViewingAssetFromTab('inventory')
     setSidebarOpen(false)
   }
   function handleViewEmployee(emp) {

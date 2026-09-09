@@ -46,9 +46,14 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
         supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
         supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
       ])
-      setAsset(a); setLog(l || []); setMaintenance(m || [])
-      setQuickNote(a?.quick_note || '')
-      quickNoteRef.current = a?.quick_note || ''
+      if (a) {
+        setAsset(a); setLog(l || []); setMaintenance(m || [])
+        setQuickNote(a?.quick_note || '')
+        quickNoteRef.current = a?.quick_note || ''
+      } else {
+        // Query completed but no asset found — set error to show error UI
+        setError('No asset found with the given ID. The asset may have been deleted.')
+      }
     } catch (err) {
       console.error('Failed to load asset:', err)
       setError(err?.message || 'Failed to load asset data.')
