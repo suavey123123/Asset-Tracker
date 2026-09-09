@@ -136,7 +136,8 @@ export default function Dashboard() {
 
   // Memoized tab content — only remounts when tab/viewingAsset changes, not on arbitrary state updates (lastRefreshed, alerts, etc.)
   const activePage = useMemo(() => {
-    if (tab === 'home' && !viewingAsset) return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
+    if (viewingAsset) return <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
+    if (tab === 'home') return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
     if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />
     if (tab === 'checkout') return <Checkout onViewAsset={handleViewAsset} />
     if (tab === 'transfer') return <Transfer onViewAsset={handleViewAsset} />
