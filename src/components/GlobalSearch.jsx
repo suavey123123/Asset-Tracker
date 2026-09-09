@@ -151,7 +151,7 @@ export default function GlobalSearch({ onViewAsset }) {
                       {a.model && a.model !== a.asset_tag ? a.model : a.name}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to ? ` · ${a.assigned_to}` : ''}
+                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to ? ` · ${empIdToName[a.assigned_to] || a.assigned_to}` : ''}
                     </div>
                   </div>
                   <Badge status={a.status} />

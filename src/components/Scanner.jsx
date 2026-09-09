@@ -33,7 +33,7 @@ export default function Scanner({ onViewAsset }) {
 
     try {
       const { data } = await supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,serial_number,purchase_cost,notes')
-        .or(`asset_tag.ilike.${tag.trim()},id.eq.${tag.trim().match(/^[0-9a-f-]{36}$/) ? tag.trim() : '00000000-0000-0000-0000-000000000000'}`)
+        .or(`asset_tag.ilike.*${tag.trim()}*,id.eq.${tag.trim()}`)
         .limit(1).maybeSingle()
       setLoading(false)
       if (!data) { setError(`No asset found for tag: "${tag.trim()}"`); return }

@@ -60,9 +60,10 @@ export function useInterval(callback, ms) {
 }
 
 /**
- * Memoizes a function with stable deps inference from its closure vars.
+ * Memoizes a function with the given dependency array (defaults to []).
  * Useful for inline arrow functions passed as props.
+ * If the function references state that changes, pass those vars in `deps`.
  */
-export function useStable(fn) {
-  return useCallback(fn, [])
+export function useStable(fn, deps = []) {
+  return useCallback(fn, deps)
 }

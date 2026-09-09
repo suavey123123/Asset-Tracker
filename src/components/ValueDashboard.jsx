@@ -13,12 +13,27 @@ export default function ValueDashboard() {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: m }, { data: s }] = await Promise.all([
-      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,assigned_to,site_id,location').limit(500),
+    const [{ data: m }, { data: s }] = await Promise.all([
       supabase.from('maintenance_records').select('cost, asset_id'),
       supabase.from('sites').select('id, name'),
     ])
-    setAssets(a || [])
+
+    // Fetch ALL assets for accurate depreciation calculations
+    let allAssets = []
+    let offset = 0
+    let batch
+    do {
+      const { data, error } = await supabase
+        .from('assets')
+        .select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,assigned_to,site_id,location')
+        .range(offset, offset + 9999)
+      if (error) { console.error('[ValueDashboard] Fetch error:', error); break }
+      batch = data || []
+      allAssets = [...allAssets, ...batch]
+      offset += 10000
+    } while (batch.length >= 10000 && allAssets.length < 500000)
+
+    setAssets(allAssets)
     setMaintenance(m || [])
     setSites(s || [])
     setLoading(false)

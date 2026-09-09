@@ -25,12 +25,19 @@ export default function Offboarding() {
 
   async function selectEmployee(emp) {
     setSelected(emp); setDone(false); setLoading(true)
-    const [{ data: a }, { data: l }] = await Promise.all([
-      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,serial_number').limit(500).eq('assigned_to', emp.name).eq('status', 'Checked Out'),
-      supabase.from('asset_license_assignments').select('*, license:license_id(id, name, seats_used), asset:asset_id(name, asset_tag)').eq('assigned_to', emp.name),
+    const [{ data: a }] = await Promise.all([
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location,assigned_to_team,serial_number').eq('assigned_to', emp.name).eq('status', 'Checked Out'),
     ])
     setAssets(a || [])
-    setLicenses(l || [])
+
+    // Fetch license assignments for this employee's assets
+    const empAssetIds = (a || []).map(x => x.id)
+    let licensesData = []
+    if (empAssetIds.length) {
+      const { data: l } = await supabase.from('asset_license_assignments').select('*, license:license_id(id, name, seats_used), asset:asset_id(name, asset_tag)').in('asset_id', empAssetIds)
+      licensesData = l || []
+    }
+    setLicenses(licensesData)
     setLoading(false)
   }
 
