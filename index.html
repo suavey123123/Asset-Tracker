@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Asset Tracker</title>
     <meta name="description" content="Track and manage your company assets" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,16 +15,25 @@
 
     <!-- Kill old service workers BEFORE React loads -->
     <script>
-      // Unregister any cached service workers
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          for (var i = 0; i < regs.length; i++) { regs[i].unregister() }
-          caches.keys().then(function(names) {
-            for (var j = 0; j < names.length; j++) { caches.delete(names[j]) }
+      (function() {
+        if (localStorage.getItem('swkilled')) return
+        localStorage.setItem('swkilled', '1')
+        if (navigator.serviceWorker.controller) {
+          try { navigator.serviceWorker.controller.postMessage({ type: 'KILL' }) } catch(e) {}
+          window.location.replace(window.location.href.split('#')[0])
+          return
+        }
+        // Unregister all cached service workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for (var i = 0; i < regs.length; i++) { regs[i].unregister() }
           }).catch(function() {})
+        }
+        // Wipe all caches
+        caches.keys().then(function(names) {
+          for (var j = 0; j < names.length; j++) { caches.delete(names[j]) }
         }).catch(function() {})
-      }
-      console.log('[SW] Cleaned up old service workers')
+      })()
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </head>
