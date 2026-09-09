@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import Sidebar from '../components/Sidebar'
@@ -151,8 +151,7 @@ export default function Dashboard() {
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
-  // Memoized tab content — only remounts when tab changes, not on arbitrary state updates (lastRefreshed, alerts, etc.)
-  const activePage = useMemo(() => {
+  function renderActivePage() {
     if (tab === 'home') return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
     if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />
     if (tab === 'checkout') return <Checkout onViewAsset={handleViewAsset} />
@@ -177,7 +176,7 @@ export default function Dashboard() {
     if (tab === 'consumables') return <Consumables />
     if (tab === 'valuedashboard') return <ValueDashboard />
     return null
-  }, [tab])
+  }
 
   return (
     <ToastProvider>
@@ -242,7 +241,7 @@ export default function Dashboard() {
           <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
             {viewingAsset ? (
               <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
-            ) : activePage}
+            ) : renderActivePage()}
           </div>
         </ErrorBoundary>
       </main>
