@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import Sidebar from '../components/Sidebar'
@@ -127,10 +127,27 @@ export default function Dashboard() {
     setAlerts((data||[]).length)
   }
 
-  const handleViewAsset = useCallback((asset) => { setViewingAsset(asset); setViewingAssetFromTab(tab); setSidebarOpen(false) }, [tab])
-  const handleViewEmployee = useCallback((emp) => { setViewingEmployee(emp); setViewingAsset(null); setTab('employees'); setSidebarOpen(false) }, [tab])
-  const handleNav = useCallback((newTab) => { setViewingAsset(null); setTab(newTab); setSidebarOpen(false) }, [])
-  const handleEdit = useCallback((asset) => { setViewingAsset(null); setEditAsset(asset); setTab('inventory') }, [])
+  function handleViewAsset(asset) {
+    setViewingAsset(asset)
+    setViewingAssetFromTab(tab)
+    setSidebarOpen(false)
+  }
+  function handleViewEmployee(emp) {
+    setViewingEmployee(emp)
+    setViewingAsset(null)
+    setTab('employees')
+    setSidebarOpen(false)
+  }
+  function handleNav(newTab) {
+    setViewingAsset(null)
+    setTab(newTab)
+    setSidebarOpen(false)
+  }
+  function handleEdit(asset) {
+    setViewingAsset(null)
+    setEditAsset(asset)
+    setTab('inventory')
+  }
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
