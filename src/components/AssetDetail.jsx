@@ -4,7 +4,6 @@ import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Spinner } from './UI'
 import AssetPhotos from './AssetPhotos'
 import AssetComments from './AssetComments'
-import HelpdeskIntegration from './HelpdeskIntegration'
 import CustomFields from './CustomFields'
 import AssetLicenses from './AssetLicenses'
 import AssetTags from './AssetTags'
@@ -33,21 +32,29 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const quickNoteRef = useRef('')
   const [noteSaving, setNoteSaving] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
+  const [error, setError] = useState(null)
   const qrRef = useRef(null)
 
-  useEffect(() => { fetchAll() }, [assetId])
+  useEffect(() => { setError(null); fetchAll() }, [assetId])
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: a }, { data: l }, { data: m }] = await Promise.all([
-      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at').eq('id', assetId).single(),
-      supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
-      supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
-    ])
-    setAsset(a); setLog(l || []); setMaintenance(m || [])
-    setQuickNote(a?.quick_note || '')
-    quickNoteRef.current = a?.quick_note || ''
-    setLoading(false)
+    setError(null)
+    try {
+      const [{ data: a }, { data: l }, { data: m }] = await Promise.all([
+        supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at,quick_note').eq('id', assetId).single(),
+        supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
+        supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
+      ])
+      setAsset(a); setLog(l || []); setMaintenance(m || [])
+      setQuickNote(a?.quick_note || '')
+      quickNoteRef.current = a?.quick_note || ''
+    } catch (err) {
+      console.error('Failed to load asset:', err)
+      setError(err?.message || 'Failed to load asset data.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -113,6 +120,14 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const isPhone = asset?.category?.toUpperCase() === 'PHONE'
 
   if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
+  if (error) return (
+    <div style={{ padding: '2rem', background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--radius-lg)' }}>
+      <div style={{ fontSize: 18, marginBottom: 8 }}>Failed to load asset</div>
+      <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>{error}</div>
+      <Btn size="sm" variant="primary" onClick={fetchAll}>Retry</Btn>
+      <Btn size="sm" onClick={onBack} style={{ marginLeft: 8 }}>Go back</Btn>
+    </div>
+  )
   if (!asset) return <div style={{ color:'var(--text2)' }}>Asset not found.</div>
 
   const today = new Date()
@@ -264,26 +279,6 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       {activeTab==='Photos' && <div style={card} className="fade-in"><AssetPhotos assetId={assetId} assetTag={asset.asset_tag} /></div>}
       {activeTab==='Custom Fields' && <div style={card} className="fade-in"><CustomFields assetId={assetId} category={asset.category} /></div>}
       {activeTab==='Comments' && <div style={card} className="fade-in"><AssetComments assetId={assetId} /></div>}
-
-      {activeTab==='Maintenance' && (
-        <div style={card} className="fade-in">
-          {maintenance.length===0 ? <div style={{ fontSize:13, color:'var(--text3)' }}>No maintenance records.</div> : (
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-              <thead><tr>{['Type','Date','Performed by','Cost','Notes'].map(h=><th key={h} style={{ textAlign:'left', padding:'6px 0', fontSize:11, color:'var(--text2)', fontWeight:500, borderBottom:'1px solid var(--border)' }}>{h}</th>)}</tr></thead>
-              <tbody>{maintenance.map(m=>(
-                <tr key={m.id}>
-                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>{m.maintenance_type}</td>
-                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)' }}>{m.performed_date?new Date(m.performed_date).toLocaleDateString():'—'}</td>
-                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)' }}>{m.performed_by||'—'}</td>
-                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>{m.cost?'$'+parseFloat(m.cost).toFixed(2):'—'}</td>
-                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)', maxWidth:200 }}>{m.notes||'—'}</td>
-                </tr>
-              ))}</tbody>
-            </table>
-          )}
-        </div>
-      )}
-
       {activeTab==='Activity' && (
         <div style={card} className="fade-in">
           <div style={{ fontSize:13, fontWeight:500, marginBottom:'1rem', color:'var(--text2)' }}>Asset history timeline</div>
@@ -316,6 +311,26 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
           )}
         </div>
       )}
+
+      {activeTab==='Maintenance' && (
+        <div style={card} className="fade-in">
+          {maintenance.length===0 ? <div style={{ fontSize:13, color:'var(--text3)' }}>No maintenance records.</div> : (
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+              <thead><tr>{['Type','Date','Performed by','Cost','Notes'].map(h=><th key={h} style={{ textAlign:'left', padding:'6px 0', fontSize:11, color:'var(--text2)', fontWeight:500, borderBottom:'1px solid var(--border)' }}>{h}</th>)}</tr></thead>
+              <tbody>{maintenance.map(m=>(
+                <tr key={m.id}>
+                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>{m.maintenance_type}</td>
+                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)' }}>{m.performed_date?new Date(m.performed_date).toLocaleDateString():'—'}</td>
+                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)' }}>{m.performed_by||'—'}</td>
+                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)' }}>{m.cost?'$'+parseFloat(m.cost).toFixed(2):'—'}</td>
+                  <td style={{ padding:'8px 0', borderBottom:'1px solid var(--border)', color:'var(--text2)', maxWidth:200 }}>{m.notes||'—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+        </div>
+      )}
+
     </div>
   )
 }

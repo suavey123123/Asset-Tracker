@@ -160,7 +160,7 @@ export default function Dashboard() {
     if (tab === 'consumables') return <Consumables />
     if (tab === 'valuedashboard') return <ValueDashboard />
     return null
-  }, [tab, viewingAsset])
+  }, [tab])
 
   return (
     <ToastProvider>
@@ -221,11 +221,13 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
-          {viewingAsset ? (
-            <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
-          ) : activePage}
-        </div>
+        <ErrorBoundary>
+          <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
+            {viewingAsset ? (
+              <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
+            ) : activePage}
+          </div>
+        </ErrorBoundary>
       </main>
     </div>
     </ToastProvider>
