@@ -134,9 +134,8 @@ export default function Dashboard() {
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
-  // Memoized tab content — only remounts when tab/viewingAsset changes, not on arbitrary state updates (lastRefreshed, alerts, etc.)
+  // Memoized tab content — only remounts when tab changes, not on arbitrary state updates (lastRefreshed, alerts, etc.)
   const activePage = useMemo(() => {
-    if (viewingAsset) return <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
     if (tab === 'home') return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
     if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />
     if (tab === 'checkout') return <Checkout onViewAsset={handleViewAsset} />
