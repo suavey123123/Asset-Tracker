@@ -113,6 +113,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   }, [assetId])
 
   const printQR = useCallback(() => {
+    if (!asset) return
     const tag = asset.asset_tag || ''
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + '/#asset=' + tag)}`
     const modelEsc = (asset.model || asset.category || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -144,7 +145,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
     const win = window.open(url, '_blank', 'noopener,noreferrer')
     if (!win) alert('Please allow popups to print.')
     setTimeout(() => URL.revokeObjectURL(url), 10000)
-  }, [asset.asset_tag, asset.model, asset.category, asset.location])
+  }, [asset])
 
   const isPhone = asset?.category?.toUpperCase() === 'PHONE'
 
