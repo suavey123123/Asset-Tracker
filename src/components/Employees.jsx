@@ -105,7 +105,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   async function fetchEmpHistory(emp) {
     const [{ data: log }, { data: current }] = await Promise.all([
       supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(50),
-      supabase.from('assets').select('id, asset_tag, model, category, status, purchase_date').eq('assigned_to', emp.id),
+      supabase.from('assets').select('id, asset_tag, model, category, status, purchase_date').eq('assigned_to', emp.name),
     ])
     setEmpHistory({ log: log || [], current: current || [] })
   }
@@ -137,7 +137,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
 
   async function offboard(emp) {
     setOffboarding(true)
-    const { data: empAssets } = await supabase.from('assets').select('id, name, asset_tag').eq('assigned_to', emp.id).eq('status', 'Checked Out')
+    const { data: empAssets } = await supabase.from('assets').select('id, name, asset_tag').eq('assigned_to', emp.name).eq('status', 'Checked Out')
     if (empAssets?.length) {
       for (const a of empAssets) {
         await supabase.from('assets').update({ status: 'Available', assigned_to: null, expected_return: null }).eq('id', a.id)
@@ -185,7 +185,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
         })
     const rows = []
     exportEmployees.forEach(emp => {
-      const empAssets = filteredAssets.filter(a => a.assigned_to === emp.id)
+      const empAssets = filteredAssets.filter(a => a.assigned_to === emp.name)
       if (empAssets.length === 0) {
         rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: '', asset_category: '', asset_model: '', asset_serial: '', purchase_date: '', provision_date: '', purchase_cost: '', cpu: '', gpu: '', ram: '', ssd: '', hdd: '', mac_wifi: '', mac_lan: '', os_version: '', resolution: '', size: '', locked_status: '', carrier: '', imei: '', seat_number: '' })
       } else {
@@ -202,8 +202,10 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
     URL.revokeObjectURL(url)
   }
 
-  function getEmployeeAssets(empId) {
-    return assets.filter(a => a.assigned_to === empId)
+  function getEmployeeAssets(emp) {
+    const empName = emp.name || (typeof emp === 'string' ? emp : null)
+    if (!empName) return []
+    return assets.filter(a => a.assigned_to === empName)
   }
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))].sort()
@@ -222,8 +224,8 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   const fieldMap = { name:'name', email:'email', title:'title', department:'department', phone:'phone', hire_date:'hire_date' }
   const sorted = [...filtered].sort((a, b) => {
     if (sortCol === 'assets') {
-      const av = getEmployeeAssets(a.id).length
-      const bv = getEmployeeAssets(b.id).length
+      const av = getEmployeeAssets(a).length
+      const bv = getEmployeeAssets(b).length
       return sortDir==='asc' ? av-bv : bv-av
     }
     if (sortCol === 'site') {
@@ -303,7 +305,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
             </thead>
             <tbody>
               {sorted.map(emp => {
-                const empAssets = getEmployeeAssets(emp.id)
+                const empAssets = getEmployeeAssets(emp)
                 const isSelected = selected.includes(emp.id)
                 const site = sites.find(s => s.id === emp.site_id)
                 return (
@@ -348,7 +350,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
       {/* Employee detail modal */}
       <Modal open={!!viewEmp} onClose={() => setViewEmp(null)} title={viewEmp?.name || ''} width={560}>
         {viewEmp && (() => {
-          const empAssets = getEmployeeAssets(viewEmp.id)
+          const empAssets = getEmployeeAssets(viewEmp)
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
