@@ -17,16 +17,6 @@ export default function Scanner({ onViewAsset }) {
 
   useEffect(() => () => stopCamera(), [])
 
-  const [isOffline, setIsOffline] = useState(!navigator.onLine)
-
-  useEffect(() => {
-    const onOnline = () => setIsOffline(false)
-    const onOffline = () => setIsOffline(true)
-    window.addEventListener('online', onOnline)
-    window.addEventListener('offline', onOffline)
-    return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline) }
-  }, [])
-
   async function lookup(tag) {
     if (!tag.trim()) return
     setLoading(true); setError(''); setResult(null)
@@ -42,18 +32,8 @@ export default function Scanner({ onViewAsset }) {
     // Play success beep
     try { const ctx=new AudioContext(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=880; g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3); o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3) } catch {}
     } catch(e) {
-      // Try offline cache
-      try {
-        const cached = localStorage.getItem('offline_assets')
-        if (cached) {
-          const assets = JSON.parse(cached)
-          const found = assets.find(a => a.asset_tag?.toLowerCase() === tag.trim().toLowerCase())
-          setLoading(false)
-          if (found) { setResult(found); return }
-        }
-      } catch {}
       setLoading(false)
-      setError(isOffline ? `Offline — no cached data for "${tag.trim()}"` : `No asset found for tag: "${tag.trim()}"`)
+      setError(`No asset found for tag: "${tag.trim()}"`)
     }
   }
 

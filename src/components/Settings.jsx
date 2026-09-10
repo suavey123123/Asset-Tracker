@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { useTheme } from '../lib/hooks'
 import { Btn, FormField } from './UI'
 
 export default function Settings() {
@@ -89,22 +90,8 @@ export default function Settings() {
   const [notifSaving, setNotifSaving] = useState(false)
   const [notifMsg, setNotifMsg] = useState('')
 
-  // Theme
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
-
-  useEffect(() => {
-    localStorage.setItem('theme', theme)
-    const vars = theme === 'light' ? {
-      '--bg': '#f5f5f5', '--bg2': '#ffffff', '--bg3': '#f0f0f0', '--bg4': '#e8e8e8',
-      '--border': '#e0e0e0', '--border2': '#d0d0d0',
-      '--text': '#111111', '--text2': '#555555', '--text3': '#999999',
-    } : {
-      '--bg': '#0f0f0f', '--bg2': '#161616', '--bg3': '#1e1e1e', '--bg4': '#262626',
-      '--border': '#2a2a2a', '--border2': '#333',
-      '--text': '#e8e8e8', '--text2': '#999', '--text3': '#555',
-    }
-    Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v))
-  }, [theme])
+  // Theme — centralized via useTheme
+  const { theme, setTheme } = useTheme()
 
   async function saveProfile() {
     setProfileSaving(true); setProfileMsg('')

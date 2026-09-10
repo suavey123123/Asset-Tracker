@@ -67,3 +67,25 @@ export function useInterval(callback, ms) {
 export function useStable(fn, deps = []) {
   return useCallback(fn, deps)
 }
+
+/**
+ * Centralizes theme state (dark/light) between Dashboard and Settings.
+ * Writes CSS custom properties to :root on change.
+ */
+export function useTheme() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+  useEffect(() => {
+    localStorage.setItem('theme', theme)
+    const vars = theme === 'light' ? {
+      '--bg': '#f5f5f5', '--bg2': '#ffffff', '--bg3': '#f0f0f0', '--bg4': '#e8e8e8',
+      '--border': '#e0e0e0', '--border2': '#d0d0d0',
+      '--text': '#111111', '--text2': '#555555', '--text3': '#999999',
+    } : {
+      '--bg': '#0f0f0f', '--bg2': '#161616', '--bg3': '#1e1e1e', '--bg4': '#262626',
+      '--border': '#2a2a2a', '--border2': '#333',
+      '--text': '#e8e8e8', '--text2': '#999', '--text3': '#555',
+    }
+    Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v))
+  }, [theme])
+  return { theme, setTheme }
+}

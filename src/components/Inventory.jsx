@@ -407,13 +407,17 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (!bulkPerson.trim()) return
     const toCheckout = selected.filter(id => assets.find(a=>a.id===id)?.status==='Available')
     if (toCheckout.length === 0) { setError('No selected assets are Available for checkout'); return }
-    for (const id of toCheckout) {
+    const { error: e } = await supabase
+      .from('assets')
+      .update({ status:'Checked Out', assigned_to:bulkPerson, expected_return:bulkDate||null })
+      .in('id', toCheckout)
+    if (e) { setError(`Bulk checkout failed: ${e.message}`); return }
+    // Batch activity log
+    const logEntries = toCheckout.map(id => {
       const asset = assets.find(a=>a.id===id)
-      if (!asset) continue
-      const { error: e } = await supabase.from('assets').update({ status:'Checked Out', assigned_to:bulkPerson, expected_return:bulkDate||null }).eq('id', id)
-      if (e) { setError(`Failed to checkout ${asset.asset_tag}: ${e.message}`); break }
-      await logActivity(id, asset.asset_tag, asset.name, 'checkout', `Bulk checked out to ${bulkPerson} by ${profile?.email}`)
-    }
+      return asset ? { asset_id: id, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkout', message: `Bulk checked out to ${bulkPerson} by ${profile?.email}`, performed_by: profile?.email } : null
+    }).filter(Boolean)
+    if (logEntries.length > 0) await supabase.from('activity_log').insert(logEntries)
     setSelected([]); setBulkPerson(''); setBulkDate(''); setBulkCheckoutOpen(false)
     fetchAssets()
   }
@@ -421,14 +425,18 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   async function doBulkCheckin() {
     const toCheckin = selected.filter(id => assets.find(a=>a.id===id)?.status==='Checked Out')
     if (toCheckin.length === 0) { setError('No selected assets are Checked Out'); return }
-    for (const id of toCheckin) {
+    const newStatus = bulkCheckinCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
+    const { error: e } = await supabase
+      .from('assets')
+      .update({ status: newStatus, assigned_to: null, expected_return: null })
+      .in('id', toCheckin)
+    if (e) { setError(`Bulk checkin failed: ${e.message}`); return }
+    // Batch activity log
+    const logEntries = toCheckin.map(id => {
       const asset = assets.find(a=>a.id===id)
-      if (!asset) continue
-      const newStatus = bulkCheckinCondition === 'Needs maintenance' ? 'Maintenance' : 'Available'
-      const { error: e } = await supabase.from('assets').update({ status: newStatus, assigned_to: null, expected_return: null }).eq('id', id)
-      if (e) { setError(`Failed to check in ${asset.asset_tag}: ${e.message}`); break }
-      await logActivity(id, asset.asset_tag, asset.name, 'checkin', `Bulk checked in — condition: ${bulkCheckinCondition}`)
-    }
+      return asset ? { asset_id: id, asset_tag: asset.asset_tag, asset_name: asset.name, type: 'checkin', message: `Bulk checked in — condition: ${bulkCheckinCondition}`, performed_by: profile?.email } : null
+    }).filter(Boolean)
+    if (logEntries.length > 0) await supabase.from('activity_log').insert(logEntries)
     setSelected([]); setBulkCheckinOpen(false); fetchAssets()
   }
 
@@ -442,34 +450,44 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     if (bulkAssignedTeam) { updates.assigned_to_team = bulkAssignedTeam; updates.assigned_to = null }
     if (bulkModel) updates.model = bulkModel
     if (bulkPurchaseCost) updates.purchase_cost = parseFloat(bulkPurchaseCost.replace(/[^0-9.]/g, ''))
-    let updated = 0, failed = 0
-    for (const id of selected) {
-      const { error: e } = await supabase.from('assets').update(updates).eq('id', id)
-      if (e) failed++; else updated++
-    }
-    // Handle license assignments
+    // Batch asset update
+    const { error: e } = await supabase
+      .from('assets')
+      .update(updates)
+      .in('id', selected)
+    if (e) { setError(`Bulk edit failed: ${e.message}`); setBulkProcessing(false); return }
+    // Batch license assignments
     if (bulkLicenses.length > 0) {
-      for (const assetId of selected) {
-        for (const licenseId of bulkLicenses) {
-          if (bulkLicenseMode === 'add') {
-            try {
-              await supabase.from('asset_license_assignments').upsert({ asset_id: assetId, license_id: licenseId })
-              await supabase.rpc('increment_license_seats', { license_id: licenseId })
-            } catch(e) { /* non-critical */ }
-          } else {
-            try {
-              await supabase.from('asset_license_assignments').delete().eq('asset_id', assetId).eq('license_id', licenseId)
-              await supabase.rpc('decrement_license_seats', { license_id: licenseId })
-            } catch(e) { /* non-critical */ }
-          }
+      if (bulkLicenseMode === 'add') {
+        // Build upsert records
+        const assignmentRecords = selected.flatMap(assetId =>
+          bulkLicenses.map(licenseId => ({ asset_id: assetId, license_id: licenseId }))
+        )
+        if (assignmentRecords.length > 0) {
+          await supabase.from('asset_license_assignments').upsert(assignmentRecords, { onConflict: 'asset_id,license_id' }).catch(() => {})
         }
+        // RPC seats must be per-license
+        await Promise.allSettled(bulkLicenses.map(lId => supabase.rpc('increment_license_seats', { license_id: lId }).catch(() => {})))
+      } else {
+        // Delete assignments: batch delete, then RPC per-license
+        const deleteEntries = selected.flatMap(assetId =>
+          bulkLicenses.map(licenseId => ({ asset_id: assetId, license_id: licenseId }))
+        )
+        if (deleteEntries.length > 0) {
+          await supabase
+            .from('asset_license_assignments')
+            .delete()
+            .in('asset_id', selected)
+            .in('license_id', bulkLicenses)
+            .catch(() => {})
+        }
+        await Promise.allSettled(bulkLicenses.map(lId => supabase.rpc('decrement_license_seats', { license_id: lId }).catch(() => {})))
       }
     }
     setBulkProcessing(false)
-    const msg = failed > 0 ? `Updated ${selected.length - failed}/${selected.length} assets` : `✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`
     setSelected([]); setBulkEditOpen(false); setBulkStatus(''); setBulkSite(''); setBulkCategory(''); setBulkAssignedTo(''); setBulkAssignedTeam(''); setBulkLicenses([]); setBulkLicenseMode('add'); setBulkModel(''); setBulkPurchaseCost('')
     fetchAssets()
-    setBulkSuccessMsg(msg)
+    setBulkSuccessMsg(`✓ Updated ${selected.length} asset${selected.length!==1?'s':''}`)
     setTimeout(()=>setBulkSuccessMsg(''),3000)
   }
 
@@ -489,16 +507,12 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
 
   async function bulkDelete() {
     if (!confirm(`Delete ${selected.length} asset${selected.length!==1?'s':''}? This cannot be undone.`)) return
-    for (const id of selected) {
-      try {
-        await releaseLicenses(id)
-        const { error: e } = await supabase.from('assets').delete().eq('id', id)
-        if (e) { setError(`Failed to delete asset ${id}: ${e.message}`); break }
-      } catch (e) {
-        setError(e.message || 'Failed to delete asset')
-        break
-      }
-    }
+    // Release licenses per-asset (depends on individual IDs)
+    const releasePromises = selected.map(id => releaseLicenses(id).catch(() => {}))
+    await Promise.allSettled(releasePromises)
+    // Batch delete all remaining assets
+    const { error: e } = await supabase.from('assets').delete().in('id', selected)
+    if (e) { setError(`Failed to delete assets: ${e.message}`); return }
     setSelected([])
     fetchAssets()
   }

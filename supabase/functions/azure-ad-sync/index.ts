@@ -50,7 +50,11 @@ serve(async (req) => {
     const appTenantId = Deno.env.get('APP_TENANT_ID') // your Supabase tenant UUID
 
     if (!azureTenantId || !azureClientId || !azureClientSecret) {
-      return new Response(JSON.stringify({ error: 'Azure credentials not configured in secrets' }), 
+      return new Response(JSON.stringify({ error: 'Azure credentials (AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET) not configured in secrets' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    if (!appTenantId) {
+      return new Response(JSON.stringify({ error: 'APP_TENANT_ID not configured in secrets' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
@@ -86,7 +90,7 @@ serve(async (req) => {
           const { data: empAssets } = await adminClient
             .from('assets')
             .select('id, asset_tag')
-            .eq('assigned_to', existing.name)
+            .eq('assigned_to', azUser.mail)
 
           if (empAssets?.length) {
             await adminClient.from('assets')

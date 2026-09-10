@@ -162,8 +162,9 @@ export default function Checkout() {
                   {isAdmin && (
                     <td style={{ padding: '10px 14px' }}>
                       <Btn size="sm" onClick={async () => {
+                        if (!confirm(`Quick return ${a.asset_tag}?`)) return
                         await supabase.from('assets').update({ status: 'Available', assigned_to: null, expected_return: null }).eq('id', a.id)
-                        await supabase.from('activity_log').insert({ asset_id: a.id, asset_tag: a.asset_tag, asset_name: a.name, type: 'checkin', message: `Quick check-in from ${a.assigned_to || 'unknown'}`, performed_by: profile?.email })
+                        await supabase.from('activity_log').insert({ asset_id: a.id, asset_tag: a.asset_tag, asset_name: a.name, type: 'checkin', message: `Quick check-in (from ${a.assigned_to || 'unknown'}) by ${profile?.email}`, performed_by: profile?.email })
                         fetchAssets()
                       }}>Return</Btn>
                     </td>

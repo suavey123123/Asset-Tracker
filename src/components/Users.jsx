@@ -110,26 +110,16 @@ export default function Users() {
   async function sendInvite() {
     if (!inviteEmail.trim()) return
     setInviting(true); setInviteMsg('')
-    const { data, error } = await supabase.auth.admin
-      ? await (async () => {
-          // Try admin invite first (sets role in user_metadata)
-          return supabase.auth.signInWithOtp({
-            email: inviteEmail.trim(),
-            options: { shouldCreateUser: true, data: { role: inviteRole } }
-          })
-        })()
-      : await supabase.auth.signInWithOtp({
-          email: inviteEmail.trim(),
-          options: { shouldCreateUser: true, data: { role: inviteRole } }
-        })
-    // After invite, try to update the profile role if user already exists
-    if (!error) {
-      const { data: existing } = await supabase.from('profiles').select('id').eq('email', inviteEmail.trim()).maybeSingle()
-      if (existing) await supabase.from('profiles').update({ role: inviteRole }).eq('id', existing.id)
-    }
+    const { error } = await supabase.auth.admin.inviteUserByEmail(inviteEmail.trim(), {
+      data: { role: inviteRole },
+    })
     setInviting(false)
-    setInviteMsg(error ? 'error:' + error.message : `✓ Invite sent to ${inviteEmail} as ${ROLE_COLORS[inviteRole]?.label || inviteRole}`)
-    if (!error) { setInviteEmail(''); setInviteRole('viewer') }
+    if (error) {
+      setInviteMsg(error.message)
+    } else {
+      setInviteMsg(`✓ Invite sent to ${inviteEmail} as ${ROLE_COLORS[inviteRole]?.label || inviteRole}`)
+      setInviteEmail(''); setInviteRole('viewer')
+    }
   }
 
   const isError = inviteMsg.startsWith('error:')

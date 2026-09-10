@@ -13,27 +13,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-    <!-- Kill old service workers BEFORE React loads -->
+    <!-- Service Worker registration for PWA offline support -->
     <script>
-      (function() {
-        if (localStorage.getItem('swkilled')) return
-        localStorage.setItem('swkilled', '1')
-        if (navigator.serviceWorker.controller) {
-          try { navigator.serviceWorker.controller.postMessage({ type: 'KILL' }) } catch(e) {}
-          window.location.replace(window.location.href.split('#')[0])
-          return
-        }
-        // Unregister all cached service workers
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            for (var i = 0; i < regs.length; i++) { regs[i].unregister() }
-          }).catch(function() {})
-        }
-        // Wipe all caches
-        caches.keys().then(function(names) {
-          for (var j = 0; j < names.length; j++) { caches.delete(names[j]) }
-        }).catch(function() {})
-      })()
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => { /* SW not available */ })
+        })
+      }
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </head>

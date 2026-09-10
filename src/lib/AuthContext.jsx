@@ -10,10 +10,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
+      if (session?.user) {
+        try { await fetchProfile(session.user.id) }
+        catch (e) {
+          // Retry once on first-load failure
+          try { await fetchProfile(session.user.id) }
+          catch (e2) { console.error('fetchProfile retry failed:', e2.message) }
+          finally { setLoading(false) }
+        }
+      } else setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

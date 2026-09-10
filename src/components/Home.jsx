@@ -62,7 +62,7 @@ export default function Home({ onNav, onViewAsset }) {
 
   async function fetchAll() {
     setLoading(true)
-    const [{ data: allLicenses }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: ag }] = await Promise.all([
+    const [{ data: allLicenses }, { data: lg }, { data: s }, { data: e }, { data: c }, { data: ms }, { data: rq }, { data: allAssetData }] = await Promise.all([
       supabase.from('licenses').select('id,name,vendor,license_type,expiry_date,seats_total,seats_used,tenant_id').order('name'),
       supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').order('created_at', { ascending: false }).limit(8),
       supabase.from('sites').select('id, name'),
@@ -70,24 +70,9 @@ export default function Home({ onNav, onViewAsset }) {
       supabase.from('consumables').select('id,name,quantity,low_stock_threshold,category,unit').order('name'),
       supabase.from('maintenance_schedules').select('id,asset_tag,maintenance_type,next_due'),
       supabase.from('asset_requests').select('id,name,requester_name,status,priority,category,urgency,notes,created_at,updated_at').eq('status', 'pending').order('created_at', { ascending: false }),
-      supabase.from('assets').select('asset_tag,model,category,purchase_date,status').not('purchase_date','is',null).eq('status','Checked Out').limit(500),
+      supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location'),
     ])
 
-    // Fetch ALL assets in one batch on mount (up to 10k rows).
-    let allAssetData = []
-    let offset = 0
-    let batch
-    do {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('id,asset_tag,name,model,category,status,purchase_date,warranty_expiry,expected_return,assigned_to,site_id,location')
-        .range(offset, offset + 9999)
-        .order('created_at', { ascending: false })
-      if (error) { console.error('[Home] Fetch error:', error); break }
-      batch = data || []
-      allAssetData = [...allAssetData, ...batch]
-      offset += 10000
-    } while (batch.length >= 10000 && allAssetData.length < 500000)
     setAssets(allAssetData || [])
     setLicenses(allLicenses || [])
     setLog(lg || [])
@@ -104,7 +89,8 @@ export default function Home({ onNav, onViewAsset }) {
         localStorage.setItem(EMP_CACHE_KEY, JSON.stringify(map))
       } catch {}
     }
-    setAgingAssets((ag||[]).filter(a => {
+    // Derive aging assets from the main fetch (purchase_date >= 3 years ago)
+    setAgingAssets((allAssetData||[]).filter(a => {
       const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
       return yrs >= 3
     }).sort((a,b)=>new Date(a.purchase_date)-new Date(b.purchase_date)))

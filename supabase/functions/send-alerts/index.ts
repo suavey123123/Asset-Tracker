@@ -1,9 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'alerts@nhncorp-assets.vercel.app'
-const ALERT_EMAIL = Deno.env.get('ALERT_EMAIL') // admin email to notify
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL')!
+const ALERT_EMAIL = Deno.env.get('ALERT_EMAIL')!
+const APP_URL = Deno.env.get('APP_URL')!
+
+// Validate required env vars
+if (!RESEND_API_KEY) throw new Error('RESEND_API_KEY is not set')
+if (!FROM_EMAIL) throw new Error('FROM_EMAIL is not set')
+if (!ALERT_EMAIL) throw new Error('ALERT_EMAIL is not set')
+if (!APP_URL) throw new Error('APP_URL is not set')
 
 serve(async (req) => {
   const supabase = createClient(
@@ -20,7 +27,7 @@ serve(async (req) => {
       .eq('status', 'Checked Out').lt('expected_return', today.toISOString().slice(0, 10)).not('expected_return', 'is', null),
     supabase.from('assets').select('name, asset_tag, warranty_expiry')
       .lte('warranty_expiry', in30.toISOString().slice(0, 10)).gte('warranty_expiry', today.toISOString().slice(0, 10)),
-    supabase.from('licenses').select('name, expiry_date')
+    supabase.from('licenses').select('name')
       .lte('expiry_date', in30.toISOString().slice(0, 10)).gte('expiry_date', today.toISOString().slice(0, 10)),
   ])
 
@@ -65,7 +72,7 @@ serve(async (req) => {
         `).join('')}` : ''}
 
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid #2a2a2a;text-align:center">
-          <a href="${Deno.env.get('APP_URL') || 'https://nhncorp-assets.vercel.app'}" style="background:#d4ff4e;color:#0f0f0f;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px">Open Asset Tracker</a>
+          <a href="${APP_URL}" style="background:#d4ff4e;color:#0f0f0f;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px">Open Asset Tracker</a>
         </div>
       </div>
     </div>
