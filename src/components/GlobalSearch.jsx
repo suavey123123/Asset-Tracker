@@ -51,7 +51,7 @@ export default function GlobalSearch({ onViewAsset }) {
           // Search licenses by name, vendor
           supabase.from('licenses').select('id, name, vendor, license_type').or(`name.ilike.%${query}%,vendor.ilike.%${query}%`).limit(3),
           // Find employees whose name matches, then fetch their assigned assets
-          supabase.from('employees').select('id,name').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(10),
+          supabase.from('employees').select('id,name,email').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(10),
         ])
 
         // Merge assets assigned to matching employees (so searching "John" shows all of John's assets)
@@ -59,12 +59,16 @@ export default function GlobalSearch({ onViewAsset }) {
         if (matchEmps?.length) {
           const matchNames = new Set(matchEmps.map(e => e.name).filter(Boolean))
           const matchIds = new Set(matchEmps.map(e => e.id).filter(Boolean))
+          const matchEmails = new Set(matchEmps.map(e => e.email).filter(Boolean))
           const extra = rawAssets.filter(a => matchNames.has(a.assigned_to) || matchIds.has(a.assigned_to))
           setAssets(extra.length > 0 ? [...extra] : rawAssets || [])
+          // Deduplicate: remove people whose assets are already shown in the assets section
+          const empEmailSet = matchEmails
+          setEmployees((emps || []).filter(e => !empEmailSet.has(e.email)))
         } else {
           setAssets(rawAssets || [])
+          setEmployees(emps || [])
         }
-        setEmployees(emps || [])
         setLicenses(lics || [])
         setOpen(true)
       } catch (e) {
