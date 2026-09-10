@@ -59,15 +59,12 @@ export default function GlobalSearch({ onViewAsset }) {
         if (matchEmps?.length) {
           const matchNames = new Set(matchEmps.map(e => e.name).filter(Boolean))
           const matchIds = new Set(matchEmps.map(e => e.id).filter(Boolean))
-          const matchEmails = new Set(matchEmps.map(e => e.email).filter(Boolean))
           const extra = rawAssets.filter(a => matchNames.has(a.assigned_to) || matchIds.has(a.assigned_to))
-          setAssets(extra.length > 0 ? [...extra] : rawAssets || [])
-          // Deduplicate: remove from People list anyone whose name/email matches the search,
+          const filteredAssets = extra.length > 0 ? [...extra] : rawAssets || []
+          setAssets(filteredAssets)
+          // Deduplicate: remove from People list anyone matching the employees we used for asset lookup,
           // since their assets are already shown in the Assets section.
-          const queryLower = query.toLowerCase()
-          setEmployees((emps || []).filter(e =>
-            !matchEmails.has(e.email) && !e.name?.toLowerCase().includes(queryLower)
-          ))
+          setEmployees((emps || []).filter(e => !matchNames.has(e.name)))
         } else {
           setAssets(rawAssets || [])
           setEmployees(emps || [])

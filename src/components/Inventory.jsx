@@ -8,6 +8,7 @@ import EmployeeSelect from './EmployeeSelect'
 import ImportCSV from './ImportCSV'
 import CheckoutAgreement from './CheckoutAgreement'
 import PrintSheet from './PrintSheet'
+import AssetEditModal from './AssetEditModal'
 
 function getAssetAge(purchase_date) {
   if (!purchase_date) return null
@@ -78,6 +79,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
   const [modalOpen, setModalOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editAsset, setEditAsset] = useState(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -308,13 +310,16 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
     const savedPage = currentPageRef.current
     filterResetGuard.current = true
     setEditAsset(asset)
-    setForm({ asset_tag:asset.asset_tag||'', name:asset.name||'', category:asset.category||'LAPTOP', status:asset.status||'Available', model:asset.model||'', serial_number:asset.serial_number||'', location:asset.location||'', purchase_date:asset.purchase_date?.slice(0,10)||'', purchase_cost:asset.purchase_cost||'', warranty_expiry:asset.warranty_expiry?.slice(0,10)||'', provision_date:asset.provision_date?.slice(0,10)||'', notes:asset.notes||'', specs:asset.specs||{}, locked_status:asset.locked_status||'', carrier:asset.carrier||'', imei:asset.imei||'', seat_number:asset.seat_number||'', assigned_to:asset.assigned_to||'', assigned_to_team:asset.assigned_to_team||'', site_id:'' })
-    setFormLicenses([]); setError(''); setModalOpen(true)
+    setEditModalOpen(true)
     // Restore page after modal opens (filter effect may have reset it)
     setTimeout(() => {
       setPage(savedPage)
       sessionStorage.setItem('inv_page', String(savedPage))
     }, 0)
+  }
+
+  function handleEditSave() {
+    setEditModalOpen(false); setEditAsset(null); fetchAssets()
   }
 
   // Clear the filter guard once the modal is open
@@ -353,23 +358,17 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
       location: form.site_id ? (allSites.find(s=>s.id===form.site_id)?.name || null) : form.location || null,
     }
     try {
-      if (editAsset) {
-        const { error: e } = await supabase.from('assets').update(payload).eq('id', editAsset.id)
-        if (e) { setError(e.message); setSaving(false); return }
-        await logActivity(editAsset.id, editAsset.asset_tag, editAsset.name, 'updated', `Asset updated by ${profile?.email}`)
-      } else {
-        const { data: created, error: e } = await supabase.from('assets').insert(payload).select().single()
-        if (e) { setError(e.message); setSaving(false); return }
-        if (created) {
-          await logActivity(created.id, created.asset_tag, created.name, 'created', `Asset added by ${profile?.email}`)
-          // Assign licenses using the returned asset ID directly
-          if (formLicenses.length > 0) {
-            for (const licId of formLicenses) {
-              try {
-                await supabase.from('asset_license_assignments').insert({ asset_id: created.id, license_id: licId, assigned_to: form.assigned_to || null })
-                await supabase.rpc('increment_license_seats', { license_id: licId })
-              } catch(e) { /* non-critical: don't block asset creation */ }
-            }
+      const { data: created, error: e } = await supabase.from('assets').insert(payload).select().single()
+      if (e) { setError(e.message); setSaving(false); return }
+      if (created) {
+        await logActivity(created.id, created.asset_tag, created.name, 'created', `Asset added by ${profile?.email}`)
+        // Assign licenses using the returned asset ID directly
+        if (formLicenses.length > 0) {
+          for (const licId of formLicenses) {
+            try {
+              await supabase.from('asset_license_assignments').insert({ asset_id: created.id, license_id: licId, assigned_to: form.assigned_to || null })
+              await supabase.rpc('increment_license_seats', { license_id: licId })
+            } catch(e) { /* non-critical: don't block asset creation */ }
           }
         }
       }
@@ -902,7 +901,7 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
         )}
       </div>
 
-      <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title={editAsset?'Edit asset':'Add new asset'}>
+      <Modal open={modalOpen} onClose={()=>setModalOpen(false)} title="Add new asset">
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <FormField label="Asset tag / ID" required><input value={form.asset_tag} onChange={e=>setForm(f=>({...f,asset_tag:e.target.value}))} placeholder="e.g. IT-0042" /></FormField>
           <FormField label="Assign to employee">
@@ -1005,10 +1004,12 @@ export default function Inventory({ onViewAsset, onViewEmployee, editAssetProp, 
           {error && <div style={{ color:'var(--red)', fontSize:12 }}>{error}</div>}
           <div style={{ display:'flex', gap:8, justifyContent:'flex-end', paddingTop:8, borderTop:'1px solid var(--border)' }}>
             <Btn onClick={()=>setModalOpen(false)}>Cancel</Btn>
-            <Btn variant="primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save asset'}</Btn>
+            <Btn variant="primary" onClick={save} disabled={saving}>{saving?'Saving…':'Add asset'}</Btn>
           </div>
         </div>
       </Modal>
+
+      <AssetEditModal asset={editAsset} open={editModalOpen} onSave={handleEditSave} onCancel={()=>{ setEditModalOpen(false); setEditAsset(null) }} allSites={allSites} allLicenses={allLicenses} />
 
       <Modal open={bulkCheckoutOpen} onClose={()=>setBulkCheckoutOpen(false)} title={`Check out ${selectedAvailable.length} asset${selectedAvailable.length!==1?'s':''}`} width={400}>
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
