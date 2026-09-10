@@ -21,7 +21,7 @@ function calcDepreciation(cost, purchase_date, useful_life_years = 3) {
   return { original: c, current: currentValue, annual: annualDep, ageYears, pct: depreciatedPct * 100 }
 }
 
-export default function AssetDetail({ assetId, onBack, onEdit }) {
+export default function AssetDetail({ assetId, onBack, onEdit, onRefetch }) {
   const { isAdmin, isAdminOrManager, canReadFinancials } = useAuth()
   const [asset, setAsset] = useState(null)
   const [log, setLog] = useState([])
@@ -80,6 +80,7 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       setMaintenance(mResult?.data || [])
       setQuickNote(asset?.quick_note || '')
       quickNoteRef.current = asset?.quick_note || ''
+      onRefetch?.(asset)
     } catch (err) {
       console.error('Failed to load asset:', err)
       setError('Failed to load asset data: ' + (err?.message || String(err)))
