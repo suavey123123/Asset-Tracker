@@ -4,15 +4,8 @@ import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Modal, FormField, Spinner, StatusSelect } from './UI'
 import CategorySelect from './CategorySelect'
 import { SPEC_FIELDS, TECH_SPEC_CATEGORIES } from '../lib/constants'
+import { EMPTY_FORM } from '../lib/assetForm'
 import EmployeeSelect from './EmployeeSelect'
-
-const EMPTY_FORM = {
-  asset_tag: '', name: '', category: 'LAPTOP', status: 'Available', model: '',
-  serial_number: '', location: '', purchase_date: '', purchase_cost: '',
-  warranty_expiry: '', provision_date: '', notes: '', specs: {},
-  locked_status: '', carrier: '', imei: '', seat_number: '',
-  assigned_to: '', assigned_to_team: '', site_id: '',
-}
 
 export default function AssetEditModal({ asset, open, onSave, onCancel, allSites, allLicenses, isCreate }) {
   const { profile } = useAuth()
@@ -109,7 +102,7 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
             try {
               await supabase.from('asset_license_assignments').insert({ asset_id: created.id, license_id: licId, assigned_to: form.assigned_to || null })
               await supabase.rpc('increment_license_seats', { license_id: licId })
-            } catch { /* non-critical */ }
+            } catch (e) { console.warn('License assignment failed:', e.message) }
           }
         }
       } else {
@@ -125,7 +118,7 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
             try {
               await supabase.from('asset_license_assignments').delete().eq('asset_id', asset.id).eq('license_id', licId)
               await supabase.rpc('decrement_license_seats', { license_id: licId })
-            } catch { /* non-critical */ }
+            } catch (e) { console.warn('License removal failed:', e.message) }
           }
         }
         for (const licId of currentLicIds) {
@@ -133,7 +126,7 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
             try {
               await supabase.from('asset_license_assignments').insert({ asset_id: asset.id, license_id: licId, assigned_to: form.assigned_to || null })
               await supabase.rpc('increment_license_seats', { license_id: licId })
-            } catch { /* non-critical */ }
+            } catch (e) { console.warn('License assignment failed:', e.message) }
           }
         }
       }
@@ -147,7 +140,7 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
   }
 
   async function logActivity(assetId, assetTag, assetName, type, message) {
-    try { await supabase.from('activity_log').insert({ asset_id: assetId, asset_tag: assetTag, asset_name: assetName, type, message, performed_by: profile?.email }) } catch {}
+    try { await supabase.from('activity_log').insert({ asset_id: assetId, asset_tag: assetTag, asset_name: assetName, type, message, performed_by: profile?.email }) } catch (e) { console.warn('Activity log failed:', e.message) }
   }
 
   return (

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { useDebounce } from '../lib/hooks'
+import { EMPLOYEE_REFRESH_INTERVAL_MS, SEARCH_DEBOUNCE_MS } from '../lib/constants'
 import { Badge } from './UI'
 
 export default function GlobalSearch({ onViewAsset }) {
@@ -10,8 +12,8 @@ export default function GlobalSearch({ onViewAsset }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [empIdToName, setEmpIdToName] = useState({})
+  const debouncedQuery = useDebounce(query, SEARCH_DEBOUNCE_MS)
   const ref = useRef(null)
-  const timer = useRef(null)
 
   useEffect(() => {
     function handleClick(e) {
@@ -31,27 +33,27 @@ export default function GlobalSearch({ onViewAsset }) {
       })
     }
     refresh()
-    const id = setInterval(refresh, 300000)
+    const id = setInterval(refresh, EMPLOYEE_REFRESH_INTERVAL_MS)
     return () => clearInterval(id)
   }, [])
 
+  // Search assets, employees, licenses on debounced query.
   useEffect(() => {
-    clearTimeout(timer.current)
-    if (!query.trim()) { setAssets([]); setEmployees([]); setLicenses([]); setOpen(false); return }
+    if (!debouncedQuery.trim()) { setAssets([]); setEmployees([]); setLicenses([]); setOpen(false); return }
     setLoading(true)
-    timer.current = setTimeout(async () => {
+    ;(async () => {
       const controller = new AbortController()
       try {
         const [{ data: rawAssets }, { data: emps }, { data: lics }, { data: matchEmps }] = await Promise.all([
           // Search assets by name, tag, model, serial, location, AND assigned_to name
           supabase.from('assets').select('id, asset_tag, name, model, status, category, location, assigned_to')
-            .or(`name.ilike.%${query}%,asset_tag.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%,location.ilike.%${query}%,assigned_to.ilike.%${query}%`),
+            .or(`name.ilike.%${debouncedQuery}%,asset_tag.ilike.%${debouncedQuery}%,model.ilike.%${debouncedQuery}%,serial_number.ilike.%${debouncedQuery}%,location.ilike.%${debouncedQuery}%,assigned_to.ilike.%${debouncedQuery}%`),
           // Search employees by name, email
-          supabase.from('employees').select('id, name, email, department').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(5),
+          supabase.from('employees').select('id, name, email, department').or(`name.ilike.%${debouncedQuery}%,email.ilike.%${debouncedQuery}%`).limit(5),
           // Search licenses by name, vendor
-          supabase.from('licenses').select('id, name, vendor, license_type').or(`name.ilike.%${query}%,vendor.ilike.%${query}%`).limit(3),
+          supabase.from('licenses').select('id, name, vendor, license_type').or(`name.ilike.%${debouncedQuery}%,vendor.ilike.%${debouncedQuery}%`).limit(3),
           // Find employees whose name matches, then fetch their assigned assets
-          supabase.from('employees').select('id,name,email').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(10),
+          supabase.from('employees').select('id,name,email').or(`name.ilike.%${debouncedQuery}%,email.ilike.%${debouncedQuery}%`).limit(10),
         ])
 
         // Merge assets assigned to matching employees (so searching "John" shows all of John's assets)
@@ -74,9 +76,8 @@ export default function GlobalSearch({ onViewAsset }) {
       } catch (e) {
         if (e.name !== 'AbortError') setLoading(false)
       }
-    }, 300)
-    return () => clearTimeout(timer.current)
-  }, [query])
+    })()
+  }, [debouncedQuery])
 
   const selectAsset = useCallback((asset) => {
     setQuery('')

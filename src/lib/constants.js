@@ -94,3 +94,13 @@ export const STORAGE_KEYS = {
   // Asset tags
   asset_tags: 'asset_tags',
 }
+
+// ── App-wide constants ───────────────────────────────────────────────
+export const SEARCH_DEBOUNCE_MS = 300
+export const EMPLOYEE_REFRESH_INTERVAL_MS = 300000
+export const PAGE_SIZE = 25
+export const RESPONSIVE_BREAKPOINT = 768
+export const INTERSECTION_ROOT_MARGIN = '100px'
+export const PRINT_URL_REVOKE_MS = 10000
+export const NOTE_SAVED_REVEAL_MS = 2000
+export const ALERT_POLL_MS = 60000

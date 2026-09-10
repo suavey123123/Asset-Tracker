@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { ALERT_POLL_MS } from '../lib/constants'
 import Sidebar from '../components/Sidebar'
 import GlobalSearch from '../components/GlobalSearch'
 import Home from '../components/Home'
@@ -36,43 +37,6 @@ const TITLES = {
   home:'Dashboard', inventory:'Inventory', checkout:'Check In / Out',
   maintenance:'Maintenance', history:'Activity History', transfer:'Asset Transfer',
   users:'User Management', reports:'Reports', settings:'Settings', scanner:'Scanner',
-}
-
-function ShortcutsButton() {
-  const [open, setOpen] = React.useState(false)
-  const shortcuts = [
-    { key: 'N', desc: 'New asset (when on Inventory)' },
-    { key: '/', desc: 'Focus search bar' },
-    { key: 'Esc', desc: 'Close modal' },
-    { key: 'H', desc: 'Go to Dashboard' },
-    { key: 'I', desc: 'Go to Inventory' },
-    { key: 'M', desc: 'Go to Maintenance' },
-    { key: 'S', desc: 'Go to Scanner' },
-  ]
-  return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)} title="Keyboard shortcuts" style={{
-        fontSize: 13, color: open ? 'var(--text)' : 'var(--text3)', cursor: 'pointer',
-        padding: '5px 9px', border: '1px solid', borderColor: open ? 'var(--border2)' : 'var(--border)',
-        borderRadius: 'var(--radius)', background: open ? 'var(--bg3)' : 'none', fontFamily: 'var(--mono)',
-      }}>⌨</button>
-      {open && (
-        <div className="fade-in" style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280,
-          background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 500, overflow: 'hidden',
-        }}>
-          <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 500, color: 'var(--text2)' }}>Keyboard shortcuts</div>
-          {shortcuts.map(s => (
-            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
-              <kbd style={{ background: 'var(--bg4)', border: '1px solid var(--border2)', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--accent)', minWidth: 28, textAlign: 'center' }}>{s.key}</kbd>
-              <span style={{ fontSize: 12, color: 'var(--text2)' }}>{s.desc}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
 }
 
 export default function Dashboard() {
@@ -132,7 +96,7 @@ export default function Dashboard() {
 
   // Periodically refresh overdue alert count every 60 seconds.
   function refreshAlerts() {
-    const id = setInterval(fetchAlerts, 60000)
+    const id = setInterval(fetchAlerts, ALERT_POLL_MS)
     return () => clearInterval(id)
   }
 

@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { Badge, Btn, Modal, FormField, EmptyState, Spinner, ViewOnlyBanner, StatusSelect } from './UI'
 import CategorySelect from './CategorySelect'
-import { SPEC_FIELDS, TECH_SPEC_CATEGORIES } from '../lib/constants'
+import { SPEC_FIELDS, TECH_SPEC_CATEGORIES, INTERSECTION_ROOT_MARGIN } from '../lib/constants'
+import { EMPTY_FORM } from '../lib/assetForm'
 import EmployeeSelect from './EmployeeSelect'
 import ImportCSV from './ImportCSV'
 import CheckoutAgreement from './CheckoutAgreement'
@@ -16,13 +17,6 @@ function getAssetAge(purchase_date) {
   if (years >= 4) return { label: `${Math.floor(years)}yr`, color: 'var(--red)', title: 'Due for replacement' }
   if (years >= 3) return { label: `${Math.floor(years)}yr`, color: 'var(--amber)', title: 'Aging asset' }
   return null
-}
-
-const EMPTY_FORM = {
-  asset_tag:'', name:'', category:'LAPTOP', status:'Available',
-  model:'', serial_number:'', location:'', purchase_date:'',
-  purchase_cost:'', warranty_expiry:'', notes:'',
-  specs: {}, assigned_to: '', assigned_to_team: '', site_id: '', provision_date: '',
 }
 
 function LazyAssetPhoto({ assetId, onClick }) {
@@ -42,7 +36,7 @@ function LazyAssetPhoto({ assetId, onClick }) {
           setUrl(publicUrl)
         }
       }
-    }, { rootMargin: '100px' })
+    }, { rootMargin: INTERSECTION_ROOT_MARGIN })
     if (ref.current) obs.observe(ref.current)
     return () => obs.disconnect()
   }, [assetId])
