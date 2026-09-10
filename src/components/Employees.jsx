@@ -103,11 +103,11 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
 
   function openAdd() { setEditEmp(null); setForm(EMPTY_FORM); setError(''); setModalOpen(true) }
   async function fetchEmpHistory(emp) {
-    const [{ data: log }, { data: current }] = await Promise.all([
+    const [{ data: log }] = await Promise.all([
       supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').ilike('message', `%${emp.name}%`).order('created_at', { ascending: false }).limit(50),
-      supabase.from('assets').select('id, asset_tag, model, category, status, purchase_date').eq('assigned_to', emp.name),
+      // Note: current assets are already in state; getEmployeeAssets does dual-match (UUID + name)
     ])
-    setEmpHistory({ log: log || [], current: current || [] })
+    setEmpHistory(prev => ({ ...prev, log: log || [] }))
   }
 
   function openEdit(emp) { setEditEmp(emp); setForm({ name: emp.name||'', email: emp.email||'', department: emp.department||'', title: emp.title||'', phone: emp.phone||'', location: emp.location||'', notes: emp.notes||'', site_id: emp.site_id||null, hire_date: emp.hire_date||'' }); setError(''); setModalOpen(true) }
@@ -137,8 +137,10 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
 
   async function offboard(emp) {
     setOffboarding(true)
-    const { data: empAssets } = await supabase.from('assets').select('id, name, asset_tag').eq('assigned_to', emp.name).eq('status', 'Checked Out')
-    if (empAssets?.length) {
+    // Fetch all checked-out assets and filter client-side (dual-match UUID + name)
+    const { data: allCheckedOut } = await supabase.from('assets').select('id, name, asset_tag').eq('status', 'Checked Out')
+    const empAssets = (allCheckedOut || []).filter(a => a.assigned_to === emp.id || a.assigned_to === emp.name)
+    if (empAssets.length) {
       for (const a of empAssets) {
         await supabase.from('assets').update({ status: 'Available', assigned_to: null, expected_return: null }).eq('id', a.id)
         await supabase.from('activity_log').insert({ asset_id: a.id, asset_tag: a.asset_tag, asset_name: a.name, type: 'checkin', message: `Checked in during offboarding of ${emp.name}`, performed_by: 'system' })
@@ -185,7 +187,7 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
         })
     const rows = []
     exportEmployees.forEach(emp => {
-      const empAssets = filteredAssets.filter(a => a.assigned_to === emp.name)
+      const empAssets = filteredAssets.filter(a => a.assigned_to === emp.id || a.assigned_to === emp.name)
       if (empAssets.length === 0) {
         rows.push({ name: emp.name, email: emp.email||'', title: emp.title||'', department: emp.department||'', phone: emp.phone||'', hire_date: emp.hire_date||'', asset_tag: '', asset_category: '', asset_model: '', asset_serial: '', purchase_date: '', provision_date: '', purchase_cost: '', cpu: '', gpu: '', ram: '', ssd: '', hdd: '', mac_wifi: '', mac_lan: '', os_version: '', resolution: '', size: '', locked_status: '', carrier: '', imei: '', seat_number: '' })
       } else {
@@ -203,12 +205,22 @@ export default function Employees({ onViewAsset, highlightEmployee, onClearHighl
   }
 
   function getEmployeeAssets(emp) {
+    const empId = emp.id || (typeof emp === 'string' ? emp : null)
     const empName = emp.name || (typeof emp === 'string' ? emp : null)
-    if (!empName) return []
-    return assets.filter(a => a.assigned_to === empName)
+    return assets.filter(a => {
+      if (a.assigned_to === empId) return true
+      if (empName && a.assigned_to === empName) return true
+      return false
+    })
   }
 
   const departments = [...new Set(employees.map(e => e.department).filter(Boolean))].sort()
+
+  // Build a lookup of all possible identifiers for each employee:
+  // both UUID and name, so matching works regardless of what's stored in assigned_to
+  const empIdSet = new Set(employees.map(e => e.id))
+  const empNameToId = {}
+  employees.forEach(e => { empNameToId[e.name] = e.id })
 
   const filtered = employees.filter(e => {
     if (filterSite && e.site_id !== filterSite) return false

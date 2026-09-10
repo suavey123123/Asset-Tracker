@@ -9,6 +9,7 @@ export default function GlobalSearch({ onViewAsset }) {
   const [licenses, setLicenses] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [empIdToName, setEmpIdToName] = useState({})
   const ref = useRef(null)
   const timer = useRef(null)
 
@@ -18,6 +19,20 @@ export default function GlobalSearch({ onViewAsset }) {
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Fetch employees periodically (every 5 min) so search result names stay current.
+  useEffect(() => {
+    function refresh() {
+      supabase.from('employees').select('id, name').then(({ data }) => {
+        const map = {}
+        data?.forEach(e => { map[e.id] = e.name })
+        setEmpIdToName(map)
+      })
+    }
+    refresh()
+    const id = setInterval(refresh, 300000)
+    return () => clearInterval(id)
   }, [])
 
   useEffect(() => {
@@ -36,16 +51,16 @@ export default function GlobalSearch({ onViewAsset }) {
           // Search licenses by name, vendor
           supabase.from('licenses').select('id, name, vendor, license_type').or(`name.ilike.%${query}%,vendor.ilike.%${query}%`).limit(3),
           // Find employees whose name matches, then fetch their assigned assets
-          supabase.from('employees').select('id').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(10),
+          supabase.from('employees').select('id,name').or(`name.ilike.%${query}%,email.ilike.%${query}%`).limit(10),
         ])
 
         // Merge assets assigned to matching employees (so searching "John" shows all of John's assets)
         if (matchEmps?.length) {
-          const matchNames = new Set(matchEmps.map(e => e.name).filter(Boolean))
-          // Use the first query results which already includes assigned_to name matches via ilike,
-          // then add any remaining assets assigned to matching employees by name
+          const matchNames = matchEmps.map(e => e.name).filter(Boolean)
+          // assigned_to stores employee names, so match by name list (dual: also include IDs for legacy data)
+          const matchIds = matchEmps.map(e => e.id).filter(Boolean)
           const { data: assignedAssets } = await supabase.from('assets').select('id, asset_tag, name, model, status, category, location, assigned_to')
-            .in('assigned_to', [...matchNames])
+            .or(`assigned_to.in.(${matchNames.map(n => `'${n.replace(/'/g, "''")}'`)})`.replace('()', `(${[...new Set([...matchNames, ...matchIds])].map(v => `'${String(v).replace(/'/g, "''")}'`).join(',')})`)
           if (assignedAssets?.length) {
             const existingIds = new Set((rawAssets || []).map(a => a.id))
             const merged = [...rawAssets || []]
@@ -139,7 +154,7 @@ export default function GlobalSearch({ onViewAsset }) {
                       {a.model && a.model !== a.asset_tag ? a.model : a.name}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
-                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to ? ` · ${a.assigned_to}` : ''}
+                      {a.asset_tag}{a.location ? ` · ${a.location}` : ''}{a.assigned_to ? ` · ${empIdToName[a.assigned_to] || a.assigned_to}` : ''}
                     </div>
                   </div>
                   <Badge status={a.status} />
