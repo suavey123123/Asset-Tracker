@@ -30,6 +30,7 @@ import ValueDashboard from '../components/ValueDashboard'
 import Sites from '../components/Sites'
 import Licenses from '../components/Licenses'
 import Compliance from '../components/Compliance'
+import AssetEditModal from '../components/AssetEditModal'
 
 const TITLES = {
   home:'Dashboard', inventory:'Inventory', checkout:'Check In / Out',
@@ -81,6 +82,10 @@ export default function Dashboard() {
   const [viewingAssetFromTab, setViewingAssetFromTab] = useState('inventory')
   const [viewingEmployee, setViewingEmployee] = useState(null)
   const [editAsset, setEditAsset] = useState(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editModalAsset, setEditModalAsset] = useState(null)
+  const [editModalSites, setEditModalSites] = useState([])
+  const [editModalLicenses, setEditModalLicenses] = useState([])
   const [alerts, setAlerts] = useState(0)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light')
 
@@ -119,6 +124,9 @@ export default function Dashboard() {
       setViewingAsset(null)
     }
   }, [tab])
+  useEffect(() => {
+    if (editModalAsset) fetchEditModalData()
+  }, [editModalAsset])
   useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
 
   // Periodically refresh overdue alert count every 60 seconds.
@@ -131,6 +139,15 @@ export default function Dashboard() {
     const today = new Date().toISOString().slice(0,10)
     const { data } = await supabase.from('assets').select('id').eq('status','Checked Out').lt('expected_return',today).not('expected_return','is',null)
     setAlerts((data||[]).length)
+  }
+
+  async function fetchEditModalData() {
+    const [{ data: sites }, { data: licenses }] = await Promise.all([
+      supabase.from('sites').select('id,name').order('name'),
+      supabase.from('licenses').select('id,name,vendor,license_type,seats_total,seats_used').order('name'),
+    ])
+    setEditModalSites(sites || [])
+    setEditModalLicenses(licenses || [])
   }
 
   function handleViewAsset(asset) {
@@ -150,16 +167,15 @@ export default function Dashboard() {
     setSidebarOpen(false)
   }
   function handleEdit(asset) {
-    setViewingAsset(null)
-    setEditAsset(asset)
-    setTab('inventory')
+    setEditModalAsset(asset)
+    setEditModalOpen(true)
   }
 
   const title = viewingAsset ? (viewingAsset.model || viewingAsset.asset_tag || viewingAsset.name) : TITLES[tab] || 'Asset Tracker'
 
   function renderActivePage() {
     if (tab === 'home') return <Home onNav={handleNav} onViewAsset={handleViewAsset} />
-    if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>setEditAsset(null)} />
+    if (tab === 'inventory') return <Inventory onViewAsset={handleViewAsset} onViewEmployee={handleViewEmployee} editAssetProp={editAsset} onEditDone={()=>{ setEditAsset(null); setEditModalOpen(false); }} />
     if (tab === 'checkout') return <Checkout onViewAsset={handleViewAsset} />
     if (tab === 'transfer') return <Transfer onViewAsset={handleViewAsset} />
     if (tab === 'maintenance') return <Maintenance />
@@ -246,10 +262,25 @@ export default function Dashboard() {
         <ErrorBoundary>
           <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
             {viewingAsset ? (
-              <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab) }} onEdit={handleEdit} />
+              <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab); setEditModalAsset(null) }} onEdit={handleEdit} />
             ) : renderActivePage()}
           </div>
         </ErrorBoundary>
+
+        {/* Edit modal — renders atop the current page */}
+        {editModalOpen && editModalAsset && (
+          <div style={{ position:'fixed', inset:0, zIndex:999, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <AssetEditModal
+              asset={editModalAsset}
+              open={editModalOpen}
+              isCreate={false}
+              onSave={() => { setEditModalOpen(false); setEditModalAsset(null); setEditAsset(null); }}
+              onCancel={() => { setEditModalOpen(false); setEditModalAsset(null); setEditAsset(null); }}
+              allSites={editModalSites}
+              allLicenses={editModalLicenses}
+            />
+          </div>
+        )}
       </main>
     </div>
     </ToastProvider>
