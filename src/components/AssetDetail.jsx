@@ -46,23 +46,39 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       return
     }
     try {
-      // Use maybeSingle instead of single — single() throws an error when 0 rows match,
-      // which shows a "fetch failed" error instead of a graceful "not found" message
-      const [{ data: a }, { data: l }, { data: m }] = await Promise.all([
-        supabase.from('assets').select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at,quick_note').eq('id', assetId).maybeSingle(),
+      // Fetch each query independently so one failure doesn't kill the whole load
+      const { data: a, error: aErr } = await supabase
+        .from('assets')
+        .select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at,quick_note')
+        .eq('id', assetId)
+        .maybeSingle()
+
+      if (aErr) {
+        console.error('Asset fetch error:', aErr)
+        setError('Failed to load asset: ' + (aErr.message || JSON.stringify(aErr)))
+        setLoading(false)
+        return
+      }
+
+      if (!a) {
+        setError('No asset found with the given ID. The asset may have been deleted.')
+        setLoading(false)
+        return
+      }
+
+      const [lResult, mResult] = await Promise.all([
         supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
         supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
       ])
-      if (a) {
-        setAsset(a); setLog(l || []); setMaintenance(m || [])
-        setQuickNote(a?.quick_note || '')
-        quickNoteRef.current = a?.quick_note || ''
-      } else {
-        setError('No asset found with the given ID. The asset may have been deleted.')
-      }
+
+      setAsset(a)
+      setLog(lResult?.data || [])
+      setMaintenance(mResult?.data || [])
+      setQuickNote(a?.quick_note || '')
+      quickNoteRef.current = a?.quick_note || ''
     } catch (err) {
       console.error('Failed to load asset:', err)
-      setError(err?.message || 'Failed to load asset data.')
+      setError('Failed to load asset data: ' + (err?.message || String(err)))
     } finally {
       setLoading(false)
     }
