@@ -46,36 +46,38 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
       return
     }
     try {
-      // Fetch each query independently so one failure doesn't kill the whole load
-      const { data: a, error: aErr } = await supabase
+      // Fetch asset individually so we can handle errors properly
+      const { data: assetData, error: assetErr } = await supabase
         .from('assets')
         .select('id,asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at,quick_note')
         .eq('id', assetId)
-        .maybeSingle()
+        .limit(1)
 
-      if (aErr) {
-        console.error('Asset fetch error:', aErr)
-        setError('Failed to load asset: ' + (aErr.message || JSON.stringify(aErr)))
+      if (assetErr) {
+        console.error('Asset fetch error:', assetErr)
+        setError('Failed to load asset: ' + (assetErr.message || JSON.stringify(assetErr)))
         setLoading(false)
         return
       }
 
-      if (!a) {
+      const asset = assetData && assetData.length > 0 ? assetData[0] : null
+      if (!asset) {
         setError('No asset found with the given ID. The asset may have been deleted.')
         setLoading(false)
         return
       }
 
+      // Now fetch activity log and maintenance records
       const [lResult, mResult] = await Promise.all([
         supabase.from('activity_log').select('id,asset_id,asset_tag,asset_name,type,message,performed_by,created_at').eq('asset_id', assetId).order('created_at', { ascending: false }),
         supabase.from('maintenance_records').select('id,asset_id,maintenance_type,performed_date,performed_by,cost,notes,ticket_number,ticket_url,ticket_system,created_at').eq('asset_id', assetId).order('performed_date', { ascending: false }),
       ])
 
-      setAsset(a)
+      setAsset(asset)
       setLog(lResult?.data || [])
       setMaintenance(mResult?.data || [])
-      setQuickNote(a?.quick_note || '')
-      quickNoteRef.current = a?.quick_note || ''
+      setQuickNote(asset?.quick_note || '')
+      quickNoteRef.current = asset?.quick_note || ''
     } catch (err) {
       console.error('Failed to load asset:', err)
       setError('Failed to load asset data: ' + (err?.message || String(err)))
