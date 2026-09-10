@@ -55,24 +55,12 @@ export default function GlobalSearch({ onViewAsset }) {
         ])
 
         // Merge assets assigned to matching employees (so searching "John" shows all of John's assets)
+        // Do client-side filter on already-fetched assets (dual-match UUID and name)
         if (matchEmps?.length) {
-          const matchNames = matchEmps.map(e => e.name).filter(Boolean)
-          // assigned_to stores employee names, so match by name list (dual: also include IDs for legacy data)
-          const matchIds = matchEmps.map(e => e.id).filter(Boolean)
-          const { data: assignedAssets } = await supabase.from('assets').select('id, asset_tag, name, model, status, category, location, assigned_to')
-            .or(`assigned_to.in.(${matchNames.map(n => `'${n.replace(/'/g, "''")}'`)})`.replace('()', `(${[...new Set([...matchNames, ...matchIds])].map(v => `'${String(v).replace(/'/g, "''")}'`).join(',')})`)
-          if (assignedAssets?.length) {
-            const existingIds = new Set((rawAssets || []).map(a => a.id))
-            const merged = [...rawAssets || []]
-            assignedAssets.forEach(a => {
-              const idx = merged.findIndex(x => x.id === a.id)
-              if (idx >= 0) merged[idx] = a
-              else { merged.push(a); existingIds.add(a.id) }
-            })
-            setAssets(merged)
-          } else {
-            setAssets(rawAssets || [])
-          }
+          const matchNames = new Set(matchEmps.map(e => e.name).filter(Boolean))
+          const matchIds = new Set(matchEmps.map(e => e.id).filter(Boolean))
+          const extra = rawAssets.filter(a => matchNames.has(a.assigned_to) || matchIds.has(a.assigned_to))
+          setAssets(extra.length > 0 ? [...extra] : rawAssets || [])
         } else {
           setAssets(rawAssets || [])
         }
