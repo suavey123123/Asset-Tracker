@@ -34,6 +34,8 @@ export default function AssetDetail({ assetId, onBack, onEdit }) {
   const [noteSaved, setNoteSaved] = useState(false)
   const [error, setError] = useState(null)
   const qrRef = useRef(null)
+  const refetchRef = useRef(null)
+  useEffect(() => { refetchRef.current = fetchAll }, [fetchAll])
 
   useEffect(() => { setError(null); fetchAll() }, [assetId])
 

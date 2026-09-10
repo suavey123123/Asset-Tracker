@@ -86,6 +86,7 @@ export default function Dashboard() {
   const [editModalAsset, setEditModalAsset] = useState(null)
   const [editModalSites, setEditModalSites] = useState([])
   const [editModalLicenses, setEditModalLicenses] = useState([])
+  const [detailVersion, setDetailVersion] = useState(0)
   const [alerts, setAlerts] = useState(0)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light')
 
@@ -148,6 +149,21 @@ export default function Dashboard() {
     ])
     setEditModalSites(sites || [])
     setEditModalLicenses(licenses || [])
+  }
+
+  async function refreshViewingAsset() {
+    if (!viewingAsset) return
+    const { data, error: e } = await supabase.from('assets').select('asset_tag,name,model,category,status,purchase_date,purchase_cost,warranty_expiry,notes,provision_date,specs,site_id,locked_status,carrier,imei,seat_number,serial_number,location,assigned_to,assigned_to_team,expected_return,tenant_id,created_at,updated_at,quick_note').eq('id', viewingAsset.id).limit(1)
+    if (!e && data?.length) {
+      setViewingAsset(data[0])
+      // Also refetch the activity log and maintenance records for the detail page
+      const [{ data: log }, { data: maint }] = await Promise.all([
+        supabase.from('activity_log').select('*').eq('asset_id', viewingAsset.id).order('created_at', { ascending: false }),
+        supabase.from('maintenance_records').select('*').eq('asset_id', viewingAsset.id).order('performed_date', { ascending: false }),
+      ])
+      // These states live in AssetDetail, so we can't update them here.
+      // But the asset fields will be correct.
+    }
   }
 
   function handleViewAsset(asset) {
@@ -262,7 +278,7 @@ export default function Dashboard() {
         <ErrorBoundary>
           <div key={viewingAsset ? `asset-${viewingAsset.id}` : `tab-${tab}`} style={{ padding:'1rem 1rem' }}>
             {viewingAsset ? (
-              <AssetDetail assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab); setEditModalAsset(null) }} onEdit={handleEdit} />
+              <AssetDetail key={`asset-${viewingAsset.id}-${detailVersion}`} assetId={viewingAsset.id} onBack={()=>{ setViewingAsset(null); setTab(viewingAssetFromTab); setEditModalAsset(null) }} onEdit={handleEdit} />
             ) : renderActivePage()}
           </div>
         </ErrorBoundary>
@@ -274,7 +290,12 @@ export default function Dashboard() {
               asset={editModalAsset}
               open={editModalOpen}
               isCreate={false}
-              onSave={() => { setEditModalOpen(false); setEditModalAsset(null); setEditAsset(null); }}
+              onSave={async () => {
+                setEditModalOpen(false)
+                setEditModalAsset(null)
+                setEditAsset(null)
+                setDetailVersion(v => v + 1)
+              }}
               onCancel={() => { setEditModalOpen(false); setEditModalAsset(null); setEditAsset(null); }}
               allSites={editModalSites}
               allLicenses={editModalLicenses}
