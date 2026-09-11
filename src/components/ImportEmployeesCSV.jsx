@@ -52,15 +52,16 @@ function normalizeImei(val) {
 }
 
 function buildSpecs(r) {
-  return {
-    CPU: r.cpu || '', GPU: r.gpu || '', RAM: r.ram || '',
-    SSD: r.ssd || '', HDD: r.hdd || '',
-    'MAC ADDRESS (WIFI)': r.mac_wifi || '',
-    'MAC ADDRESS (LAN)': r.mac_lan || '',
-    'OS VERSION': r.os_version || '',
-    'RESOLUTION': r.resolution || '',
-    'SIZE': r.size || '',
+  const specs = {
+    CPU: r.cpu || null, GPU: r.gpu || null, RAM: r.ram || null,
+    SSD: r.ssd || null, HDD: r.hdd || null,
+    'MAC ADDRESS (WIFI)': r.mac_wifi || null,
+    'MAC ADDRESS (LAN)': r.mac_lan || null,
+    'OS VERSION': r.os_version || null,
+    'RESOLUTION': r.resolution || null,
+    'SIZE': r.size || null,
   }
+  return Object.values(specs).some(v => v) ? specs : null
 }
 
 // Truncate long display strings (subStep, labels)
@@ -282,7 +283,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
         const { data: existing } = await supabase.from('employees').select('id, name, email').ilike('name', empName).maybeSingle()
 
         const empPayload = typeof emp.details === 'string'
-          ? { name: empName, site_id: siteId || null }
+          ? { name: empName, ...(siteId ? { site_id: siteId } : {}) }
           : {
               name: emp.details.name,
               email: emp.details.email || null,
@@ -290,7 +291,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               department: emp.details.department || null,
               phone: emp.details.phone || null,
               hire_date: normalizeDate(emp.details.hire_date),
-              site_id: siteId || null,
+              ...(siteId ? { site_id: siteId } : {}),
             }
 
         if (existing) {
@@ -338,7 +339,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     // Step 2: Create/assign assets in batches (Issue #1)
     const assetRowList = rows.filter(r => r.asset_tag)
     const totalAssets = assetRowList.length
-    setProgress({ step: 'Assigning assets', current: 0, total: totalAssets })
+    if (totalAssets > 0) setProgress({ step: 'Assigning assets', current: 0, total: totalAssets })
 
     const resolveEmpId = (rawName) => {
       if (!rawName || !rawName.trim()) return null
@@ -445,7 +446,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     if (activityLogEntries.length > 0) {
       try {
         await supabase.from('activity_log').insert(
-          activityLogEntries.map(e => ({ ...e, created_at: new Date().toISOString() }))
+          activityLogEntries
         )
       } catch (e) {
         errors.push(`Activity log: ${e.message}`)
@@ -478,7 +479,15 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                 status: r.status || 'Available',
               }).eq('id', existing.id)
               if (error) { errors.push(`Team asset ${r.asset_tag}: ${error.message}`); assetErrors++ }
-              else assetAssigned++
+              else {
+                assetAssigned++
+                activityLogEntries.push({
+                  asset_id: existing.id, asset_tag: existing.asset_tag,
+                  asset_name: existing.asset_tag, type: 'checkin',
+                  message: `Assigned to team "${r.assigned_to_team}" via bulk import`,
+                  performed_by: 'import',
+                })
+              }
             } else {
               const { data: newAsset, error } = await supabase.from('assets').insert({
                 asset_tag: r.asset_tag,
@@ -492,7 +501,15 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               }).select().single()
 
               if (error) { errors.push(`Team asset ${r.asset_tag}: ${error.message}`); assetErrors++ }
-              else assetCreated++
+              else {
+                assetCreated++
+                activityLogEntries.push({
+                  asset_id: newAsset.id, asset_tag: newAsset.asset_tag,
+                  asset_name: newAsset.asset_tag, type: 'created',
+                  message: `Created for team "${r.assigned_to_team}" via bulk import`,
+                  performed_by: 'import',
+                })
+              }
             }
           } catch (e) {
             // Issue #2: per-row error isolation
@@ -635,8 +652,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                     {showPreview ? 'Show less ▲' : 'Show all ▼'}
                   </button>
                 </div>
-                {(showPreview ? preview : preview.slice(0, 5)).length > 0 && (
-                  <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight: showPreview ? 400 : 220, WebkitOverflowScrolling:'touch' }}>
+                <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight: showPreview ? 400 : 220, WebkitOverflowScrolling:'touch' }}>
                     <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
                       <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
                         {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','Assigned To','Team Use','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Seat #','Lock Status','Carrier','IMEI','Notes'].map(h=>(
@@ -675,7 +691,6 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                       ))}</tbody>
                     </table>
                   </div>
-                )}
               </div>
             )}
 
