@@ -40,11 +40,30 @@ function cleanCost(val) {
   return isNaN(n) ? null : n
 }
 
+function normalizeImei(val) {
+  if (!val) return null
+  const s = String(val)
+  if (s.includes('E+') || s.includes('e+')) return String(Math.round(parseFloat(s)))
+  return s
+}
+
+function buildSpecs(r) {
+  return {
+    CPU: r.cpu || '', GPU: r.gpu || '', RAM: r.ram || '',
+    SSD: r.ssd || '', HDD: r.hdd || '',
+    'MAC ADDRESS (WIFI)': r.mac_wifi || '',
+    'MAC ADDRESS (LAN)': r.mac_lan || '',
+    'OS VERSION': r.os_version || '',
+    'RESOLUTION': r.resolution || '',
+    'SIZE': r.size || '',
+  }
+}
+
 
 const TEMPLATE = `name,email,title,department,phone,hire_date,asset_tag,asset_category,asset_model,asset_serial,purchase_date,provision_date,purchase_cost,assigned_to,assigned_to_team,cpu,gpu,ram,ssd,hdd,mac_wifi,mac_lan,os_version,resolution,size,seat_number,locked_status,carrier,imei,notes
-John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,John Smith,,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro,2560x1600,15",,,, 
+John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-001,LAPTOP,Dell XPS 15,SN-12345,5/29/2025,6/1/2025,$1899.00,John Smith,,Intel i7-13700H,NVIDIA RTX 4060,16GB DDR5,512GB NVMe,,00:1A:2B:3C:4D:5E,00:1A:2B:3C:4D:5F,Windows 11 Pro,2560x1600,15",,,,
 John Smith,john@company.com,IT Engineer,IT,555-1234,2024-01-15,IT-045,PHONE,iPhone 15,SN-67890,5/29/2025,6/1/2025,$999.00,John Smith,,A15 6-core,4-core graphics,4GB,64GB,,d0:88:0c:c4:b5:c6,,iOS 17,,6.1",Unlocked,T-Mobile,="351876499606414"
-Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Jane Doe,,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14,3024x1964,14",,, 
+Jane Doe,jane@company.com,IT Manager,IT,555-5678,2023-06-01,IT-002,LAPTOP,MacBook Pro 14,SN-11111,5/25/2023,6/1/2023,$2499.00,Jane Doe,,Apple M3 Pro,Apple M3 GPU,18GB,512GB NVMe,,00:AA:BB:CC:DD:EE,00:AA:BB:CC:DD:EF,macOS Sonoma 14,3024x1964,14",,,
 ,,,,,,IT-099,MONITOR,Dell S2722DC,SN-99999,1/1/2024,1/5/2024,$350.00,,Tradeshow Equipment,,,,,,,,,,27",A-101,,, `
 
 const NOTES = [
@@ -54,7 +73,11 @@ const NOTES = [
   'Employee details only get created once — duplicate names are automatically skipped.',
   'Dates accept any format: 5/29/2025, 2025-05-29, 29/05/2025 etc.',
   'Costs accept $ signs and commas: $1,899.00 or 1899.00 both work.',
+  'IMEI numbers from Excel may show as formulas (e.g. ="3.5187E+14") — these are auto-normalized.',
+  'Maximum file size: 5 MB.',
 ]
+
+// --- CSV parsing ---
 
 function parseCSVLine(line) {
   const vals = []
@@ -76,7 +99,8 @@ function parseCSVLine(line) {
 
 function parseCSV(text) {
   // Handle Windows (CRLF) and Mac (CR) line endings
-  const lines = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.replace(/,/g,'').replace(/;/g,'').trim())
+  const raw = text.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const lines = raw.split('\n').filter(l => l.replace(/,/g,'').replace(/;/g,'').trim())
   if (lines.length < 2) return { rows: [], errors: ['Need a header row and at least one data row.'] }
   // Auto-detect delimiter: semicolon (Excel European) or comma
   const delimiter = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ','
@@ -92,7 +116,15 @@ function parseCSV(text) {
     headers.forEach((h, j) => { row[h] = (vals[j] || '').trim() })
     return row
   }).filter(row => (row.name && row.name.trim()) || (row.asset_tag && row.assigned_to_team))
-  // Only error if a row has some data but no name
+
+  // Warn if a row has an asset_tag but no name — the assigned_to lookup will still work,
+  // but if no employee row with that name exists, the asset will be created unassigned.
+  rows.filter(r => r.asset_tag && !r.name?.trim()).forEach(r => {
+    if (!r.assigned_to?.trim()) {
+      errs.push(`Row with asset_tag "${r.asset_tag}": no employee name (name or assigned_to required)`)
+    }
+  })
+
   return { rows, errors: errs }
 }
 
@@ -111,15 +143,19 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   function handleFileUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    // File size validation (max 5 MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors([`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 5 MB.`])
+      return
+    }
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target.result
       setErrors([])
-      const { rows, errors } = parseCSV(text)
-      setPreview(rows)
-      setErrors(errors)
-      if (!errors.length) {
-        // Store parsed rows directly, don't show raw CSV in textarea
+      const { rows, errors: errs } = parseCSV(text)
+      setPreview(rows.slice(0, 5))
+      setErrors(errs)
+      if (!errs.length) {
         setCsv(text)
         setFileName(file.name)
       }
@@ -129,31 +165,43 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
   }
 
   function handleCSV(text) {
-    setCsv(text); setErrors([])
+    setCsv(text); setErrors([]); setFileName('')
     if (!text.trim()) { setPreview([]); return }
     const { rows, errors } = parseCSV(text)
-    setPreview(rows)
+    setPreview(rows.slice(0, 5))
     setErrors(errors)
   }
 
+  function onCsvChange(e) {
+    setFileName('')
+    const v = e.target.value
+    if (v.trim()) handleCSV(v)
+    else { setCsv(''); setPreview([]); setErrors([]) }
+  }
+
   function downloadTemplate() {
-    const blob = new Blob(['\uFEFF' + TEMPLATE], { type: 'text/csv;charset=utf-8' })
+    const blob = new Blob(['﻿' + TEMPLATE], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href = url; a.download = 'employee-asset-import.csv'; a.click()
     URL.revokeObjectURL(url)
   }
 
+  // Sleep helper to avoid hammering the database with rapid sequential requests
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
   async function doImport() {
     const { rows, errors: errs } = parseCSV(csv)
     if (errs.length) { setErrors(errs); return }
+
     // Separate team-use rows (no name, has assigned_to_team) from employee rows
     const teamRows = rows.filter(r => !r.name?.trim() && r.asset_tag && r.assigned_to_team)
     const employeeRows = rows.filter(r => r.name?.trim())
+    const assetRows = rows.filter(r => r.asset_tag && r.name?.trim())
 
     // Collect unique names: from 'name' column + from 'assigned_to' column on asset rows
     const nameSet = new Set()
     employeeRows.forEach(r => nameSet.add(r.name))
-    rows.filter(r => r.asset_tag && !r.name?.trim() && r.assigned_to?.trim()).forEach(r => nameSet.add(r.assigned_to))
+    assetRows.filter(r => r.assigned_to?.trim()).forEach(r => nameSet.add(r.assigned_to))
     const extraNames = [...nameSet].filter(n => !employeeRows.find(r => r.name === n))
 
     // Group employee rows by name
@@ -165,143 +213,182 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     // Add placeholder entries for assigned_to-only names (no asset rows to carry details)
     extraNames.forEach(n => { empMap[n] = { details: n, assets: [] } })
     const employees = Object.values(empMap)
+
     let empCreated = 0, empSkipped = 0, assetCreated = 0, assetAssigned = 0, errors = []
 
     setImporting(true)
+    setResult(null)
 
     try {
+      // Step 1: Create employees, build name→id map for asset assignment
+      // Deduplicate by normalised lowercase name to avoid near-duplicate entries
+      const nameToId = {}
+      const seenNormalised = {} // lowercase → canonical name
 
-    // Step 1: Create employees, build name→id map for asset assignment
-    const nameToId = {}
-    setProgress({ step: 'Creating employees', current: 0, total: employees.length })
-    for (let i = 0; i < employees.length; i++) {
-      const emp = employees[i]
-      const empName = typeof emp.details === 'string' ? emp.details : emp.details.name
-      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: empName })
+      const normalizeForLookup = (name) => name.trim().toLowerCase()
 
-      // Check if employee already exists — update if so, create if not
-      const { data: existing } = await supabase.from('employees').select('id').ilike('name', empName).maybeSingle()
+      for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i]
+        const empName = typeof emp.details === 'string' ? emp.details : emp.details.name
+        const normName = normalizeForLookup(empName)
 
-      const empPayload = typeof emp.details === 'string'
-        ? { name: empName, site_id: siteId || null }
-        : {
-            name: emp.details.name,
-            email: emp.details.email || null,
-            title: emp.details.title || null,
-            department: emp.details.department || null,
-            phone: emp.details.phone || null,
-            hire_date: normalizeDate(emp.details.hire_date),
-            site_id: siteId || null,
+        // Skip duplicate normalised names — keep the first occurrence
+        if (seenNormalised[normName]) {
+          empSkipped++
+          continue
+        }
+        seenNormalised[normName] = empName
+
+        setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: empName })
+
+        // Check if employee already exists — update if so, create if not
+        const { data: existing } = await supabase.from('employees').select('id').ilike('name', empName).maybeSingle()
+
+        const empPayload = typeof emp.details === 'string'
+          ? { name: empName, site_id: siteId || null }
+          : {
+              name: emp.details.name,
+              email: emp.details.email || null,
+              title: emp.details.title || null,
+              department: emp.details.department || null,
+              phone: emp.details.phone || null,
+              hire_date: normalizeDate(emp.details.hire_date),
+              site_id: siteId || null,
+            }
+
+        if (existing) {
+          // Update existing employee with new data
+          const { error } = await supabase.from('employees').update(empPayload).eq('id', existing.id)
+          if (error) errors.push(`Employee ${empName}: ${error.message}`)
+          else {
+            empSkipped++
+            nameToId[normName] = existing.id
           }
-
-      if (existing) {
-        // Update existing employee with new data
-        const { error } = await supabase.from('employees').update(empPayload).eq('id', existing.id)
-        if (error) errors.push(`Employee ${empName}: ${error.message}`)
-        else empSkipped++ // count as skipped-but-updated
-      } else {
-        const { data: inserted, error } = await supabase.from('employees').insert(empPayload).select('id').single()
-        if (error) { errors.push(`Employee ${empName}: ${error.message}`); empSkipped++ }
-        else { empCreated++; nameToId[empName] = inserted?.id }
+        } else {
+          const { data: inserted, error } = await supabase.from('employees').insert(empPayload).select('id').single()
+          if (error) { errors.push(`Employee ${empName}: ${error.message}`); empSkipped++ }
+          else { empCreated++; nameToId[normName] = inserted?.id } }
       }
-    }
 
-    // Step 2: Create/assign assets
-    // Resolve assigned_to name → employee id using the map from Step 1
-    const resolveEmpId = (rawName) => {
-      if (!rawName) return null
-      // Direct match from nameToId
-      if (nameToId[rawName]) return nameToId[rawName]
-      // Case-insensitive match
-      const key = Object.keys(nameToId).find(k => k.toLowerCase() === rawName.toLowerCase())
-      return key ? nameToId[key] : null
-    }
+      // Step 2: Create/assign assets
+      const assetRowList = rows.filter(r => r.asset_tag)
+      const totalAssets = assetRowList.length
+      setProgress({ step: 'Assigning assets', current: 0, total: totalAssets })
 
-    const assetRows = rows.filter(r => r.asset_tag)
-    setProgress({ step: 'Assigning assets', current: 0, total: assetRows.length })
+      // Resolve employee name → id using the deduplicated map from Step 1
+      const resolveEmpId = (rawName) => {
+        if (!rawName || !rawName.trim()) return null
+        const norm = normalizeForLookup(rawName)
+        return nameToId[norm] || null
+      }
 
-    for (let i = 0; i < assetRows.length; i++) {
-      const r = assetRows[i]
-      setProgress({ step: 'Assigning assets', current: i + 1, total: assetRows.length, subStep: `${r.asset_tag} → ${r.name}` })
+      for (let i = 0; i < assetRowList.length; i++) {
+        const r = assetRowList[i]
+        setProgress({ step: 'Assigning assets', current: i + 1, total: totalAssets, subStep: `${r.asset_tag} → ${r.name || r.assigned_to}` })
 
-      // Check if asset already exists
-      const { data: existing } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', r.asset_tag).maybeSingle()
+        // Check if asset already exists
+        const { data: existing } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', r.asset_tag).maybeSingle()
 
-      if (existing) {
-        // Update existing asset with all fields + assign to employee
-        await supabase.from('assets').update({
-          status: 'Checked Out',
-          model: r.asset_model || existing.model || null,
-          serial_number: r.asset_serial || existing.serial_number || null,
-          purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
-          provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
-          purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
-          assigned_to: resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null,
-          assigned_to_team: r.assigned_to_team || null,
-          seat_number: r.seat_number || existing.seat_number || null,
-          quick_note: r.notes || existing.quick_note || null,
-          locked_status: r.locked_status || existing.locked_status || null,
-          carrier: r.carrier || existing.carrier || null,
-          imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : existing.imei || null,
-          specs: {
-            CPU: r.cpu || '',
-            GPU: r.gpu || '',
-            RAM: r.ram || '',
-            SSD: r.ssd || '',
-            HDD: r.hdd || '',
-            'MAC ADDRESS (WIFI)': r.mac_wifi || '',
-            'MAC ADDRESS (LAN)': r.mac_lan || '',
-            'OS VERSION': r.os_version || '',
-            'RESOLUTION': r.resolution || '',
-            'SIZE': r.size || '',
+        if (existing) {
+          // Update existing asset with all fields + assign to employee
+          const empId = resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null
+          await supabase.from('assets').update({
+            status: 'Checked Out',
+            model: r.asset_model || existing.model || null,
+            serial_number: r.asset_serial || existing.serial_number || null,
+            purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
+            provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
+            purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
+            assigned_to: empId,
+            assigned_to_team: r.assigned_to_team || null,
+            seat_number: r.seat_number || existing.seat_number || null,
+            quick_note: r.notes || existing.quick_note || null,
+            locked_status: r.locked_status || existing.locked_status || null,
+            carrier: r.carrier || existing.carrier || null,
+            imei: normalizeImei(r.imei) || existing.imei || null,
+            specs: buildSpecs(r),
+          }).eq('id', existing.id)
+
+          if (empId) {
+            await supabase.from('activity_log').insert({ asset_id: existing.id, asset_tag: existing.asset_tag, asset_name: existing.asset_tag, type: 'checkout', message: `Assigned to ${r.name || r.assigned_to} via bulk import`, performed_by: 'import' })
           }
-        }).eq('id', existing.id)
-        await supabase.from('activity_log').insert({ asset_id: existing.id, asset_tag: existing.asset_tag, asset_name: existing.asset_tag, type: 'checkout', message: `Assigned to ${r.name} via bulk import` })
-        assetAssigned++
-      } else {
-        // Create new asset and assign
-        const { data: newAsset, error } = await supabase.from('assets').insert({
-          asset_tag: r.asset_tag,
-          name: r.asset_model || r.asset_tag,
-          model: r.asset_model || null,
-          category: (r.asset_category || 'LAPTOP').toUpperCase().trim().replace(/[^A-Z0-9 &()-]/g, '').substring(0, 50) || 'OTHER',
-          serial_number: r.asset_serial || null,
-          purchase_date: normalizeDate(r.purchase_date),
-          provision_date: normalizeDate(r.provision_date),
-          purchase_cost: cleanCost(r.purchase_cost),
-          status: 'Checked Out',
-          assigned_to: resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null,
-          assigned_to_team: r.assigned_to_team || null,
-          location: sites?.find(s => s.id === siteId)?.name || null,
-          seat_number: r.seat_number || null,
-          quick_note: r.notes || null,
-          locked_status: r.locked_status || null,
-          carrier: r.carrier || null,
-          imei: r.imei ? (String(r.imei).includes('E+') || String(r.imei).includes('e+') ? String(Math.round(parseFloat(r.imei))) : r.imei) : null,
-          specs: {
-            CPU: r.cpu || '',
-            GPU: r.gpu || '',
-            RAM: r.ram || '',
-            SSD: r.ssd || '',
-            HDD: r.hdd || '',
-            'MAC ADDRESS (WIFI)': r.mac_wifi || '',
-            'MAC ADDRESS (LAN)': r.mac_lan || '',
-            'OS VERSION': r.os_version || '',
-            'RESOLUTION': r.resolution || '',
-            'SIZE': r.size || '',
-          }
-        }).select().single()
+          assetAssigned++
+        } else {
+          // Create new asset and assign
+          const empId = resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null
+          const { data: newAsset, error } = await supabase.from('assets').insert({
+            asset_tag: r.asset_tag,
+            name: r.asset_model || r.asset_tag,
+            model: r.asset_model || null,
+            category: (r.asset_category || 'OTHER').toUpperCase().trim().replace(/[^A-Z0-9 &()-]/g, '').substring(0, 50) || 'OTHER',
+            serial_number: r.asset_serial || null,
+            purchase_date: normalizeDate(r.purchase_date),
+            provision_date: normalizeDate(r.provision_date),
+            purchase_cost: cleanCost(r.purchase_cost),
+            status: 'Checked Out',
+            assigned_to: empId,
+            assigned_to_team: r.assigned_to_team || null,
+            location: sites?.find(s => s.id === siteId)?.name || null,
+            seat_number: r.seat_number || null,
+            quick_note: r.notes || null,
+            locked_status: r.locked_status || null,
+            carrier: r.carrier || null,
+            imei: normalizeImei(r.imei),
+            specs: buildSpecs(r),
+          }).select().single()
 
-        if (error) { errors.push(`Asset ${r.asset_tag}: ${error.message}`) }
-        else {
-          await supabase.from('activity_log').insert({ asset_id: newAsset.id, asset_tag: newAsset.asset_tag, asset_name: newAsset.asset_tag, type: 'created', message: `Created and assigned to ${r.name} via bulk import` })
-          assetCreated++
+          if (error) { errors.push(`Asset ${r.asset_tag}: ${error.message}`) }
+          else {
+            const msg = empId
+              ? `Created and assigned to ${r.name || r.assigned_to} via bulk import`
+              : `Created (unassigned) via bulk import`
+            await supabase.from('activity_log').insert({ asset_id: newAsset.id, asset_tag: newAsset.asset_tag, asset_name: newAsset.asset_tag, type: 'created', message: msg, performed_by: 'import' })
+            assetCreated++
+          }
+        }
+
+        // Throttle: brief pause between asset operations to avoid overwhelming the database
+        if (i < assetRowList.length - 1) await sleep(30)
+      }
+
+      // Step 3: Process team-use assets (rows with no employee name but assigned_to_team)
+      if (teamRows.length > 0) {
+        setProgress({ step: 'Team-use assets', current: 0, total: teamRows.length })
+        for (let i = 0; i < teamRows.length; i++) {
+          const r = teamRows[i]
+          setProgress({ step: 'Team-use assets', current: i + 1, total: teamRows.length, subStep: r.asset_tag })
+
+          // Check if asset already exists
+          const { data: existing } = await supabase.from('assets').select('id, asset_tag').eq('asset_tag', r.asset_tag).maybeSingle()
+
+          if (existing) {
+            await supabase.from('assets').update({
+              assigned_to_team: r.assigned_to_team,
+              status: r.status || 'Available',
+            }).eq('id', existing.id)
+            assetAssigned++
+          } else {
+            const { data: newAsset, error } = await supabase.from('assets').insert({
+              asset_tag: r.asset_tag,
+              name: r.asset_model || r.asset_tag,
+              model: r.asset_model || null,
+              category: (r.asset_category || 'OTHER').toUpperCase().trim().replace(/[^A-Z0-9 &()-]/g, '').substring(0, 50) || 'OTHER',
+              serial_number: r.asset_serial || null,
+              assigned_to_team: r.assigned_to_team,
+              status: r.status || 'Available',
+              location: sites?.find(s => s.id === siteId)?.name || null,
+            }).select().single()
+
+            if (error) { errors.push(`Team asset ${r.asset_tag}: ${error.message}`) }
+            else assetCreated++
+          }
+
+          if (i < teamRows.length - 1) await sleep(30)
         }
       }
-    }
 
     } catch(e) {
-      setErrors(prev => [...prev, 'Unexpected error: ' + e.message])
+      errors.push('Unexpected error: ' + e.message)
     } finally {
       setImporting(false)
       setProgress({ step: '', current: 0, total: 0, subStep: '' })
@@ -311,7 +398,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
   function reset() {
     setCsv(''); setFileName(''); setPreview([]); setErrors([]); setResult(null); setSiteId('')
-    setProgress({ step: '', current: 0, total: 0 })
+    setProgress({ step: '', current: 0, total: 0, subStep: '' })
   }
 
   const rowCount = csv.trim() && !errors.length ? parseCSV(csv).rows.length : 0
@@ -382,8 +469,6 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
               )}
             </div>
 
-
-
             {/* File upload */}
             <label style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg3)', border:'2px dashed var(--border2)', borderRadius:'var(--radius)', cursor:'pointer', fontSize:13, color:'var(--text2)' }}>
               <span style={{ fontSize:20 }}>📂</span>
@@ -407,9 +492,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
                   <span style={{ fontSize:11, color:'var(--text3)' }}>or paste manually</span>
                   <div style={{ flex:1, height:1, background:'var(--border)' }} />
                 </div>
-                <textarea value={csv} onChange={e => { setFileName(''); if (e.target.value.trim()) handleCSV(e.target.value); else { setCsv(''); setPreview([]); setErrors([]) } }}
-                  placeholder="Paste CSV data here…"
-                  style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
+                <textarea value={csv} onChange={onCsvChange} placeholder="Paste CSV data here…" style={{ minHeight: 100, fontFamily: 'var(--mono)', fontSize: 12 }} />
               </>
             )}
 
@@ -420,50 +503,58 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
             )}
 
             {/* Preview */}
-            {preview.length > 0 && !errors.length && (
+            {preview.length > 0 && (
               <div style={{ border:'1px solid var(--border)', borderRadius:'var(--radius)' }}>
-                <div style={{ padding:'6px 12px', background:'var(--bg3)', fontSize:11, color:'var(--text2)', fontWeight:500, display:'flex', justifyContent:'space-between' }}>
-                  <span>PREVIEW ({preview.length} rows)</span>
-                  <span>{Object.keys(Object.fromEntries(preview.map(r=>[r.name,1]))).length} unique employees</span>
+                <div style={{ padding:'6px 12px', background:'var(--bg3)', fontSize:11, color:'var(--text2)', fontWeight:500, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <span>PREVIEW ({preview.length} of {rowCount} rows)</span>
+                  <button
+                    onClick={() => setShowPreview(!showPreview)}
+                    style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', fontSize:11, padding:0 }}
+                  >
+                    {showPreview ? 'Show less ▲' : 'Show all ▼'}
+                  </button>
                 </div>
-                <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight:220, WebkitOverflowScrolling:'touch' }}>
-                  <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
-                    <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
-                      {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','Assigned To','Team Use','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Seat #','Lock Status','Carrier','IMEI'].map(h=>(
-                        <th key={h} style={{ padding:'6px 12px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11, whiteSpace:'nowrap' }}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>{preview.map((r,i)=>(
-                      <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
-                        <td style={{ padding:'6px 12px', fontWeight:500, whiteSpace:'nowrap' }}>{r.name}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.email||'—'}</td>
-                        <td style={{ padding:'6px 12px', fontFamily:'var(--mono)', color:r.asset_tag?'var(--accent)':'var(--text3)', whiteSpace:'nowrap' }}>{r.asset_tag||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_category||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_model||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.asset_serial||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to_team||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.cpu||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.gpu||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ram||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ssd||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.hdd||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_wifi||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_lan||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.os_version||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.resolution||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.size||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.seat_number||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.locked_status||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.carrier||'—'}</td>
-                        <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.imei||'—'}</td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                </div>
+                {(showPreview ? preview : preview.slice(0, 5)).length > 0 && (
+                  <div style={{ overflowX:'scroll', overflowY:'auto', maxHeight: showPreview ? 400 : 220, WebkitOverflowScrolling:'touch' }}>
+                    <table style={{ borderCollapse:'collapse', fontSize:12, tableLayout:'auto', whiteSpace:'nowrap' }}>
+                      <thead><tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg3)' }}>
+                        {['Name','Email','Asset tag','Category','Model','Serial','Purchase date','Provision date','Cost','Assigned To','Team Use','CPU','GPU','RAM','SSD','HDD','MAC WiFi','MAC LAN','OS Version','Resolution','Size','Seat #','Lock Status','Carrier','IMEI','Notes'].map(h=>(
+                          <th key={h} style={{ padding:'6px 12px', textAlign:'left', color:'var(--text2)', fontWeight:500, fontSize:11, whiteSpace:'nowrap' }}>{h}</th>
+                        ))}
+                      </tr></thead>
+                      <tbody>{(showPreview ? preview : preview.slice(0, 5)).map((r,i)=>(
+                        <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+                          <td style={{ padding:'6px 12px', fontWeight:500, whiteSpace:'nowrap' }}>{r.name||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.email||'—'}</td>
+                          <td style={{ padding:'6px 12px', fontFamily:'var(--mono)', color:r.asset_tag?'var(--accent)':'var(--text3)', whiteSpace:'nowrap' }}>{r.asset_tag||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_category||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.asset_model||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.asset_serial||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_date||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.provision_date||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.purchase_cost||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.assigned_to_team||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.cpu||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.gpu||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ram||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.ssd||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.hdd||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_wifi||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.mac_lan||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.os_version||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.resolution||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.size||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.seat_number||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.locked_status||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.carrier||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', fontFamily:'var(--mono)', fontSize:11, whiteSpace:'nowrap' }}>{r.imei||'—'}</td>
+                          <td style={{ padding:'6px 12px', color:'var(--text2)', whiteSpace:'nowrap' }}>{r.notes||'—'}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -479,7 +570,3 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     </Modal>
   )
 }
-
-
-
-
