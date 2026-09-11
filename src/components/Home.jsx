@@ -91,6 +91,7 @@ export default function Home({ onNav, onViewAsset }) {
     }
     // Derive aging assets from the main fetch (purchase_date >= 3 years ago)
     setAgingAssets((allAssetData||[]).filter(a => {
+      if (!a.purchase_date) return false
       const yrs = (Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)
       return yrs >= 3
     }).sort((a,b)=>new Date(a.purchase_date)-new Date(b.purchase_date)))
