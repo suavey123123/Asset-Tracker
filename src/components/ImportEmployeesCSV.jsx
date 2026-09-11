@@ -150,12 +150,20 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
     const teamRows = rows.filter(r => !r.name?.trim() && r.asset_tag && r.assigned_to_team)
     const employeeRows = rows.filter(r => r.name?.trim())
 
+    // Collect unique names: from 'name' column + from 'assigned_to' column on asset rows
+    const nameSet = new Set()
+    employeeRows.forEach(r => nameSet.add(r.name))
+    rows.filter(r => r.asset_tag && !r.name?.trim() && r.assigned_to?.trim()).forEach(r => nameSet.add(r.assigned_to))
+    const extraNames = [...nameSet].filter(n => !employeeRows.find(r => r.name === n))
+
     // Group employee rows by name
     const empMap = {}
     employeeRows.forEach(r => {
       if (!empMap[r.name]) empMap[r.name] = { details: r, assets: [] }
       if (r.asset_tag) empMap[r.name].assets.push(r)
     })
+    // Add placeholder entries for assigned_to-only names (no asset rows to carry details)
+    extraNames.forEach(n => { empMap[n] = { details: n, assets: [] } })
     const employees = Object.values(empMap)
     let empCreated = 0, empSkipped = 0, assetCreated = 0, assetAssigned = 0, errors = []
 
@@ -163,38 +171,52 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
 
     try {
 
-    // Step 1: Create employees
+    // Step 1: Create employees, build name→id map for asset assignment
+    const nameToId = {}
     setProgress({ step: 'Creating employees', current: 0, total: employees.length })
     for (let i = 0; i < employees.length; i++) {
-      const { details: r } = employees[i]
-      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: r.name })
+      const emp = employees[i]
+      const empName = typeof emp.details === 'string' ? emp.details : emp.details.name
+      setProgress({ step: 'Creating employees', current: i + 1, total: employees.length, subStep: empName })
 
       // Check if employee already exists — update if so, create if not
-      const { data: existing } = await supabase.from('employees').select('id').ilike('name', r.name).maybeSingle()
+      const { data: existing } = await supabase.from('employees').select('id').ilike('name', empName).maybeSingle()
 
-      const empPayload = {
-        name: r.name,
-        email: r.email || null,
-        title: r.title || null,
-        department: r.department || null,
-        phone: r.phone || null,
-        hire_date: normalizeDate(r.hire_date),
-        site_id: siteId || null,
-      }
+      const empPayload = typeof emp.details === 'string'
+        ? { name: empName, site_id: siteId || null }
+        : {
+            name: emp.details.name,
+            email: emp.details.email || null,
+            title: emp.details.title || null,
+            department: emp.details.department || null,
+            phone: emp.details.phone || null,
+            hire_date: normalizeDate(emp.details.hire_date),
+            site_id: siteId || null,
+          }
 
       if (existing) {
         // Update existing employee with new data
         const { error } = await supabase.from('employees').update(empPayload).eq('id', existing.id)
-        if (error) errors.push(`Employee ${r.name}: ${error.message}`)
+        if (error) errors.push(`Employee ${empName}: ${error.message}`)
         else empSkipped++ // count as skipped-but-updated
       } else {
-        const { error } = await supabase.from('employees').insert(empPayload)
-        if (error) { errors.push(`Employee ${r.name}: ${error.message}`); empSkipped++ }
-        else empCreated++
+        const { data: inserted, error } = await supabase.from('employees').insert(empPayload).select('id').single()
+        if (error) { errors.push(`Employee ${empName}: ${error.message}`); empSkipped++ }
+        else { empCreated++; nameToId[empName] = inserted?.id }
       }
     }
 
     // Step 2: Create/assign assets
+    // Resolve assigned_to name → employee id using the map from Step 1
+    const resolveEmpId = (rawName) => {
+      if (!rawName) return null
+      // Direct match from nameToId
+      if (nameToId[rawName]) return nameToId[rawName]
+      // Case-insensitive match
+      const key = Object.keys(nameToId).find(k => k.toLowerCase() === rawName.toLowerCase())
+      return key ? nameToId[key] : null
+    }
+
     const assetRows = rows.filter(r => r.asset_tag)
     setProgress({ step: 'Assigning assets', current: 0, total: assetRows.length })
 
@@ -214,7 +236,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           purchase_date: normalizeDate(r.purchase_date) || existing.purchase_date || null,
           provision_date: normalizeDate(r.provision_date) || existing.provision_date || null,
           purchase_cost: cleanCost(r.purchase_cost) || existing.purchase_cost || null,
-          assigned_to: r.assigned_to || r.name || null,
+          assigned_to: resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null,
           assigned_to_team: r.assigned_to_team || null,
           seat_number: r.seat_number || existing.seat_number || null,
           quick_note: r.notes || existing.quick_note || null,
@@ -248,7 +270,7 @@ export default function ImportEmployeesCSV({ open, onClose, onDone, sites }) {
           provision_date: normalizeDate(r.provision_date),
           purchase_cost: cleanCost(r.purchase_cost),
           status: 'Checked Out',
-          assigned_to: r.assigned_to || r.name || null,
+          assigned_to: resolveEmpId(r.assigned_to) || resolveEmpId(r.name) || null,
           assigned_to_team: r.assigned_to_team || null,
           location: sites?.find(s => s.id === siteId)?.name || null,
           seat_number: r.seat_number || null,
