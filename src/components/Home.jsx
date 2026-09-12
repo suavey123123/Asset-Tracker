@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Badge, Spinner } from './UI'
 import { STORAGE_KEYS } from '../lib/constants'
-import AssetEditModal from './AssetEditModal'
-import { useAuth } from '../lib/AuthContext'
 
 const EMP_CACHE_KEY = 'home_emp_lookup'
 
@@ -36,7 +34,6 @@ const ALL_WIDGETS = [
 const STORAGE_KEY = STORAGE_KEYS.dashboard_widgets
 
 export default function Home({ onNav, onViewAsset }) {
-  const { profile } = useAuth()
   const [assets, setAssets] = useState([])
   const [log, setLog] = useState([])
   const [licenses, setLicenses] = useState([])
@@ -49,8 +46,6 @@ export default function Home({ onNav, onViewAsset }) {
   const [agingAssets, setAgingAssets] = useState([])
   const [expiringLicensesList, setExpiringLicensesList] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editAsset, setEditAsset] = useState(null)
-  const [editModalOpen, setEditModalOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [widgets, setWidgets] = useState(() => {
     try {
@@ -108,9 +103,6 @@ export default function Home({ onNav, onViewAsset }) {
   }
 
   const toggleWidget = (id) => setWidgets(w => w.includes(id) ? w.filter(x=>x!==id) : [...w, id])
-
-  const openEdit = (asset) => { setEditAsset(asset); setEditModalOpen(true) }
-  const handleEditDone = () => { setEditModalOpen(false); setEditAsset(null); fetchAll() }
 
   if (loading) return <div style={{ padding:'3rem' }}><Spinner /></div>
 
@@ -406,7 +398,7 @@ export default function Home({ onNav, onViewAsset }) {
                 const yrs = ((Date.now()-new Date(a.purchase_date))/(1000*60*60*24*365)).toFixed(1)
                 return (
                   <div key={a.asset_tag} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
-                    <div style={{ flex:1, cursor:'pointer' }} onClick={()=>openEdit(a)}>
+                    <div style={{ flex:1, cursor:'pointer' }} onClick={()=>onViewAsset(a)}>
                       <div style={{ fontSize:13, fontWeight:500, fontFamily:'var(--mono)', color:'var(--accent)', textDecoration:'underline', textUnderlineOffset:'3px' }}>{a.asset_tag}</div>
                       <div style={{ fontSize:11, color:'var(--text2)' }}>{a.model||a.category}</div>
                     </div>
@@ -461,7 +453,6 @@ export default function Home({ onNav, onViewAsset }) {
         </div>
       )}
       </div>
-      <AssetEditModal asset={editAsset} open={editModalOpen} onSave={handleEditDone} onCancel={()=>{ setEditModalOpen(false); setEditAsset(null) }} allSites={sites} allLicenses={licenses} />
     </div>
   )
 }
