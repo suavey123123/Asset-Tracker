@@ -70,11 +70,10 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
 
   async function save() {
     if (!form.asset_tag.trim()) { setError('Asset Tag is required.'); return }
-    const finalName = form.asset_tag.trim()
     setSaving(true); setError('')
     const payload = {
       ...form,
-      name: finalName,
+      name: form.name || form.asset_tag.trim(),
       purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
       purchase_date: form.purchase_date || null,
       provision_date: form.provision_date || null,
@@ -151,9 +150,6 @@ export default function AssetEditModal({ asset, open, onSave, onCancel, allSites
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <FormField label="Asset tag / ID" required>
             <input value={form.asset_tag} onChange={e => setForm(f => ({ ...f, asset_tag: e.target.value }))} placeholder="e.g. IT-0042" />
-          </FormField>
-          <FormField label="Name">
-            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. MacBook Pro 14" />
           </FormField>
           <FormField label="Assign to employee">
             <EmployeeSelect value={form.assigned_to || ''} onChange={v => setForm(f => ({ ...f, assigned_to: v, assigned_to_team: '', status: v ? 'Checked Out' : 'Available' }))} placeholder="Search employee or leave blank" />

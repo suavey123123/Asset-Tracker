@@ -37,6 +37,20 @@ export default function AssetDetail({ assetId, onBack, onEdit, onRefetch }) {
   const refetchRef = useRef(null)
   useEffect(() => { refetchRef.current = fetchAll }, [fetchAll])
 
+  // Push a history entry so the browser back button steps through app screens,
+  // rather than navigating to the previous website.
+  useEffect(() => {
+    if (assetId) {
+      window.history.pushState(null, '')
+      return () => { /* only pop on back — do not pop on remount */ }
+    }
+  }, [assetId])
+
+  const handleBack = useCallback(() => {
+    window.history.back()
+    onBack?.()
+  }, [onBack])
+
   useEffect(() => { setError(null); fetchAll() }, [assetId])
 
   async function fetchAll() {
@@ -158,7 +172,7 @@ export default function AssetDetail({ assetId, onBack, onEdit, onRefetch }) {
       <div style={{ fontSize: 18, marginBottom: 8 }}>Failed to load asset</div>
       <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>{error}</div>
       <Btn size="sm" variant="primary" onClick={fetchAll}>Retry</Btn>
-      <Btn size="sm" onClick={onBack} style={{ marginLeft: 8 }}>Go back</Btn>
+      <Btn size="sm" onClick={handleBack} style={{ marginLeft: 8 }}>Go back</Btn>
     </div>
   )
   if (!asset) return <div style={{ color:'var(--text2)' }}>Asset not found.</div>
@@ -180,7 +194,7 @@ export default function AssetDetail({ assetId, onBack, onEdit, onRefetch }) {
     <div className="fade-in">
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:'1rem' }}>
-        <Btn onClick={onBack} size="sm">← Back</Btn>
+        <Btn onClick={handleBack} size="sm">← Back</Btn>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:18, fontWeight:500 }}>
             {(() => {
