@@ -94,6 +94,8 @@ export default function Dashboard() {
   useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
 
   // Capture popstate (browser back button) to keep navigation inside the app.
+  // This handler NEVER calls pushState — pushState is only called in handleNav
+  // and handleViewEmployee (sidebar nav), giving us full control of the stack.
   useEffect(() => {
     window.history.replaceState(null, '', `#${tab}`)
 
@@ -102,7 +104,7 @@ export default function Dashboard() {
       // Close edit modal on back so it doesn't persist across navigation
       setEditModalOpen(false)
       setEditModalAsset(null)
-      // Navigating back to an asset detail URL → load the asset and display it
+      // Navigating back from asset detail → load the asset from URL and display it
       if (newTab.startsWith('inventory?id=')) {
         const assetId = newTab.split('id=')[1]
         const stateTab = window.history.state?.previousTab
@@ -113,14 +115,15 @@ export default function Dashboard() {
             setViewingAssetFromTab('inventory')
           }
         })
-      } else if (newTab.startsWith('inventory')) {
-        // Navigating back to the base inventory tab → clear the viewing asset
-        setViewingAsset(null)
+        // Don't sync tab to URL — the asset view is displayed, tab stays on previousTab
+        return
       }
-      // Always sync the tab state to the URL (handles back/forward nav)
+      // Any other back navigation from asset view → clear the viewing asset
+      setViewingAsset(null)
+      // Sync the tab state to the URL (handles back/forward nav between tabs)
+      // No pushState here — we just update the React state to match the URL
       if (newTab && newTab !== tabRef.current) {
         setTab(newTab || 'home')
-        window.history.pushState(null, '', `#${newTab || 'home'}`)
       }
     }
     window.addEventListener('popstate', handlePopState)
