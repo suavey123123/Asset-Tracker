@@ -84,6 +84,9 @@ export default function Dashboard() {
 
     function handlePopState() {
       const newTab = window.location.hash.slice(1)
+      // Close edit modal on back so it doesn't persist across navigation
+      setEditModalOpen(false)
+      setEditModalAsset(null)
       if (newTab !== tabRef.current) {
         setTab(newTab || 'home')
         window.history.pushState(null, '', `#${newTab || 'home'}`)
