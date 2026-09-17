@@ -132,8 +132,11 @@ export default function Dashboard() {
           window.history.replaceState(null, '', `#${stateTab}`)
         }
       } else if (viewingAssetRef.current) {
-        // Popping back from asset view → just clear it, no pushState
+        // Popping back from asset view → clear it and sync tab to URL
         setViewingAsset(null)
+        if (newTab !== tabRef.current) {
+          setTab(newTab || 'home')
+        }
       } else if (newTab !== tabRef.current) {
         setTab(newTab || 'home')
         window.history.pushState(null, '', `#${newTab || 'home'}`)
