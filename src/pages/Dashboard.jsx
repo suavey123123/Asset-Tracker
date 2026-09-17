@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { useTheme } from '../lib/hooks'
@@ -41,7 +41,12 @@ const TITLES = {
 }
 
 export default function Dashboard() {
-  const [tab, setTab] = useState('home')
+  const [tab, setTab] = useState(() => {
+    // Restore tab from URL hash (deep-linking / browser back button)
+    const hashTab = window.location.hash.slice(1)
+    if (hashTab) return hashTab
+    return 'home'
+  })
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
   const [viewingAssetFromTab, setViewingAssetFromTab] = useState('inventory')
@@ -56,6 +61,8 @@ export default function Dashboard() {
   const { theme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isAdmin, tenant, role } = useAuth()
+  const tabRef = useRef(tab)
+  tabRef.current = tab
 
   // Sync viewingAsset to null when tab changes — prevents stale asset detail persisting across tab switches
   useEffect(() => {
@@ -67,6 +74,24 @@ export default function Dashboard() {
     if (editModalAsset) fetchEditModalData()
   }, [editModalAsset])
   useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
+
+  // Push history entries on navigation so the browser back button stays within the app.
+  // Also capture popstate (browser back button) to keep navigation inside the app.
+  useEffect(() => {
+    // Push the initial entry so the first back press goes back to a previous app page,
+    // not to whatever was open before the app was loaded.
+    window.history.pushState(null, '', `#${tab}`)
+
+    function handlePopState() {
+      const newTab = window.location.hash.slice(1)
+      if (newTab !== tabRef.current) {
+        setTab(newTab || 'home')
+        window.history.pushState(null, '', `#${newTab || 'home'}`)
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   // Periodically refresh overdue alert count every 60 seconds.
   function refreshAlerts() {
@@ -105,6 +130,7 @@ export default function Dashboard() {
     setViewingAsset(null)
     setTab(newTab)
     setSidebarOpen(false)
+    window.history.pushState(null, '', `#${newTab}`)
   }
   function handleEdit(asset) {
     setEditModalAsset(asset)
