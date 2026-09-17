@@ -37,12 +37,11 @@ export default function AssetDetail({ assetId, onBack, onEdit, onRefetch }) {
   const refetchRef = useRef(null)
   useEffect(() => { refetchRef.current = fetchAll }, [fetchAll])
 
-  // Push a history entry so the browser back button steps through app screens,
+  // Replace state so the browser back button returns to the previous app view
   // rather than navigating to the previous website.
   useEffect(() => {
     if (assetId) {
-      window.history.pushState(null, '')
-      return () => { /* only pop on back — do not pop on remount */ }
+      window.history.replaceState(null, '')
     }
   }, [assetId])
 

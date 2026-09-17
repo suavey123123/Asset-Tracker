@@ -104,18 +104,21 @@ export default function Dashboard() {
       // Close edit modal on back so it doesn't persist across navigation
       setEditModalOpen(false)
       setEditModalAsset(null)
-      // Navigating back from asset detail → load the asset from URL and display it
+      // Navigating back from asset detail → replace the asset URL with the previous tab URL
       if (newTab.startsWith('inventory?id=')) {
         const assetId = newTab.split('id=')[1]
         const stateTab = window.history.state?.previousTab
-        if (stateTab) setTab(stateTab)
+        if (stateTab) {
+          setTab(stateTab)
+          // Replace current asset entry with previous tab entry so second back works
+          window.history.replaceState(null, '', `#${stateTab}`)
+        }
         supabase.from('assets').select('*').eq('id', assetId).single().then(({ data }) => {
           if (data) {
             setViewingAsset(data)
             setViewingAssetFromTab('inventory')
           }
         })
-        // Don't sync tab to URL — the asset view is displayed, tab stays on previousTab
         return
       }
       // Any other back navigation from asset view → clear the viewing asset
@@ -156,7 +159,7 @@ export default function Dashboard() {
     setViewingAsset(asset)
     setViewingAssetFromTab('inventory')
     setSidebarOpen(false)
-    window.history.replaceState({ previousTab: tabRef.current }, '', `#inventory?id=${asset.id}`)
+    window.history.pushState({ previousTab: tabRef.current }, '', `#inventory?id=${asset.id}`)
   }
   function handleViewEmployee(emp) {
     setViewingEmployee(emp)
