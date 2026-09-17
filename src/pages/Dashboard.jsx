@@ -64,23 +64,6 @@ export default function Dashboard() {
   tabRef.current = tab
   const viewingAssetRef = useRef(viewingAsset)
   viewingAssetRef.current = viewingAsset
-  // Prevent the [tab] useEffect from pushing duplicate history entries during popstate handling
-  const suppressHistoryPushRef = useRef(false)
-
-  // Sync viewingAsset to null when tab changes — prevents stale asset detail persisting across tab switches
-  useEffect(() => {
-    if (viewingAsset && tab !== viewingAssetFromTab) {
-      setViewingAsset(null)
-      window.history.replaceState(null, '', `#${tab}`)
-    }
-  }, [tab])
-
-  // Push history entry on tab change (for sidebar navigation). Suppressed during popstate handling.
-  useEffect(() => {
-    if (!suppressHistoryPushRef.current) {
-      window.history.pushState(null, '', `#${tab}`)
-    }
-  }, [tab])
 
   // Load asset from URL on mount for deep-linking
   useEffect(() => {
@@ -97,16 +80,21 @@ export default function Dashboard() {
       }
     }
   }, [])
+
+  // Clean up viewingAsset when leaving the tab it came from.
+  useEffect(() => {
+    if (viewingAsset && tab !== viewingAssetFromTab) {
+      setViewingAsset(null)
+    }
+  }, [tab])
+
   useEffect(() => {
     if (editModalAsset) fetchEditModalData()
   }, [editModalAsset])
   useEffect(() => { fetchAlerts(); refreshAlerts() }, [])
 
-  // Push history entries on navigation so the browser back button stays within the app.
-  // Also capture popstate (browser back button) to keep navigation inside the app.
+  // Capture popstate (browser back button) to keep navigation inside the app.
   useEffect(() => {
-    // Replace the current (empty) history entry with our initial hash, instead of
-    // pushing a new one. This keeps the back button escaping directly to the previous page.
     window.history.replaceState(null, '', `#${tab}`)
 
     function handlePopState() {
@@ -114,30 +102,23 @@ export default function Dashboard() {
       // Close edit modal on back so it doesn't persist across navigation
       setEditModalOpen(false)
       setEditModalAsset(null)
-      // Going back from asset detail → load the asset from URL and navigate to the previous tab
+      // Navigating back to an asset detail URL → load the asset and display it
       if (newTab.startsWith('inventory?id=')) {
         const assetId = newTab.split('id=')[1]
         const stateTab = window.history.state?.previousTab
-        suppressHistoryPushRef.current = true
+        if (stateTab) setTab(stateTab)
         supabase.from('assets').select('*').eq('id', assetId).single().then(({ data }) => {
           if (data) {
             setViewingAsset(data)
             setViewingAssetFromTab('inventory')
-            if (stateTab) setTab(stateTab)
           }
         })
-        // Replace the asset entry with the previous tab's entry
-        // so the back stack doesn't grow: [page, tab, tab?id=xxx] → [page, tab]
-        if (stateTab) {
-          window.history.replaceState(null, '', `#${stateTab}`)
-        }
-      } else if (viewingAssetRef.current) {
-        // Popping back from asset view → clear it and sync tab to URL
+      } else if (newTab.startsWith('inventory')) {
+        // Navigating back to the base inventory tab → clear the viewing asset
         setViewingAsset(null)
-        if (newTab !== tabRef.current) {
-          setTab(newTab || 'home')
-        }
-      } else if (newTab !== tabRef.current) {
+      }
+      // Always sync the tab state to the URL (handles back/forward nav)
+      if (newTab && newTab !== tabRef.current) {
         setTab(newTab || 'home')
         window.history.pushState(null, '', `#${newTab || 'home'}`)
       }
@@ -179,11 +160,13 @@ export default function Dashboard() {
     setViewingAsset(null)
     setTab('employees')
     setSidebarOpen(false)
+    window.history.pushState(null, '', '#employees')
   }
   function handleNav(newTab) {
     setViewingAsset(null)
     setTab(newTab)
     setSidebarOpen(false)
+    window.history.pushState(null, '', `#${newTab}`)
   }
   function handleEdit(asset) {
     setEditModalAsset(asset)
