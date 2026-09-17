@@ -62,6 +62,10 @@ export default function Dashboard() {
   const { isAdmin, tenant, role } = useAuth()
   const tabRef = useRef(tab)
   tabRef.current = tab
+  const viewingAssetRef = useRef(viewingAsset)
+  viewingAssetRef.current = viewingAsset
+  // Prevent the [tab] useEffect from pushing duplicate history entries during popstate handling
+  const suppressHistoryPushRef = useRef(false)
 
   // Sync viewingAsset to null when tab changes — prevents stale asset detail persisting across tab switches
   useEffect(() => {
@@ -71,12 +75,12 @@ export default function Dashboard() {
     }
   }, [tab])
 
-  // Push history entry when viewing an asset so the browser back button goes back
+  // Push history entry on tab change (for sidebar navigation). Suppressed during popstate handling.
   useEffect(() => {
-    if (viewingAsset) {
-      window.history.pushState(null, '', `#inventory?id=${viewingAsset.id}`)
+    if (!suppressHistoryPushRef.current) {
+      window.history.pushState(null, '', `#${tab}`)
     }
-  }, [viewingAsset])
+  }, [tab])
 
   // Load asset from URL on mount for deep-linking
   useEffect(() => {
@@ -101,29 +105,35 @@ export default function Dashboard() {
   // Push history entries on navigation so the browser back button stays within the app.
   // Also capture popstate (browser back button) to keep navigation inside the app.
   useEffect(() => {
-    // Push the initial entry so the first back press goes back to a previous app page,
-    // not to whatever was open before the app was loaded.
-    window.history.pushState(null, '', `#${tab}`)
+    // Replace the current (empty) history entry with our initial hash, instead of
+    // pushing a new one. This keeps the back button escaping directly to the previous page.
+    window.history.replaceState(null, '', `#${tab}`)
 
     function handlePopState() {
       const newTab = window.location.hash.slice(1)
       // Close edit modal on back so it doesn't persist across navigation
       setEditModalOpen(false)
       setEditModalAsset(null)
-      // Going back from asset detail → load the asset from URL
+      // Going back from asset detail → load the asset from URL and navigate to the previous tab
       if (newTab.startsWith('inventory?id=')) {
         const assetId = newTab.split('id=')[1]
+        const stateTab = window.history.state?.previousTab
+        suppressHistoryPushRef.current = true
         supabase.from('assets').select('*').eq('id', assetId).single().then(({ data }) => {
-          if (data) { setViewingAsset(data); setViewingAssetFromTab('inventory') }
+          if (data) {
+            setViewingAsset(data)
+            setViewingAssetFromTab('inventory')
+            if (stateTab) setTab(stateTab)
+          }
         })
-        if (newTab !== tabRef.current) {
-          setTab('inventory')
-          window.history.pushState(null, '', newTab)
+        // Replace the asset entry with the previous tab's entry
+        // so the back stack doesn't grow: [page, tab, tab?id=xxx] → [page, tab]
+        if (stateTab) {
+          window.history.replaceState(null, '', `#${stateTab}`)
         }
-      } else if (viewingAsset) {
-        // Going back from asset detail to tab without asset → clear it
+      } else if (viewingAssetRef.current) {
+        // Popping back from asset view → just clear it, no pushState
         setViewingAsset(null)
-        window.history.pushState(null, '', '#inventory')
       } else if (newTab !== tabRef.current) {
         setTab(newTab || 'home')
         window.history.pushState(null, '', `#${newTab || 'home'}`)
@@ -159,6 +169,7 @@ export default function Dashboard() {
     setViewingAsset(asset)
     setViewingAssetFromTab('inventory')
     setSidebarOpen(false)
+    window.history.replaceState({ previousTab: tabRef.current }, '', `#inventory?id=${asset.id}`)
   }
   function handleViewEmployee(emp) {
     setViewingEmployee(emp)
@@ -170,7 +181,6 @@ export default function Dashboard() {
     setViewingAsset(null)
     setTab(newTab)
     setSidebarOpen(false)
-    window.history.pushState(null, '', `#${newTab}`)
   }
   function handleEdit(asset) {
     setEditModalAsset(asset)
