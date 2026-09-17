@@ -43,9 +43,8 @@ const TITLES = {
 export default function Dashboard() {
   const [tab, setTab] = useState(() => {
     // Restore tab from URL hash (deep-linking / browser back button)
-    const hashTab = window.location.hash.slice(1)
-    if (hashTab) return hashTab
-    return 'home'
+    const hash = window.location.hash.slice(1)
+    return hash || 'home'
   })
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [viewingAsset, setViewingAsset] = useState(null)
@@ -68,8 +67,32 @@ export default function Dashboard() {
   useEffect(() => {
     if (viewingAsset && tab !== viewingAssetFromTab) {
       setViewingAsset(null)
+      window.history.replaceState(null, '', `#${tab}`)
     }
   }, [tab])
+
+  // Push history entry when viewing an asset so the browser back button goes back
+  useEffect(() => {
+    if (viewingAsset) {
+      window.history.pushState(null, '', `#inventory?id=${viewingAsset.id}`)
+    }
+  }, [viewingAsset])
+
+  // Load asset from URL on mount for deep-linking
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash.startsWith('inventory?id=')) {
+      const assetId = hash.split('id=')[1]
+      if (assetId) {
+        supabase.from('assets').select('*').eq('id', assetId).single().then(({ data }) => {
+          if (data) {
+            setViewingAsset(data)
+            setViewingAssetFromTab('inventory')
+          }
+        })
+      }
+    }
+  }, [])
   useEffect(() => {
     if (editModalAsset) fetchEditModalData()
   }, [editModalAsset])
@@ -87,7 +110,21 @@ export default function Dashboard() {
       // Close edit modal on back so it doesn't persist across navigation
       setEditModalOpen(false)
       setEditModalAsset(null)
-      if (newTab !== tabRef.current) {
+      // Going back from asset detail → load the asset from URL
+      if (newTab.startsWith('inventory?id=')) {
+        const assetId = newTab.split('id=')[1]
+        supabase.from('assets').select('*').eq('id', assetId).single().then(({ data }) => {
+          if (data) { setViewingAsset(data); setViewingAssetFromTab('inventory') }
+        })
+        if (newTab !== tabRef.current) {
+          setTab('inventory')
+          window.history.pushState(null, '', newTab)
+        }
+      } else if (viewingAsset) {
+        // Going back from asset detail to tab without asset → clear it
+        setViewingAsset(null)
+        window.history.pushState(null, '', '#inventory')
+      } else if (newTab !== tabRef.current) {
         setTab(newTab || 'home')
         window.history.pushState(null, '', `#${newTab || 'home'}`)
       }
